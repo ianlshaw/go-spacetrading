@@ -14,6 +14,7 @@ import (
 var url_base string = "https://api.spacetraders.io/v2/"
 var bearer_token = "Bearer "
 var base_system_symbol = ""
+var http_calls = 0
 
 func main() {
 
@@ -35,27 +36,47 @@ func main() {
 
 	populate_base_system_symbol()
 
-	marketplaces_in_system := list_waypoints_in_system(base_system_symbol, "MARKETPLACE")
+	//trade_routes := []TradeRoute{}
+
+	all_market_results := []GetMarketResponse{}
+
+	marketplaces_in_system := list_waypoints_in_system_by_trait(base_system_symbol, "MARKETPLACE")
 	for _, marketplace := range marketplaces_in_system.Data {
 
 		get_market_result := get_market(base_system_symbol, marketplace.Symbol)
 
-		if len(get_market_result.Data.Exports) > 0 {
-			fmt.Println(marketplace.Symbol)
-			fmt.Println("Exports")
-			for _, market := range get_market_result.Data.Exports {
-				fmt.Println(market.Symbol)
-			}
-		}
+		all_market_results = append(all_market_results, get_market_result.Data)
 
-		if len(get_market_result.Data.Imports) > 0 {
-			fmt.Println(marketplace.Symbol)
-			fmt.Println("Imports")
-			for _, market := range get_market_result.Data.Imports {
-				fmt.Println(market.Symbol)
+	}
+
+	for _, each_market_result := range all_market_results {
+		if len(each_market_result.Exports) > 0 {
+			for _, each_export := range each_market_result.Exports {
+				for _, each_market_result_inner := range all_market_results {
+					if len(each_market_result_inner.Imports) > 0 {
+						for _, each_market_result_imports := range each_market_result_inner.Imports {
+							if each_export.Symbol == each_market_result_imports.Symbol {
+								fmt.Println("Trade route: BUY " + each_export.Symbol + " AT " + each_market_result.Symbol + " SELL AT " + each_market_result_inner.Symbol)
+							}
+						}
+					}
+				}
 			}
 		}
 	}
+
+	fmt.Println("http calls:")
+	fmt.Println(http_calls)
+
+	// match imports to an exports
+
+	//jumpgates_in_system := list_waypoints_in_system_by_type(base_system_symbol, "JUMP_GATE")
+	//fmt.Println("JUMP_GATEs")
+	//for _, jumpgate_waypoint := range jumpgates_in_system.Data {
+	//	fmt.Println(jumpgate_waypoint.Symbol)
+	//	jumpgate := get_jump_gate(base_system_symbol, jumpgate_waypoint.Symbol)
+	//	fmt.Println(jumpgate.Data.Connections)
+	//}
 }
 
 func check(e error) {
@@ -114,6 +135,8 @@ func basic_get(endpoint string) (response_body string) {
 	sb := string(body)
 	//log.Printf(sb)
 
+	http_calls++
+
 	return sb
 }
 
@@ -139,6 +162,7 @@ func basic_post(endpoint string, payload []byte) (response_body string) {
 	check(err)
 	//Convert the body to type string
 	sb := string(body)
+	http_calls++
 	return sb
 }
 
@@ -225,7 +249,7 @@ func list_ships() (list_ships_result ListShipsResponseData) {
 }
 
 func populate_base_system_symbol() {
-	fmt.Println("[DEBUG] populate_base_system_symbol")
+	//fmt.Println("[DEBUG] populate_base_system_symbol")
 	endpoint := "my/ships"
 	response_string := basic_get(endpoint)
 
@@ -237,15 +261,22 @@ func populate_base_system_symbol() {
 
 }
 
-func list_waypoints_in_system(system_symbol string, trait string) (list_waypoints_in_system_result ListWaypointsInSystemResponseData) {
-	endpoint := "systems/" + system_symbol + "/waypoints?" + trait
+func list_waypoints_in_system_by_trait(system_symbol string, trait string) (list_waypoints_in_system_result ListWaypointsInSystemResponseData) {
+	endpoint := "systems/" + system_symbol + "/waypoints?traits=" + trait
 	response_string := basic_get(endpoint)
 	if err := json.Unmarshal([]byte(response_string), &list_waypoints_in_system_result); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
 	}
-
 	return list_waypoints_in_system_result
+}
 
+func list_waypoints_in_system_by_type(system_symbol string, query_type string) (list_waypoints_in_system_result ListWaypointsInSystemResponseData) {
+	endpoint := "systems/" + system_symbol + "/waypoints?type=" + query_type
+	response_string := basic_get(endpoint)
+	if err := json.Unmarshal([]byte(response_string), &list_waypoints_in_system_result); err != nil {
+		fmt.Println("[ERROR] failed to unmarshal")
+	}
+	return list_waypoints_in_system_result
 }
 
 func get_market(system_symbol string, waypoint_symbol string) (get_market_result GetMarketResponseData) {
@@ -255,6 +286,14 @@ func get_market(system_symbol string, waypoint_symbol string) (get_market_result
 	if err := json.Unmarshal([]byte(response_string), &get_market_result); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
 	}
-
 	return get_market_result
+}
+
+func get_jump_gate(system_symbol string, waypoint_symbol string) (get_jump_gate_result GetJumpGateResponseData) {
+	endpoint := "systems/" + system_symbol + "/waypoints/" + waypoint_symbol + "jump-gate"
+	response_string := basic_get(endpoint)
+	if err := json.Unmarshal([]byte(response_string), &get_jump_gate_result); err != nil {
+		fmt.Println("[ERROR] failed to unmarshal")
+	}
+	return get_jump_gate_result
 }

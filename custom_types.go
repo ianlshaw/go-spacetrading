@@ -224,3 +224,18 @@ type Transaction struct {
 	TotalPrice     int64  `json:"totalPrice"`
 	Timestamp      string `json:"timestamp"`
 }
+
+type GetJumpGateResponseData struct {
+	Data GetJumpGateResponse `json:"data"`
+}
+
+type GetJumpGateResponse struct {
+	Symbol      string   `json:"symbol"`
+	Connections []string `json:"connections"`
+}
+
+type TradeRoute struct {
+	BuyWaypointSymbol  string
+	SellWaypointSymbol string
+	TradeGoodSymbol    string
+}
