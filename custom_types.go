@@ -150,3 +150,77 @@ type Meta struct {
 	Page  int64 `json:"page"`
 	Limit int64 `json:"limit"`
 }
+
+type ListWaypointsInSystemResponseData struct {
+	Data []ListWaypointsInSystemResponse `json:"data"`
+	Meta Meta                            `json:"meta"`
+}
+
+type ListWaypointsInSystemResponse struct {
+	SystemSymbol        string        `json:"systemSymbol"`
+	Symbol              string        `json:"symbol"`
+	Type                string        `json:"type"`
+	X                   int64         `json:"x"`
+	Y                   int64         `json:"y"`
+	Orbitals            []Faction     `json:"orbitals"`
+	Traits              []Trait       `json:"traits"`
+	Modifiers           []interface{} `json:"modifiers"`
+	Chart               Chart         `json:"chart"`
+	Faction             Faction       `json:"faction"`
+	IsUnderConstruction bool          `json:"isUnderConstruction"`
+}
+
+type Chart struct {
+	SubmittedBy string `json:"submittedBy"`
+	SubmittedOn string `json:"submittedOn"`
+}
+
+type Faction struct {
+	Symbol string `json:"symbol"`
+}
+
+type Trait struct {
+	Symbol      string `json:"symbol"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type GetMarketResponseData struct {
+	Data GetMarketResponse `json:"data"`
+}
+
+type GetMarketResponse struct {
+	Symbol       string        `json:"symbol"`
+	Exports      []Exchange    `json:"exports"`
+	Imports      []Exchange    `json:"imports"`
+	Exchange     []Exchange    `json:"exchange"`
+	Transactions []Transaction `json:"transactions"`
+	TradeGoods   []TradeGood   `json:"tradeGoods"`
+}
+
+type Exchange struct {
+	Symbol      string `json:"symbol"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type TradeGood struct {
+	Symbol        string `json:"symbol"`
+	Type          string `json:"type"`
+	TradeVolume   int64  `json:"tradeVolume"`
+	Supply        string `json:"supply"`
+	Activity      string `json:"activity"`
+	PurchasePrice int64  `json:"purchasePrice"`
+	SellPrice     int64  `json:"sellPrice"`
+}
+
+type Transaction struct {
+	WaypointSymbol string `json:"waypointSymbol"`
+	ShipSymbol     string `json:"shipSymbol"`
+	TradeSymbol    string `json:"tradeSymbol"`
+	Type           string `json:"type"`
+	Units          int64  `json:"units"`
+	PricePerUnit   int64  `json:"pricePerUnit"`
+	TotalPrice     int64  `json:"totalPrice"`
+	Timestamp      string `json:"timestamp"`
+}

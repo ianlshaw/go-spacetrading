@@ -13,6 +13,7 @@ import (
 
 var url_base string = "https://api.spacetraders.io/v2/"
 var bearer_token = "Bearer "
+var base_system_symbol = ""
 
 func main() {
 
@@ -24,6 +25,7 @@ func main() {
 
 	CALLSIGN := os.Args[1]
 
+	// Check if an auth token file is present for the CALLSIGN provided
 	if !does_auth_file_exist(CALLSIGN) {
 		fmt.Println("this is where we would register agent")
 		//register_agent(CALLSIGN)
@@ -31,11 +33,29 @@ func main() {
 
 	read_auth_token_from_file(CALLSIGN)
 
-	list_ships()
+	populate_base_system_symbol()
 
-	// Check if an auth token file is present for the CALLSIGN provided
+	marketplaces_in_system := list_waypoints_in_system(base_system_symbol, "MARKETPLACE")
+	for _, marketplace := range marketplaces_in_system.Data {
 
-	//pretty_print_json(dumb_get(""))
+		get_market_result := get_market(base_system_symbol, marketplace.Symbol)
+
+		if len(get_market_result.Data.Exports) > 0 {
+			fmt.Println(marketplace.Symbol)
+			fmt.Println("Exports")
+			for _, market := range get_market_result.Data.Exports {
+				fmt.Println(market.Symbol)
+			}
+		}
+
+		if len(get_market_result.Data.Imports) > 0 {
+			fmt.Println(marketplace.Symbol)
+			fmt.Println("Imports")
+			for _, market := range get_market_result.Data.Imports {
+				fmt.Println(market.Symbol)
+			}
+		}
+	}
 }
 
 func check(e error) {
@@ -59,12 +79,6 @@ type ErrorContainer struct {
 
 type DataContainer struct {
 	Data map[string]interface{} `json:"data"`
-}
-
-func jsonToMap(jsonStr string) map[string]interface{} {
-	result := make(map[string]interface{})
-	json.Unmarshal([]byte(jsonStr), &result)
-	return result
 }
 
 func dumb_get(endpoint string) (response_body string) {
@@ -103,7 +117,7 @@ func basic_get(endpoint string) (response_body string) {
 	return sb
 }
 
-func basic_post(endpoint string, payload []byte) (returnedJSON map[string]interface{}) {
+func basic_post(endpoint string, payload []byte) (response_body string) {
 	// HTTP endpoint
 	posturl := url_base + endpoint
 
@@ -123,13 +137,9 @@ func basic_post(endpoint string, payload []byte) (returnedJSON map[string]interf
 
 	body, err := io.ReadAll(res.Body)
 	check(err)
-
+	//Convert the body to type string
 	sb := string(body)
-	mapResult := jsonToMap(sb)
-	//fmt.Printf("Map with keys :%+v\n", mapResult)
-
-	return mapResult
-
+	return sb
 }
 
 func pretty_print_json(json_blob string) {
@@ -191,26 +201,60 @@ func register_agent(callsign string) {
 
 	result := basic_post("register", payloadJSON)
 
-	//data := result["data"]
+	fmt.Println(result)
 
-	token := result["data"].(map[string]interface{})["token"]
+	// TODO: create model for register_agent response and convert this to unmarshal and return
+	//token := result["data"].(map[string]interface{})["token"]
 
-	fmt.Println(token)
-
-	auth_token := token.(string)
-	write_auth_token_to_file(auth_token, callsign+".token")
+	//auth_token := token.(string)
+	//write_auth_token_to_file(auth_token, callsign+".token")
 }
 
-func list_ships() {
+func list_ships() (list_ships_result ListShipsResponseData) {
 	fmt.Println("list_ships")
+	endpoint := "my/ships"
+	response_string := basic_get(endpoint)
+
+	//response_typed := ListShipsResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &list_ships_result); err != nil {
+		fmt.Println("failed to unmarshal")
+	}
+
+	return list_ships_result
+
+}
+
+func populate_base_system_symbol() {
+	fmt.Println("[DEBUG] populate_base_system_symbol")
 	endpoint := "my/ships"
 	response_string := basic_get(endpoint)
 
 	response_typed := ListShipsResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &response_typed); err != nil {
-		fmt.Println("failed to unmarshal")
+		fmt.Println("[ERROR] failed to unmarshal")
 	}
-	//fmt.Println(reponse_typed)
-	fmt.Println(response_typed.Data[0].Symbol)
+	base_system_symbol = response_typed.Data[0].Nav.SystemSymbol
 
+}
+
+func list_waypoints_in_system(system_symbol string, trait string) (list_waypoints_in_system_result ListWaypointsInSystemResponseData) {
+	endpoint := "systems/" + system_symbol + "/waypoints?" + trait
+	response_string := basic_get(endpoint)
+	if err := json.Unmarshal([]byte(response_string), &list_waypoints_in_system_result); err != nil {
+		fmt.Println("[ERROR] failed to unmarshal")
+	}
+
+	return list_waypoints_in_system_result
+
+}
+
+func get_market(system_symbol string, waypoint_symbol string) (get_market_result GetMarketResponseData) {
+
+	endpoint := "systems/" + system_symbol + "/waypoints/" + waypoint_symbol + "/market"
+	response_string := basic_get(endpoint)
+	if err := json.Unmarshal([]byte(response_string), &get_market_result); err != nil {
+		fmt.Println("[ERROR] failed to unmarshal")
+	}
+
+	return get_market_result
 }
