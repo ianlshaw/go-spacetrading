@@ -12,6 +12,7 @@ import (
 )
 
 var url_base string = "https://api.spacetraders.io/v2/"
+var bearer_token = "Bearer "
 
 func main() {
 
@@ -24,8 +25,13 @@ func main() {
 	CALLSIGN := os.Args[1]
 
 	if !does_auth_file_exist(CALLSIGN) {
-		register_agent(CALLSIGN)
+		fmt.Println("this is where we would register agent")
+		//register_agent(CALLSIGN)
 	}
+
+	read_auth_token_from_file(CALLSIGN)
+
+	list_ships()
 
 	// Check if an auth token file is present for the CALLSIGN provided
 
@@ -36,6 +42,29 @@ func check(e error) {
 	if e != nil {
 		panic(e)
 	}
+}
+
+type RegisterAgentPayload struct {
+	Symbol  string `json:"symbol"`
+	Faction string `json:"faction"`
+}
+
+type ResponseDataContainer struct {
+	Container map[string]interface{}
+}
+
+type ErrorContainer struct {
+	Error map[string]interface{} `json:"error"`
+}
+
+type DataContainer struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+func jsonToMap(jsonStr string) map[string]interface{} {
+	result := make(map[string]interface{})
+	json.Unmarshal([]byte(jsonStr), &result)
+	return result
 }
 
 func dumb_get(endpoint string) (response_body string) {
@@ -55,19 +84,23 @@ func dumb_get(endpoint string) (response_body string) {
 	return sb
 }
 
-type RegisterAgentPayload struct {
-	Symbol  string `json:"symbol"`
-	Faction string `json:"faction"`
-}
+func basic_get(endpoint string) (response_body string) {
+	url := url_base + endpoint
 
-type ResponseDataContainer struct {
-	Container map[string]interface{}
-}
+	req, _ := http.NewRequest("GET", url, nil)
 
-func jsonToMap(jsonStr string) map[string]interface{} {
-	result := make(map[string]interface{})
-	json.Unmarshal([]byte(jsonStr), &result)
-	return result
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Authorization", bearer_token)
+
+	res, _ := http.DefaultClient.Do(req)
+
+	defer res.Body.Close()
+	body, _ := io.ReadAll(res.Body)
+	//Convert the body to type string
+	sb := string(body)
+	//log.Printf(sb)
+
+	return sb
 }
 
 func basic_post(endpoint string, payload []byte) (returnedJSON map[string]interface{}) {
@@ -125,6 +158,26 @@ func does_auth_file_exist(callsign string) (result bool) {
 	return true
 }
 
+func write_auth_token_to_file(auth_token string, filename string) {
+	f, err := os.Create(filename)
+	check(err)
+	defer f.Close()
+	write_string_result, err := f.WriteString(auth_token)
+	check(err)
+	fmt.Printf("wrote %d bytes\n", write_string_result)
+}
+
+func read_auth_token_from_file(callsign string) {
+	f, err := os.ReadFile(callsign + ".token") // just pass the file name
+	check(err)
+	bearer_token += (string(f))
+}
+
+func get_status() {
+	result := dumb_get("")
+	pretty_print_json(result)
+}
+
 func register_agent(callsign string) {
 	fmt.Println("register_agent")
 
@@ -148,11 +201,16 @@ func register_agent(callsign string) {
 	write_auth_token_to_file(auth_token, callsign+".token")
 }
 
-func write_auth_token_to_file(auth_token string, filename string) {
-	f, err := os.Create(filename)
-	check(err)
-	defer f.Close()
-	write_string_result, err := f.WriteString(auth_token)
-	check(err)
-	fmt.Printf("wrote %d bytes\n", write_string_result)
+func list_ships() {
+	fmt.Println("list_ships")
+	endpoint := "my/ships"
+	response_string := basic_get(endpoint)
+
+	response_typed := ListShipsResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &response_typed); err != nil {
+		fmt.Println("failed to unmarshal")
+	}
+	//fmt.Println(reponse_typed)
+	fmt.Println(response_typed.Data[0].Symbol)
+
 }
