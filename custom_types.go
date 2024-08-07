@@ -368,3 +368,11 @@ type OrbitShipResponse struct {
 
 type EmptyPayload struct {
 }
+
+type DockShipResponseData struct {
+	Data DockShipResponse `json:"data"`
+}
+
+type DockShipResponse struct {
+	Nav Nav `json:"nav"`
+}

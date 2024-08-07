@@ -30,7 +30,7 @@ func main() {
 
 	// Check if an auth token file is present for the CALLSIGN provided
 	if !does_auth_file_exist(CALLSIGN) {
-		register_agent(CALLSIGN)
+		RegisterAgent(CALLSIGN)
 	}
 
 	read_auth_token_from_file(CALLSIGN)
@@ -44,7 +44,7 @@ func main() {
 	// populate all_market results with the result of get_market against each waypoint which has a MARKETPLACE
 	marketplaces_in_system := list_waypoints_in_system_by_trait(base_system_symbol, "MARKETPLACE")
 	for _, marketplace := range marketplaces_in_system {
-		get_market_result := get_market(base_system_symbol, marketplace.Symbol)
+		get_market_result := GetMarket(base_system_symbol, marketplace.Symbol)
 		all_market_results = append(all_market_results, get_market_result.Data)
 	}
 
@@ -84,7 +84,7 @@ func main() {
 	// populate probe_shipyards with waypoints which have SHIPYARDs which sell SHIP_PROBE's
 	shipyards_in_system := list_waypoints_in_system_by_trait(base_system_symbol, "SHIPYARD")
 	for _, shipyard_waypoint := range shipyards_in_system {
-		get_shipyard_result := get_shipyard(base_system_symbol, shipyard_waypoint.Symbol)
+		get_shipyard_result := GetShipyard(base_system_symbol, shipyard_waypoint.Symbol)
 		for _, ship := range get_shipyard_result.ShipTypes {
 			if ship.Type == "SHIP_PROBE" {
 				fmt.Println("[DEBUG] shipyard with probes for sale found: ")
@@ -95,7 +95,7 @@ func main() {
 	}
 
 	// TODO: i think most of this goes into the turn loop
-	list_ships_result := list_ships()
+	list_ships_result := ListShips()
 
 	for _, each_trade_route := range trade_routes {
 		fmt.Println("BUY " + each_trade_route.TradeGoodSymbol + " AT " + each_trade_route.BuyWaypointSymbol + " SELL AT " + each_trade_route.SellWaypointSymbol)
@@ -137,7 +137,7 @@ func main() {
 	}
 
 	// TODO: This goes into the COMMAND_SHIP's role
-	command_ship_current_location := get_waypoint(base_system_symbol, command_ship.Nav.WaypointSymbol)
+	command_ship_current_location := GetWaypoint(base_system_symbol, command_ship.Nav.WaypointSymbol)
 
 	fmt.Println("[DEBUG] number of satellites")
 	fmt.Println(number_of_satellites)
@@ -160,33 +160,45 @@ func main() {
 		fmt.Println("[DEBUG] command ship current location")
 		fmt.Println(command_ship.Nav.WaypointSymbol)
 
-		if ship_is_already_at_waypoint(command_ship, buyer_ship_destination_waypoint_symbol) {
+		if is_ship_already_at_waypoint(command_ship, buyer_ship_destination_waypoint_symbol) {
 			// TODO: buy satellites upto len(markets_to_cover)
 			fmt.Println("[INFO] command ship is at buyer_ship_destination_waypoint_symbol BUY SATELLITES")
+			if !is_ship_docked(command_ship) {
+				DockShip(command_ship.Symbol)
+			}
 		} else {
 			// TODO: send command ship to shipyard which sells satellites
 			if is_ship_docked(command_ship) {
-				orbit_ship(command_ship.Symbol)
+				OrbitShip(command_ship.Symbol)
 			}
 			navigate_ship_result := NavigateShip(command_ship.Symbol, buyer_ship_destination_waypoint_symbol)
 			fmt.Println(navigate_ship_result)
 		}
 	}
 
+	turn_number := 1
+
 	// this runs forever
 	for {
-		fmt.Println("[INFO] START OF TURN")
-		list_ships_result := list_ships()
+		fmt.Print("[INFO] START OF TURN ")
+		fmt.Print(turn_number)
+		fmt.Println()
+		list_ships_result := ListShips()
 		wait_between_ships := turn_length / len(list_ships_result)
 
 		// inform user of http calls/turn to ease rate limit issues
-		fmt.Println("[INFO] http calls:")
-		fmt.Println(http_calls)
+		fmt.Print("[INFO] http calls: ")
+		fmt.Print(http_calls / 2)
+		fmt.Print("/m")
+		fmt.Println()
 		fmt.Println("[INFO] END OF TURN")
 
 		// reset call counter
 		http_calls = 0
 
+		turn_number++
+
+		// turns are always turn_length (default 2 minutes) but as we add ships they fill the time between turns
 		time.Sleep(time.Duration(wait_between_ships) * time.Second)
 	}
 }
@@ -286,7 +298,7 @@ func does_auth_file_exist(callsign string) (result bool) {
 	return true
 }
 
-func write_auth_token_to_file(auth_token string, filename string) {
+func WriteAuthTokenToFile(auth_token string, filename string) {
 	f, err := os.Create(filename)
 	check(err)
 	defer f.Close()
@@ -306,8 +318,8 @@ func get_status() {
 	pretty_print_json(result)
 }
 
-func register_agent(callsign string) (result RegisterAgentResponse) {
-	fmt.Println("register_agent")
+func RegisterAgent(callsign string) (result RegisterAgentResponse) {
+	fmt.Println("RegisterAgent")
 	payload := &RegisterAgentPayload{}
 	payload.Faction = "COSMIC"
 	payload.Symbol = callsign
@@ -320,11 +332,11 @@ func register_agent(callsign string) (result RegisterAgentResponse) {
 	}
 	token := data_container.Data.Token
 	auth_token := token
-	write_auth_token_to_file(auth_token, callsign+".token")
+	WriteAuthTokenToFile(auth_token, callsign+".token")
 	return data_container.Data
 }
 
-func list_ships() (ships []Ship) {
+func ListShips() (ships []Ship) {
 	//fmt.Println("[DEBUG] list_ships")
 	endpoint := "my/ships"
 	response_string := basic_get(endpoint)
@@ -350,7 +362,7 @@ func populate_base_system_symbol() {
 	base_system_symbol = response_typed.Data[0].Nav.SystemSymbol
 }
 
-func get_waypoint(system_symbol string, waypoint_symbol string) (resultant_waypoint Waypoint) {
+func GetWaypoint(system_symbol string, waypoint_symbol string) (resultant_waypoint Waypoint) {
 	endpoint := "systems/" + system_symbol + "/waypoints/" + waypoint_symbol
 	response_string := basic_get(endpoint)
 	data_container := GetWaypointResponseData{}
@@ -380,7 +392,7 @@ func distance_between_two_coordinates(waypoint1X int64, waypoint1Y int64, waypoi
 	return resultant_distance
 }
 
-func list_waypoints_in_system_by_trait(system_symbol string, trait string) (list_waypoints_in_system_result []Waypoint) {
+func list_waypoints_in_system_by_trait(system_symbol string, trait string) []Waypoint {
 	endpoint := "systems/" + system_symbol + "/waypoints?traits=" + trait
 	response_string := basic_get(endpoint)
 	data_container := ListWaypointsInSystemResponseData{}
@@ -400,8 +412,7 @@ func list_waypoints_in_system_by_type(system_symbol string, query_type string) (
 	return data_container.Data
 }
 
-func get_market(system_symbol string, waypoint_symbol string) (get_market_result GetMarketResponseData) {
-
+func GetMarket(system_symbol string, waypoint_symbol string) (get_market_result GetMarketResponseData) {
 	endpoint := "systems/" + system_symbol + "/waypoints/" + waypoint_symbol + "/market"
 	response_string := basic_get(endpoint)
 	if err := json.Unmarshal([]byte(response_string), &get_market_result); err != nil {
@@ -410,7 +421,7 @@ func get_market(system_symbol string, waypoint_symbol string) (get_market_result
 	return get_market_result
 }
 
-func get_shipyard(system_symbol string, waypoint_symbol string) (get_shipyard_result Shipyard) {
+func GetShipyard(system_symbol string, waypoint_symbol string) (get_shipyard_result Shipyard) {
 	endpoint := "systems/" + system_symbol + "/waypoints/" + waypoint_symbol + "/shipyard"
 	response_string := basic_get(endpoint)
 	data_container := GetShipyardResponseData{}
@@ -442,11 +453,11 @@ func is_satellite_present_at_marketplace(list_ships_result []Ship, waypoint_symb
 	return false
 }
 
-func ship_is_already_at_waypoint(ship_to_test Ship, waypoint_symbol string) (result bool) {
+func is_ship_already_at_waypoint(ship_to_test Ship, waypoint_symbol string) bool {
 	return ship_to_test.Nav.WaypointSymbol == waypoint_symbol
 }
 
-func NavigateShip(ship_symbol string, waypoint_symbol string) (result NavigateShipResponse) {
+func NavigateShip(ship_symbol string, waypoint_symbol string) NavigateShipResponse {
 	fmt.Println("[DEBUG] NavigateShip " + ship_symbol + " " + waypoint_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/navigate"
 	payload := &NavigateShipPayload{}
@@ -467,14 +478,28 @@ func is_ship_docked(ship Ship) (is_docked bool) {
 	return ship.Nav.Status == "DOCKED"
 }
 
-func orbit_ship(ship_symbol string) (return_value_why_do_i_name_this NavigateShipResponse) {
-	fmt.Println("[DEBUG] orbit_ship")
+func OrbitShip(ship_symbol string) NavigateShipResponse {
+	fmt.Println("[DEBUG] OrbitShip")
 	endpoint := "my/ships/" + ship_symbol + "/orbit"
 	payload := &EmptyPayload{}
 	payloadJSON, err := json.Marshal(payload)
 	check(err)
 	response_string := basic_post(endpoint, payloadJSON)
 	data_container := NavigateShipResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("[ERROR] failed to unmarshal")
+	}
+	return data_container.Data
+}
+
+func DockShip(ship_symbol string) DockShipResponse {
+	fmt.Println("[DEBUG] DockShip")
+	endpoint := "my/ships/" + ship_symbol + "/dock"
+	payload := &EmptyPayload{}
+	payloadJSON, err := json.Marshal(payload)
+	check(err)
+	response_string := basic_post(endpoint, payloadJSON)
+	data_container := DockShipResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
 	}
