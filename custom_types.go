@@ -152,11 +152,11 @@ type Meta struct {
 }
 
 type ListWaypointsInSystemResponseData struct {
-	Data []ListWaypointsInSystemResponse `json:"data"`
-	Meta Meta                            `json:"meta"`
+	Data []Waypoint `json:"data"`
+	Meta Meta       `json:"meta"`
 }
 
-type ListWaypointsInSystemResponse struct {
+type Waypoint struct {
 	SystemSymbol        string        `json:"systemSymbol"`
 	Symbol              string        `json:"symbol"`
 	Type                string        `json:"type"`
@@ -238,4 +238,26 @@ type TradeRoute struct {
 	BuyWaypointSymbol  string
 	SellWaypointSymbol string
 	TradeGoodSymbol    string
+}
+
+type GetShipyardResponseData struct {
+	Data Shipyard `json:"data"`
+}
+
+type Shipyard struct {
+	Symbol           string        `json:"symbol"`
+	ShipTypes        []ShipType    `json:"shipTypes"`
+	Transactions     []Transaction `json:"transactions"`
+	Ships            []Ship        `json:"ships"`
+	ModificationsFee int64         `json:"modificationsFee"`
+}
+
+type ShipType struct {
+	Type string `json:"type"`
+}
+
+type Requirements struct {
+	Power int64 `json:"power"`
+	Crew  int64 `json:"crew"`
+	Slots int64 `json:"slots"`
 }

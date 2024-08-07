@@ -74,6 +74,19 @@ func main() {
 		}
 	}
 
+	fmt.Println("Shipyard finder...")
+	shipyards_in_system := list_waypoints_in_system_by_trait(base_system_symbol, "SHIPYARD")
+	for _, shipyard_waypoint := range shipyards_in_system.Data {
+		get_shipyard_result := get_shipyard(base_system_symbol, shipyard_waypoint.Symbol)
+		for _, ship := range get_shipyard_result.ShipTypes {
+			if ship.Type == "SHIP_PROBE" {
+				fmt.Println("Shipyard with probes for sale found: ")
+				fmt.Println(get_shipyard_result.Symbol)
+
+			}
+		}
+	}
+
 	list_ships_result := list_ships()
 
 	for _, each_trade_route := range trade_routes {
@@ -114,6 +127,10 @@ func main() {
 
 	if number_of_satellites < len(markets_to_cover) {
 		fmt.Println("We need more satellites, boss")
+
+		// send command ship to shipyard which sells satellites
+
+		// buy satellites
 	}
 
 	fmt.Println("http calls:")
@@ -297,7 +314,15 @@ func populate_base_system_symbol() {
 		fmt.Println("[ERROR] failed to unmarshal")
 	}
 	base_system_symbol = response_typed.Data[0].Nav.SystemSymbol
+}
 
+func get_waypoint_coordinate(waypoint Waypoint) (waypointX int64, waypointY int64) {
+	return waypoint.X, waypoint.Y
+}
+
+func distance_between_two_coordinates(waypoint1X int64, waypoint1Y int64, waypoint2X int64, waypoint2Y int64) (resultant_distance int64) {
+
+	return resultant_distance
 }
 
 func list_waypoints_in_system_by_trait(system_symbol string, trait string) (list_waypoints_in_system_result ListWaypointsInSystemResponseData) {
@@ -326,6 +351,16 @@ func get_market(system_symbol string, waypoint_symbol string) (get_market_result
 		fmt.Println("[ERROR] failed to unmarshal")
 	}
 	return get_market_result
+}
+
+func get_shipyard(system_symbol string, waypoint_symbol string) (get_shipyard_result Shipyard) {
+	endpoint := "systems/" + system_symbol + "/waypoints/" + waypoint_symbol + "/shipyard"
+	response_string := basic_get(endpoint)
+	data_container := GetShipyardResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("[ERROR] failed to unmarshal")
+	}
+	return data_container.Data
 }
 
 func get_jump_gate(system_symbol string, waypoint_symbol string) (get_jump_gate_result GetJumpGateResponseData) {
