@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"os"
 )
@@ -47,7 +48,7 @@ func main() {
 	markets_to_cover := make(map[string]bool)
 
 	marketplaces_in_system := list_waypoints_in_system_by_trait(base_system_symbol, "MARKETPLACE")
-	for _, marketplace := range marketplaces_in_system.Data {
+	for _, marketplace := range marketplaces_in_system {
 		get_market_result := get_market(base_system_symbol, marketplace.Symbol)
 		all_market_results = append(all_market_results, get_market_result.Data)
 	}
@@ -74,15 +75,19 @@ func main() {
 		}
 	}
 
+	probe_shipyards := []Waypoint{}
+
 	fmt.Println("Shipyard finder...")
 	shipyards_in_system := list_waypoints_in_system_by_trait(base_system_symbol, "SHIPYARD")
-	for _, shipyard_waypoint := range shipyards_in_system.Data {
+	for _, shipyard_waypoint := range shipyards_in_system {
 		get_shipyard_result := get_shipyard(base_system_symbol, shipyard_waypoint.Symbol)
 		for _, ship := range get_shipyard_result.ShipTypes {
 			if ship.Type == "SHIP_PROBE" {
 				fmt.Println("Shipyard with probes for sale found: ")
 				fmt.Println(get_shipyard_result.Symbol)
+				probe_shipyards = append(probe_shipyards, shipyard_waypoint)
 
+				// decide which matching shipyard to go to...
 			}
 		}
 	}
@@ -110,27 +115,37 @@ func main() {
 		fmt.Println(market)
 	}
 
-	fmt.Println("Number of markets to cover:")
+	fmt.Println("[DEBUG] number of markets to cover:")
 	fmt.Println(len(markets_to_cover))
 
 	// count number of satellites
 	number_of_satellites := 0
 
+	var command_ship Ship
+
 	for _, ship := range list_ships_result.Data {
 		if ship.Registration.Role == "SATELLITE" {
 			number_of_satellites++
 		}
+		if ship.Registration.Role == "COMMAND" {
+			command_ship = ship
+		}
 	}
 
-	fmt.Println("Number of satellites")
+	command_ship_current_location := get_waypoint(base_system_symbol, command_ship.Nav.WaypointSymbol)
+
+	fmt.Println("[DEBUG] number of satellites")
 	fmt.Println(number_of_satellites)
 
 	if number_of_satellites < len(markets_to_cover) {
 		fmt.Println("We need more satellites, boss")
 
-		// send command ship to shipyard which sells satellites
+		for _, shipyard := range probe_shipyards {
+			distance_between_two_coordinates(shipyard.X, shipyard.Y, command_ship_current_location.X, command_ship_current_location.Y)
+		}
 
-		// buy satellites
+		// TODO: send command ship to shipyard which sells satellites
+		// TODO: buy satellites upto len(markets_to_cover)
 	}
 
 	fmt.Println("http calls:")
@@ -291,7 +306,7 @@ func register_agent(callsign string) {
 }
 
 func list_ships() (list_ships_result ListShipsResponseData) {
-	fmt.Println("list_ships")
+	fmt.Println("[DEBUG] list_ships")
 	endpoint := "my/ships"
 	response_string := basic_get(endpoint)
 
@@ -316,31 +331,54 @@ func populate_base_system_symbol() {
 	base_system_symbol = response_typed.Data[0].Nav.SystemSymbol
 }
 
+func get_waypoint(system_symbol string, waypoint_symbol string) (resultant_waypoint Waypoint) {
+	endpoint := "systems/" + system_symbol + "/waypoints/" + waypoint_symbol
+	response_string := basic_get(endpoint)
+	data_container := GetWaypointResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("[ERROR] failed to unmarshal")
+	}
+	return data_container.Data
+}
+
 func get_waypoint_coordinate(waypoint Waypoint) (waypointX int64, waypointY int64) {
 	return waypoint.X, waypoint.Y
 }
 
-func distance_between_two_coordinates(waypoint1X int64, waypoint1Y int64, waypoint2X int64, waypoint2Y int64) (resultant_distance int64) {
+func distance_between_two_coordinates(waypoint1X int64, waypoint1Y int64, waypoint2X int64, waypoint2Y int64) (resultant_distance float64) {
+	fmt.Println("[DEBUG] distance_between_two_coordinates")
 
+	XIntermediate := waypoint1X - waypoint2X
+	YIntermediate := waypoint1Y - waypoint2Y
+	XSquared := XIntermediate * XIntermediate
+	YSquared := YIntermediate * YIntermediate
+	XPlusY := XSquared + YSquared
+	XPlusYFloat := float64(XPlusY)
+	resultant_distance = math.Sqrt(XPlusYFloat)
+
+	fmt.Println("[DEBUG] distance: ")
+	fmt.Println(resultant_distance)
 	return resultant_distance
 }
 
-func list_waypoints_in_system_by_trait(system_symbol string, trait string) (list_waypoints_in_system_result ListWaypointsInSystemResponseData) {
+func list_waypoints_in_system_by_trait(system_symbol string, trait string) (list_waypoints_in_system_result []Waypoint) {
 	endpoint := "systems/" + system_symbol + "/waypoints?traits=" + trait
 	response_string := basic_get(endpoint)
-	if err := json.Unmarshal([]byte(response_string), &list_waypoints_in_system_result); err != nil {
+	data_container := ListWaypointsInSystemResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
 	}
-	return list_waypoints_in_system_result
+	return data_container.Data
 }
 
-func list_waypoints_in_system_by_type(system_symbol string, query_type string) (list_waypoints_in_system_result ListWaypointsInSystemResponseData) {
+func list_waypoints_in_system_by_type(system_symbol string, query_type string) (list_waypoints_in_system_result []Waypoint) {
 	endpoint := "systems/" + system_symbol + "/waypoints?type=" + query_type
 	response_string := basic_get(endpoint)
+	data_container := ListWaypointsInSystemResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &list_waypoints_in_system_result); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
 	}
-	return list_waypoints_in_system_result
+	return data_container.Data
 }
 
 func get_market(system_symbol string, waypoint_symbol string) (get_market_result GetMarketResponseData) {

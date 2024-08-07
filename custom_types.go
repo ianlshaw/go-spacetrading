@@ -261,3 +261,13 @@ type Requirements struct {
 	Crew  int64 `json:"crew"`
 	Slots int64 `json:"slots"`
 }
+
+type GetWaypointResponseData struct {
+	Data Waypoint `json:"data"`
+}
+
+type Modifier struct {
+	Symbol      string `json:"symbol"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
