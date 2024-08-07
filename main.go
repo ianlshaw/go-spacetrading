@@ -34,19 +34,22 @@ func main() {
 
 	read_auth_token_from_file(CALLSIGN)
 
+	// TODO: globals are bad, this should be removed
 	populate_base_system_symbol()
 
-	//trade_routes := []TradeRoute{}
+	// association for places to BUY and SELL TradeGoods
+	trade_routes := []TradeRoute{}
 
-	all_market_results := []GetMarketResponse{}
+	// cache for full response from every get_market call
+	all_market_results := []Market{}
+
+	// each unique market waypoint symbol
+	markets_to_cover := make(map[string]bool)
 
 	marketplaces_in_system := list_waypoints_in_system_by_trait(base_system_symbol, "MARKETPLACE")
 	for _, marketplace := range marketplaces_in_system.Data {
-
 		get_market_result := get_market(base_system_symbol, marketplace.Symbol)
-
 		all_market_results = append(all_market_results, get_market_result.Data)
-
 	}
 
 	for _, each_market_result := range all_market_results {
@@ -56,13 +59,61 @@ func main() {
 					if len(each_market_result_inner.Imports) > 0 {
 						for _, each_market_result_imports := range each_market_result_inner.Imports {
 							if each_export.Symbol == each_market_result_imports.Symbol {
-								fmt.Println("Trade route: BUY " + each_export.Symbol + " AT " + each_market_result.Symbol + " SELL AT " + each_market_result_inner.Symbol)
+								trade_route := TradeRoute{}
+								trade_route.TradeGoodSymbol = each_export.Symbol
+								trade_route.BuyWaypointSymbol = each_market_result.Symbol
+								trade_route.SellWaypointSymbol = each_market_result_inner.Symbol
+								trade_routes = append(trade_routes, trade_route)
+								markets_to_cover[trade_route.BuyWaypointSymbol] = true
+								markets_to_cover[trade_route.SellWaypointSymbol] = true
 							}
 						}
 					}
 				}
 			}
 		}
+	}
+
+	list_ships_result := list_ships()
+
+	for _, each_trade_route := range trade_routes {
+		fmt.Println("BUY " + each_trade_route.TradeGoodSymbol + " AT " + each_trade_route.BuyWaypointSymbol + " SELL AT " + each_trade_route.SellWaypointSymbol)
+		if is_satellite_present_at_marketplace(list_ships_result, each_trade_route.BuyWaypointSymbol) {
+			fmt.Println("satellite present at BUY waypoint")
+		} else {
+			//fmt.Println("No satellite present at BUY waypoint")
+		}
+		if is_satellite_present_at_marketplace(list_ships_result, each_trade_route.SellWaypointSymbol) {
+			fmt.Println("satellite present at SELL waypoint")
+		} else {
+			//fmt.Println("No satellite present at SELL waypoint")
+		}
+	}
+
+	fmt.Println("markets to cover:")
+	//fmt.Println(markets_to_cover)
+
+	for market := range markets_to_cover {
+		fmt.Println(market)
+	}
+
+	fmt.Println("Number of markets to cover:")
+	fmt.Println(len(markets_to_cover))
+
+	// count number of satellites
+	number_of_satellites := 0
+
+	for _, ship := range list_ships_result.Data {
+		if ship.Registration.Role == "SATELLITE" {
+			number_of_satellites++
+		}
+	}
+
+	fmt.Println("Number of satellites")
+	fmt.Println(number_of_satellites)
+
+	if number_of_satellites < len(markets_to_cover) {
+		fmt.Println("We need more satellites, boss")
 	}
 
 	fmt.Println("http calls:")
@@ -88,18 +139,6 @@ func check(e error) {
 type RegisterAgentPayload struct {
 	Symbol  string `json:"symbol"`
 	Faction string `json:"faction"`
-}
-
-type ResponseDataContainer struct {
-	Container map[string]interface{}
-}
-
-type ErrorContainer struct {
-	Error map[string]interface{} `json:"error"`
-}
-
-type DataContainer struct {
-	Data map[string]interface{} `json:"data"`
 }
 
 func dumb_get(endpoint string) (response_body string) {
@@ -296,4 +335,17 @@ func get_jump_gate(system_symbol string, waypoint_symbol string) (get_jump_gate_
 		fmt.Println("[ERROR] failed to unmarshal")
 	}
 	return get_jump_gate_result
+}
+
+func is_satellite_present_at_marketplace(list_ships_result ListShipsResponseData, waypoint_symbol string) (answer bool) {
+	list_ships_data := list_ships_result.Data
+
+	for _, ship := range list_ships_data {
+		if ship.Registration.Role == "SATELLITE" {
+			if ship.Nav.WaypointSymbol == waypoint_symbol {
+				return true
+			}
+		}
+	}
+	return false
 }

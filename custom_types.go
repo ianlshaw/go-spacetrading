@@ -186,10 +186,10 @@ type Trait struct {
 }
 
 type GetMarketResponseData struct {
-	Data GetMarketResponse `json:"data"`
+	Data Market `json:"data"`
 }
 
-type GetMarketResponse struct {
+type Market struct {
 	Symbol       string        `json:"symbol"`
 	Exports      []Exchange    `json:"exports"`
 	Imports      []Exchange    `json:"imports"`
