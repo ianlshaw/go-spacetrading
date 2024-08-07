@@ -1,5 +1,15 @@
 package main
 
+type ErrorResponse struct {
+	Error Error `json:"error"`
+}
+
+type Error struct {
+	Message string      `json:"message"`
+	Code    int64       `json:"code"`
+	Data    interface{} `json:"data"`
+}
+
 type ListShipsResponseData struct {
 	Data []Ship `json:"data"`
 	Meta Meta   `json:"meta"`
@@ -270,4 +280,91 @@ type Modifier struct {
 	Symbol      string `json:"symbol"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+}
+
+type NavigateShipResponseData struct {
+	Data NavigateShipResponse `json:"data"`
+}
+
+type NavigateShipResponse struct {
+	Fuel   Fuel    `json:"fuel"`
+	Nav    Nav     `json:"nav"`
+	Events []Event `json:"events"`
+}
+
+type Event struct {
+	Symbol      string `json:"symbol"`
+	Component   string `json:"component"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type RegisterAgentPayload struct {
+	Symbol  string `json:"symbol"`
+	Faction string `json:"faction"`
+}
+
+type NavigateShipPayload struct {
+	WaypointSymbol string `json:"waypointSymbol"`
+}
+
+type RegisterAgentResponseData struct {
+	Data RegisterAgentResponse `json:"data"`
+}
+
+type RegisterAgentResponse struct {
+	Agent    Agent    `json:"agent"`
+	Contract Contract `json:"contract"`
+	Faction  Faction  `json:"faction"`
+	Ship     Ship     `json:"ship"`
+	Token    string   `json:"token"`
+}
+
+type Agent struct {
+	AccountID       string `json:"accountId"`
+	Symbol          string `json:"symbol"`
+	Headquarters    string `json:"headquarters"`
+	Credits         int64  `json:"credits"`
+	StartingFaction string `json:"startingFaction"`
+	ShipCount       int64  `json:"shipCount"`
+}
+
+type Contract struct {
+	ID               string `json:"id"`
+	FactionSymbol    string `json:"factionSymbol"`
+	Type             string `json:"type"`
+	Terms            Terms  `json:"terms"`
+	Accepted         bool   `json:"accepted"`
+	Fulfilled        bool   `json:"fulfilled"`
+	Expiration       string `json:"expiration"`
+	DeadlineToAccept string `json:"deadlineToAccept"`
+}
+
+type Terms struct {
+	Deadline string    `json:"deadline"`
+	Payment  Payment   `json:"payment"`
+	Deliver  []Deliver `json:"deliver"`
+}
+
+type Deliver struct {
+	TradeSymbol       string `json:"tradeSymbol"`
+	DestinationSymbol string `json:"destinationSymbol"`
+	UnitsRequired     int64  `json:"unitsRequired"`
+	UnitsFulfilled    int64  `json:"unitsFulfilled"`
+}
+
+type Payment struct {
+	OnAccepted  int64 `json:"onAccepted"`
+	OnFulfilled int64 `json:"onFulfilled"`
+}
+
+type OrbitShipResponseData struct {
+	Data OrbitShipResponse `json:"data"`
+}
+
+type OrbitShipResponse struct {
+	Nav Nav `json:"nav"`
+}
+
+type EmptyPayload struct {
 }
