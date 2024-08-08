@@ -151,6 +151,18 @@ func RegisterAgent(callsign string) (result RegisterAgentResponse) {
 	return data_container.Data
 }
 
+func GetAgent() Agent {
+	endpoint := "my/agent"
+	response_string := basic_get(endpoint)
+
+	data_container := GetAgentResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("failed to unmarshal")
+	}
+
+	return data_container.Data
+}
+
 func ListShips() (ships []Ship) {
 	//fmt.Println("[DEBUG] list_ships")
 	endpoint := "my/ships"
@@ -193,7 +205,6 @@ func get_waypoint_coordinate(waypoint Waypoint) (waypointX int64, waypointY int6
 
 func distance_between_two_coordinates(waypoint1X int64, waypoint1Y int64, waypoint2X int64, waypoint2Y int64) (resultant_distance float64) {
 	//fmt.Println("[DEBUG] distance_between_two_coordinates")
-
 	XIntermediate := waypoint1X - waypoint2X
 	YIntermediate := waypoint1Y - waypoint2Y
 	XSquared := XIntermediate * XIntermediate
@@ -201,10 +212,11 @@ func distance_between_two_coordinates(waypoint1X int64, waypoint1Y int64, waypoi
 	XPlusY := XSquared + YSquared
 	XPlusYFloat := float64(XPlusY)
 	resultant_distance = math.Sqrt(XPlusYFloat)
-
-	fmt.Println("[DEBUG] distance: ")
-	fmt.Println(resultant_distance)
 	return resultant_distance
+}
+
+func distance_between_two_waypoints(waypoint1 Waypoint, waypoint2 Waypoint) float64 {
+	return distance_between_two_coordinates(waypoint1.X, waypoint1.Y, waypoint2.X, waypoint2.Y)
 }
 
 func list_waypoints_in_system_by_trait(system_symbol string, trait string) []Waypoint {
@@ -227,13 +239,14 @@ func list_waypoints_in_system_by_type(system_symbol string, query_type string) (
 	return data_container.Data
 }
 
-func GetMarket(system_symbol string, waypoint_symbol string) (get_market_result GetMarketResponseData) {
+func GetMarket(system_symbol string, waypoint_symbol string) Market {
 	endpoint := "systems/" + system_symbol + "/waypoints/" + waypoint_symbol + "/market"
 	response_string := basic_get(endpoint)
-	if err := json.Unmarshal([]byte(response_string), &get_market_result); err != nil {
+	data_container := GetMarketResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
 	}
-	return get_market_result
+	return data_container.Data
 }
 
 func GetShipyard(system_symbol string, waypoint_symbol string) (get_shipyard_result Shipyard) {
@@ -255,13 +268,13 @@ func get_jump_gate(system_symbol string, waypoint_symbol string) (get_jump_gate_
 	return get_jump_gate_result
 }
 
-func is_satellite_present_at_marketplace(list_ships_result []Ship, waypoint_symbol string) (answer bool) {
-	list_ships_data := list_ships_result
-
-	for _, ship := range list_ships_data {
+func is_a_satellite_docked_at_marketplace(list_ships_result []Ship, waypoint_symbol string) (answer bool) {
+	for _, ship := range list_ships_result {
 		if ship.Registration.Role == "SATELLITE" {
 			if ship.Nav.WaypointSymbol == waypoint_symbol {
-				return true
+				if ship.Nav.Status == "DOCKED" {
+					return true
+				}
 			}
 		}
 	}
@@ -269,7 +282,7 @@ func is_satellite_present_at_marketplace(list_ships_result []Ship, waypoint_symb
 }
 
 func is_ship_already_at_waypoint(ship_to_test Ship, waypoint_symbol string) bool {
-	return ship_to_test.Nav.WaypointSymbol == waypoint_symbol
+	return (ship_to_test.Nav.WaypointSymbol == waypoint_symbol && ship_to_test.Nav.Status != "IN_TRANSIT")
 }
 
 func NavigateShip(ship_symbol string, waypoint_symbol string) NavigateShipResponse {
@@ -369,7 +382,8 @@ func SellCargo(ship_symbol string, trade_good_symbol string, units int64) SellCa
 	return data_container.Data
 }
 
-func ApplyRoleCommand(ship Ship, number_of_markets_to_cover int, probe_shipyards []Waypoint) {
+func ApplyRoleCommand(ship Ship, number_of_markets_to_cover int, probe_shipyards []Waypoint, trade_routes []TradeRoute) {
+	fmt.Println("[INFO] " + ship.Symbol)
 	fmt.Println("[DEBUG] ApplyRoleCommand")
 
 	// do we have enough satellites?
@@ -392,9 +406,6 @@ func ApplyRoleCommand(ship Ship, number_of_markets_to_cover int, probe_shipyards
 	}
 
 	current_waypoint := GetWaypoint(base_system_symbol, ship.Nav.WaypointSymbol)
-
-	fmt.Println("[DEBUG] number of satellites")
-	fmt.Println(number_of_satellites)
 
 	if number_of_satellites < number_of_markets_to_cover {
 		fmt.Println("[INFO] We need more satellites, boss")
@@ -436,22 +447,104 @@ func ApplyRoleCommand(ship Ship, number_of_markets_to_cover int, probe_shipyards
 		}
 	} else {
 		// we have enough satellites
-		fmt.Println("We have enough satellites, boss. It's time to start trading!")
+		fmt.Println("[INFO] We have enough satellites, boss. It's time to start trading!")
+
+		for i, trade_route := range trade_routes {
+			if is_a_satellite_docked_at_marketplace(ship_list, trade_route.BuyWaypoint.Symbol) {
+				if is_a_satellite_docked_at_marketplace(ship_list, trade_route.SellWaypoint.Symbol) {
+					//fmt.Println("[DEBUG] TRADE ROUTE HAS SAT AT BOTH BUY AND SELL")
+
+					// populate additional trade_route fields with results of GetMarketCalls
+					trade_routes[i].BuyMarket = GetMarket(base_system_symbol, trade_route.BuyWaypoint.Symbol)
+					trade_routes[i].SellMarket = GetMarket(base_system_symbol, trade_route.SellWaypoint.Symbol)
+
+					var buy_price int64
+
+					for _, trade_good := range trade_routes[i].BuyMarket.TradeGoods {
+						if trade_good.Symbol == trade_route.TradeGoodSymbol {
+							fmt.Print("[DEBUG] BUY " + trade_route.TradeGoodSymbol + " FOR ")
+							fmt.Print(trade_good.PurchasePrice)
+							fmt.Print(" AT " + trade_route.BuyWaypoint.Symbol)
+							fmt.Println()
+							buy_price = trade_good.PurchasePrice
+						}
+					}
+
+					var sell_price int64
+
+					for _, trade_good := range trade_routes[i].SellMarket.TradeGoods {
+						if trade_good.Symbol == trade_route.TradeGoodSymbol {
+							fmt.Print("[DEBUG] SELL " + trade_route.TradeGoodSymbol + " FOR ")
+							fmt.Print(trade_good.SellPrice)
+							fmt.Print(" AT " + trade_route.SellWaypoint.Symbol)
+							fmt.Println()
+							sell_price = trade_good.SellPrice
+						}
+					}
+
+					fmt.Print("[INFO] PROFIT PER UNIT: ")
+					profit_per_unit := sell_price - buy_price
+					fmt.Print(profit_per_unit)
+					fmt.Println()
+
+					fmt.Print("[INFO] DISTANCE: ")
+					distance := distance_between_two_waypoints(trade_route.BuyWaypoint, trade_route.SellWaypoint)
+					fmt.Print(distance)
+					fmt.Println()
+
+					fmt.Print("[INFO] PROFIT PER UNIT / DISTANCE: ")
+					profit_per_unit_divide_by_distance_times_two := float64(profit_per_unit) / (distance * 2)
+					fmt.Print(profit_per_unit_divide_by_distance_times_two)
+					fmt.Println()
+				}
+			}
+		}
+	}
+}
+
+func ApplyRoleSatellite(ship Ship, markets_to_cover map[string]bool) {
+	fmt.Println("[DEBUG] ApplyRoleSatellite")
+	fmt.Println("[INFO] " + ship.Symbol)
+
+	if ship.Nav.Status == "IN_TRANSIT" {
+		fmt.Println("[DEBUG] IN_TRANSIT TO")
+		fmt.Println(ship.Nav.Route.Destination)
+		fmt.Println("[DEBUG] Arrival")
+		fmt.Println(ship.Nav.Route.Arrival)
+		return
 	}
 
+	// check if i am already at any of the markets which need to be covered
+	for market_waypoint := range markets_to_cover {
+		if is_ship_already_at_waypoint(ship, market_waypoint) {
+			//fmt.Println("[DEBUG] Already at market waypoint")
+			if !is_ship_docked(ship) {
+				DockShip(ship.Symbol)
+			}
+			markets_to_cover[market_waypoint] = true
+			return
+		}
+	}
+
+	for market_waypoint, is_market_covered_market := range markets_to_cover {
+		if !is_market_covered_market {
+			if is_ship_docked(ship) {
+				OrbitShip(ship.Symbol)
+			}
+			NavigateShip(ship.Symbol, market_waypoint)
+			markets_to_cover[market_waypoint] = true
+			return
+		}
+	}
 }
 
-func ApplyRoleSatellite(ship Ship) {
-
-}
-
-func ShipRoleDecider(ship Ship, markets_to_cover map[string]bool, probe_shipyards []Waypoint) {
+func ShipRoleDecider(ship Ship, markets_to_cover map[string]bool, probe_shipyards []Waypoint, trade_routes []TradeRoute) {
 	if ship.Registration.Role == "COMMAND" {
-		ApplyRoleCommand(ship, len(markets_to_cover), probe_shipyards)
+		ApplyRoleCommand(ship, len(markets_to_cover), probe_shipyards, trade_routes)
 	}
 
 	if ship.Registration.Role == "SATELLITE" {
-		ApplyRoleSatellite(ship)
+		ApplyRoleSatellite(ship, markets_to_cover)
 	}
 }
 
@@ -482,7 +575,7 @@ func main() {
 	marketplaces_in_system := list_waypoints_in_system_by_trait(base_system_symbol, "MARKETPLACE")
 	for _, marketplace := range marketplaces_in_system {
 		get_market_result := GetMarket(base_system_symbol, marketplace.Symbol)
-		all_market_results = append(all_market_results, get_market_result.Data)
+		all_market_results = append(all_market_results, get_market_result)
 	}
 
 	// association for places to BUY and SELL TradeGoods
@@ -502,11 +595,11 @@ func main() {
 							if each_export.Symbol == each_market_result_imports.Symbol {
 								trade_route := TradeRoute{}
 								trade_route.TradeGoodSymbol = each_export.Symbol
-								trade_route.BuyWaypointSymbol = each_market_result.Symbol
-								trade_route.SellWaypointSymbol = each_market_result_inner.Symbol
+								trade_route.BuyWaypoint = GetWaypoint(base_system_symbol, each_market_result.Symbol)
+								trade_route.SellWaypoint = GetWaypoint(base_system_symbol, each_market_result_inner.Symbol)
 								trade_routes = append(trade_routes, trade_route)
-								markets_to_cover[trade_route.BuyWaypointSymbol] = false
-								markets_to_cover[trade_route.SellWaypointSymbol] = false
+								markets_to_cover[trade_route.BuyWaypoint.Symbol] = false
+								markets_to_cover[trade_route.SellWaypoint.Symbol] = false
 							}
 						}
 					}
@@ -537,13 +630,13 @@ func main() {
 	// check if satellite is present at each of the markets in trade_routes
 	// this goes into the satellite role
 	for _, each_trade_route := range trade_routes {
-		fmt.Println("[INFO] BUY " + each_trade_route.TradeGoodSymbol + " AT " + each_trade_route.BuyWaypointSymbol + " SELL AT " + each_trade_route.SellWaypointSymbol)
-		if is_satellite_present_at_marketplace(list_ships_result, each_trade_route.BuyWaypointSymbol) {
+		fmt.Println("[INFO] BUY " + each_trade_route.TradeGoodSymbol + " AT " + each_trade_route.BuyWaypoint.Symbol + " SELL AT " + each_trade_route.SellWaypoint.Symbol)
+		if is_a_satellite_docked_at_marketplace(list_ships_result, each_trade_route.BuyWaypoint.Symbol) {
 			fmt.Println("[INFO] satellite present at BUY waypoint")
 		} else {
 			fmt.Println("[INFO] no satellite present at BUY waypoint")
 		}
-		if is_satellite_present_at_marketplace(list_ships_result, each_trade_route.SellWaypointSymbol) {
+		if is_a_satellite_docked_at_marketplace(list_ships_result, each_trade_route.SellWaypoint.Symbol) {
 			fmt.Println("[INFO] satellite present at SELL waypoint")
 		} else {
 			fmt.Println("[DEBUG] no satellite present at SELL waypoint")
@@ -562,16 +655,35 @@ func main() {
 
 	turn_number := 1
 
+	fmt.Print("[INFO] http calls: ")
+	fmt.Print(http_calls)
+	fmt.Println()
+
 	// this runs forever
 	for {
+
 		fmt.Print("[INFO] START OF TURN ")
 		fmt.Print(turn_number)
 		fmt.Println()
+
+		agent := GetAgent()
+
+		fmt.Println("[INFO] " + agent.Symbol)
+		fmt.Print("[INFO] ShipCount: ")
+		fmt.Print(agent.ShipCount)
+		fmt.Println()
+		fmt.Print("[INFO] Credits: ")
+		fmt.Print(agent.Credits)
+		fmt.Println()
+
 		ships_list := ListShips()
 		wait_between_ships := turn_length / len(ships_list)
 
 		for _, ship := range ships_list {
-			ShipRoleDecider(ship, markets_to_cover, probe_shipyards)
+			ShipRoleDecider(ship, markets_to_cover, probe_shipyards, trade_routes)
+
+			// turns are always turn_length (default 2 minutes) but as we add ships they fill the time between turns
+			time.Sleep(time.Duration(wait_between_ships) * time.Second)
 		}
 
 		// outro
@@ -585,10 +697,6 @@ func main() {
 
 		// reset call counter
 		http_calls = 0
-
 		turn_number++
-
-		// turns are always turn_length (default 2 minutes) but as we add ships they fill the time between turns
-		time.Sleep(time.Duration(wait_between_ships) * time.Second)
 	}
 }

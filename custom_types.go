@@ -245,9 +245,11 @@ type GetJumpGateResponse struct {
 }
 
 type TradeRoute struct {
-	BuyWaypointSymbol  string
-	SellWaypointSymbol string
-	TradeGoodSymbol    string
+	BuyWaypoint     Waypoint
+	BuyMarket       Market
+	SellWaypoint    Waypoint
+	SellMarket      Market
+	TradeGoodSymbol string
 }
 
 type GetShipyardResponseData struct {
@@ -427,4 +429,8 @@ type SellCargoResponse struct {
 	Agent       Agent       `json:"agent"`
 	Cargo       Cargo       `json:"cargo"`
 	Transaction Transaction `json:"transaction"`
+}
+
+type GetAgentResponseData struct {
+	Data Agent `json:"data"`
 }
