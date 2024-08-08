@@ -376,3 +376,55 @@ type DockShipResponseData struct {
 type DockShipResponse struct {
 	Nav Nav `json:"nav"`
 }
+
+type PurchaseShipPayload struct {
+	ShipType       string `json:"shipType"`
+	WaypointSymbol string `json:"waypointSymbol"`
+}
+
+type PurchaseShipResponseData struct {
+	Data PurchaseShipResponse `json:"data"`
+}
+
+type PurchaseShipResponse struct {
+	Agent       Agent       `json:"agent"`
+	Ship        Ship        `json:"ship"`
+	Transaction Transaction `json:"transaction"`
+}
+
+type Inventory struct {
+	Symbol      string `json:"symbol"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Units       int64  `json:"units"`
+}
+
+type PurchaseCargoPayload struct {
+	Symbol string `json:"symbol"`
+	Units  int64  `json:"units"`
+}
+
+type PurchaseCargoResponseData struct {
+	Data PurchaseCargoResponse `json:"data"`
+}
+
+type PurchaseCargoResponse struct {
+	Agent       Agent       `json:"agent"`
+	Cargo       Cargo       `json:"cargo"`
+	Transaction Transaction `json:"transaction"`
+}
+
+type SellCargoPayload struct {
+	Symbol string `json:"symbol"`
+	Units  int64  `json:"units"`
+}
+
+type SellCargoResponseData struct {
+	Data SellCargoResponse `json:"data"`
+}
+
+type SellCargoResponse struct {
+	Agent       Agent       `json:"agent"`
+	Cargo       Cargo       `json:"cargo"`
+	Transaction Transaction `json:"transaction"`
+}

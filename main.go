@@ -18,191 +18,6 @@ var base_system_symbol = ""
 var http_calls = 0
 var turn_length = 120
 
-func main() {
-
-	// Ensure the CALLSIGN is provided as a command line argument
-	if len(os.Args) != 2 {
-		fmt.Println("go-spacetrade CALLSIGN")
-		os.Exit(1)
-	}
-
-	CALLSIGN := os.Args[1]
-
-	// Check if an auth token file is present for the CALLSIGN provided
-	if !does_auth_file_exist(CALLSIGN) {
-		RegisterAgent(CALLSIGN)
-	}
-
-	read_auth_token_from_file(CALLSIGN)
-
-	// TODO: globals are bad, this should be removed
-	populate_base_system_symbol()
-
-	// cache for full response from every get_market call
-	all_market_results := []Market{}
-
-	// populate all_market results with the result of get_market against each waypoint which has a MARKETPLACE
-	marketplaces_in_system := list_waypoints_in_system_by_trait(base_system_symbol, "MARKETPLACE")
-	for _, marketplace := range marketplaces_in_system {
-		get_market_result := GetMarket(base_system_symbol, marketplace.Symbol)
-		all_market_results = append(all_market_results, get_market_result.Data)
-	}
-
-	// association for places to BUY and SELL TradeGoods
-	trade_routes := []TradeRoute{}
-
-	// each unique market waypoint symbol (unordered)
-	markets_to_cover := make(map[string]bool)
-
-	// populate both trade_routes and markets_to_cover by iterating through A) every MARKETPLACE B) each of their Imports and C) their Exports
-	// associations of import/export are added to trade_routes, and we keep one copy of each waypoint_symbol in markets_to_cover
-	for _, each_market_result := range all_market_results {
-		if len(each_market_result.Exports) > 0 {
-			for _, each_export := range each_market_result.Exports {
-				for _, each_market_result_inner := range all_market_results {
-					if len(each_market_result_inner.Imports) > 0 {
-						for _, each_market_result_imports := range each_market_result_inner.Imports {
-							if each_export.Symbol == each_market_result_imports.Symbol {
-								trade_route := TradeRoute{}
-								trade_route.TradeGoodSymbol = each_export.Symbol
-								trade_route.BuyWaypointSymbol = each_market_result.Symbol
-								trade_route.SellWaypointSymbol = each_market_result_inner.Symbol
-								trade_routes = append(trade_routes, trade_route)
-								markets_to_cover[trade_route.BuyWaypointSymbol] = true
-								markets_to_cover[trade_route.SellWaypointSymbol] = true
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	// there can be multiple SHIPYARDs which sell SHIP_PROBE
-	probe_shipyards := []Waypoint{}
-
-	// populate probe_shipyards with waypoints which have SHIPYARDs which sell SHIP_PROBE's
-	shipyards_in_system := list_waypoints_in_system_by_trait(base_system_symbol, "SHIPYARD")
-	for _, shipyard_waypoint := range shipyards_in_system {
-		get_shipyard_result := GetShipyard(base_system_symbol, shipyard_waypoint.Symbol)
-		for _, ship := range get_shipyard_result.ShipTypes {
-			if ship.Type == "SHIP_PROBE" {
-				fmt.Println("[DEBUG] shipyard with probes for sale found: ")
-				fmt.Println(get_shipyard_result.Symbol)
-				probe_shipyards = append(probe_shipyards, shipyard_waypoint)
-			}
-		}
-	}
-
-	// TODO: i think most of this goes into the turn loop
-	list_ships_result := ListShips()
-
-	for _, each_trade_route := range trade_routes {
-		fmt.Println("BUY " + each_trade_route.TradeGoodSymbol + " AT " + each_trade_route.BuyWaypointSymbol + " SELL AT " + each_trade_route.SellWaypointSymbol)
-		if is_satellite_present_at_marketplace(list_ships_result, each_trade_route.BuyWaypointSymbol) {
-			fmt.Println("satellite present at BUY waypoint")
-		} else {
-			//fmt.Println("No satellite present at BUY waypoint")
-		}
-		if is_satellite_present_at_marketplace(list_ships_result, each_trade_route.SellWaypointSymbol) {
-			fmt.Println("satellite present at SELL waypoint")
-		} else {
-			//fmt.Println("No satellite present at SELL waypoint")
-		}
-	}
-
-	fmt.Println("[DEBUG] markets to cover:")
-	//fmt.Println(markets_to_cover)
-
-	for market := range markets_to_cover {
-		fmt.Println(market)
-	}
-
-	fmt.Println("[DEBUG] number of markets to cover:")
-	fmt.Println(len(markets_to_cover))
-
-	// count number of satellites
-	number_of_satellites := 0
-
-	var command_ship Ship
-
-	// TODO: this may as well become the role assigner
-	for _, ship := range list_ships_result {
-		if ship.Registration.Role == "SATELLITE" {
-			number_of_satellites++
-		}
-		if ship.Registration.Role == "COMMAND" {
-			command_ship = ship
-		}
-	}
-
-	// TODO: This goes into the COMMAND_SHIP's role
-	command_ship_current_location := GetWaypoint(base_system_symbol, command_ship.Nav.WaypointSymbol)
-
-	fmt.Println("[DEBUG] number of satellites")
-	fmt.Println(number_of_satellites)
-
-	if number_of_satellites < len(markets_to_cover) {
-		fmt.Println("We need more satellites, boss")
-
-		best_distance := 99999999.9999999
-		var buyer_ship_destination_waypoint_symbol string
-		for _, shipyard := range probe_shipyards {
-			distance := distance_between_two_coordinates(shipyard.X, shipyard.Y, command_ship_current_location.X, command_ship_current_location.Y)
-			if distance < best_distance {
-				buyer_ship_destination_waypoint_symbol = shipyard.Symbol
-			}
-		}
-
-		fmt.Println("[DEBUG] buyer_ship_destination_symbol:")
-		fmt.Println(buyer_ship_destination_waypoint_symbol)
-
-		fmt.Println("[DEBUG] command ship current location")
-		fmt.Println(command_ship.Nav.WaypointSymbol)
-
-		if is_ship_already_at_waypoint(command_ship, buyer_ship_destination_waypoint_symbol) {
-			// TODO: buy satellites upto len(markets_to_cover)
-			fmt.Println("[INFO] command ship is at buyer_ship_destination_waypoint_symbol BUY SATELLITES")
-			if !is_ship_docked(command_ship) {
-				DockShip(command_ship.Symbol)
-			}
-		} else {
-			// TODO: send command ship to shipyard which sells satellites
-			if is_ship_docked(command_ship) {
-				OrbitShip(command_ship.Symbol)
-			}
-			navigate_ship_result := NavigateShip(command_ship.Symbol, buyer_ship_destination_waypoint_symbol)
-			fmt.Println(navigate_ship_result)
-		}
-	}
-
-	turn_number := 1
-
-	// this runs forever
-	for {
-		fmt.Print("[INFO] START OF TURN ")
-		fmt.Print(turn_number)
-		fmt.Println()
-		list_ships_result := ListShips()
-		wait_between_ships := turn_length / len(list_ships_result)
-
-		// inform user of http calls/turn to ease rate limit issues
-		fmt.Print("[INFO] http calls: ")
-		fmt.Print(http_calls / 2)
-		fmt.Print("/m")
-		fmt.Println()
-		fmt.Println("[INFO] END OF TURN")
-
-		// reset call counter
-		http_calls = 0
-
-		turn_number++
-
-		// turns are always turn_length (default 2 minutes) but as we add ships they fill the time between turns
-		time.Sleep(time.Duration(wait_between_ships) * time.Second)
-	}
-}
-
 func check(e error) {
 	if e != nil {
 		panic(e)
@@ -504,4 +319,276 @@ func DockShip(ship_symbol string) DockShipResponse {
 		fmt.Println("[ERROR] failed to unmarshal")
 	}
 	return data_container.Data
+}
+
+func PurchaseShip(ship_type string, waypoint_symbol string) PurchaseShipResponse {
+	fmt.Println("[DEBUG] PurchaseShip")
+	endpoint := "my/ships/"
+	payload := &PurchaseShipPayload{}
+	payload.WaypointSymbol = waypoint_symbol
+	payload.ShipType = ship_type
+	payloadJSON, err := json.Marshal(payload)
+	check(err)
+	response_string := basic_post(endpoint, payloadJSON)
+	data_container := PurchaseShipResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("[ERROR] failed to unmarshal")
+	}
+	return data_container.Data
+}
+
+func PurchaseCargo(ship_symbol string, trade_good_symbol string, units int64) PurchaseCargoResponse {
+	fmt.Println("[DEBUG] PurchaseCargo")
+	endpoint := "my/ships/" + ship_symbol + "/purchase"
+	payload := &PurchaseCargoPayload{}
+	payload.Symbol = trade_good_symbol
+	payload.Units = units
+	payloadJSON, err := json.Marshal(payload)
+	check(err)
+	response_string := basic_post(endpoint, payloadJSON)
+	data_container := PurchaseCargoResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("[ERROR] failed to unmarshal")
+	}
+	return data_container.Data
+}
+
+func SellCargo(ship_symbol string, trade_good_symbol string, units int64) SellCargoResponse {
+	fmt.Println("[DEBUG] SellCargo")
+	endpoint := "my/ships/" + ship_symbol + "/sell"
+	payload := &SellCargoPayload{}
+	payload.Symbol = trade_good_symbol
+	payload.Units = units
+	payloadJSON, err := json.Marshal(payload)
+	check(err)
+	response_string := basic_post(endpoint, payloadJSON)
+	data_container := SellCargoResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("[ERROR] failed to unmarshal")
+	}
+	return data_container.Data
+}
+
+func ApplyRoleCommand(ship Ship, number_of_markets_to_cover int, probe_shipyards []Waypoint) {
+	fmt.Println("[DEBUG] ApplyRoleCommand")
+
+	// do we have enough satellites?
+	// trade
+
+	// if not
+	// go to closest shipyard selling SHIP_PROBE
+	// buy satellites until we have enough
+
+	// count number of satellites
+	var number_of_satellites int
+
+	ship_list := ListShips()
+
+	// TODO: this may as well become the role assigner
+	for _, a_ship := range ship_list {
+		if a_ship.Registration.Role == "SATELLITE" {
+			number_of_satellites++
+		}
+	}
+
+	current_waypoint := GetWaypoint(base_system_symbol, ship.Nav.WaypointSymbol)
+
+	fmt.Println("[DEBUG] number of satellites")
+	fmt.Println(number_of_satellites)
+
+	if number_of_satellites < number_of_markets_to_cover {
+		fmt.Println("[INFO] We need more satellites, boss")
+
+		best_distance := 99999999.9999999
+		var buyer_ship_destination_waypoint_symbol string
+		for _, shipyard := range probe_shipyards {
+			distance := distance_between_two_coordinates(shipyard.X, shipyard.Y, current_waypoint.X, current_waypoint.Y)
+			if distance < best_distance {
+				buyer_ship_destination_waypoint_symbol = shipyard.Symbol
+			}
+		}
+
+		fmt.Println("[DEBUG] buyer_ship_destination_symbol:")
+		fmt.Println(buyer_ship_destination_waypoint_symbol)
+
+		fmt.Println("[DEBUG] command ship current location")
+		fmt.Println(ship.Nav.WaypointSymbol)
+
+		if is_ship_already_at_waypoint(ship, buyer_ship_destination_waypoint_symbol) {
+
+			if !is_ship_docked(ship) {
+				DockShip(ship.Symbol)
+			}
+
+			// This will only purchase one ship per turn. We can buy more per turn but we need to update the satellite count afterwards
+			PurchaseShip("SHIP_PROBE", ship.Nav.WaypointSymbol)
+
+			// TODO: buy satellites upto len(markets_to_cover)
+			fmt.Println("[INFO] command ship is at buyer_ship_destination_waypoint_symbol BUY SATELLITES")
+
+		} else {
+			// TODO: send command ship to shipyard which sells satellites
+			if is_ship_docked(ship) {
+				OrbitShip(ship.Symbol)
+			}
+			navigate_ship_result := NavigateShip(ship.Symbol, buyer_ship_destination_waypoint_symbol)
+			fmt.Println(navigate_ship_result)
+		}
+	} else {
+		// we have enough satellites
+		fmt.Println("We have enough satellites, boss. It's time to start trading!")
+	}
+
+}
+
+func ApplyRoleSatellite(ship Ship) {
+
+}
+
+func ShipRoleDecider(ship Ship, markets_to_cover map[string]bool, probe_shipyards []Waypoint) {
+	if ship.Registration.Role == "COMMAND" {
+		ApplyRoleCommand(ship, len(markets_to_cover), probe_shipyards)
+	}
+
+	if ship.Registration.Role == "SATELLITE" {
+		ApplyRoleSatellite(ship)
+	}
+}
+
+func main() {
+
+	// Ensure the CALLSIGN is provided as a command line argument
+	if len(os.Args) != 2 {
+		fmt.Println("go-spacetrade CALLSIGN")
+		os.Exit(1)
+	}
+
+	CALLSIGN := os.Args[1]
+
+	// Check if an auth token file is present for the CALLSIGN provided
+	if !does_auth_file_exist(CALLSIGN) {
+		RegisterAgent(CALLSIGN)
+	}
+
+	read_auth_token_from_file(CALLSIGN)
+
+	// TODO: globals are bad, this should be removed
+	populate_base_system_symbol()
+
+	// cache for full response from every get_market call
+	all_market_results := []Market{}
+
+	// populate all_market results with the result of get_market against each waypoint which has a MARKETPLACE
+	marketplaces_in_system := list_waypoints_in_system_by_trait(base_system_symbol, "MARKETPLACE")
+	for _, marketplace := range marketplaces_in_system {
+		get_market_result := GetMarket(base_system_symbol, marketplace.Symbol)
+		all_market_results = append(all_market_results, get_market_result.Data)
+	}
+
+	// association for places to BUY and SELL TradeGoods
+	trade_routes := []TradeRoute{}
+
+	// each unique market waypoint symbol (unordered)
+	markets_to_cover := make(map[string]bool)
+
+	// populate both trade_routes and markets_to_cover by iterating through A) every MARKETPLACE B) each of their Imports and C) their Exports
+	// associations of import/export are added to trade_routes, and we keep one copy of each waypoint_symbol in markets_to_cover
+	for _, each_market_result := range all_market_results {
+		if len(each_market_result.Exports) > 0 {
+			for _, each_export := range each_market_result.Exports {
+				for _, each_market_result_inner := range all_market_results {
+					if len(each_market_result_inner.Imports) > 0 {
+						for _, each_market_result_imports := range each_market_result_inner.Imports {
+							if each_export.Symbol == each_market_result_imports.Symbol {
+								trade_route := TradeRoute{}
+								trade_route.TradeGoodSymbol = each_export.Symbol
+								trade_route.BuyWaypointSymbol = each_market_result.Symbol
+								trade_route.SellWaypointSymbol = each_market_result_inner.Symbol
+								trade_routes = append(trade_routes, trade_route)
+								markets_to_cover[trade_route.BuyWaypointSymbol] = false
+								markets_to_cover[trade_route.SellWaypointSymbol] = false
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// there can be multiple SHIPYARDs which sell SHIP_PROBE
+	probe_shipyards := []Waypoint{}
+
+	// populate probe_shipyards with Waypoints which have SHIPYARDs which sell SHIP_PROBEs
+	shipyards_in_system := list_waypoints_in_system_by_trait(base_system_symbol, "SHIPYARD")
+	for _, shipyard_waypoint := range shipyards_in_system {
+		get_shipyard_result := GetShipyard(base_system_symbol, shipyard_waypoint.Symbol)
+		for _, ship := range get_shipyard_result.ShipTypes {
+			if ship.Type == "SHIP_PROBE" {
+				fmt.Println("[INFO] shipyard with satellites for sale found: ")
+				fmt.Println("[INFO] " + get_shipyard_result.Symbol)
+				probe_shipyards = append(probe_shipyards, shipyard_waypoint)
+			}
+		}
+	}
+
+	// TODO: i think most of this goes into the turn loop
+	list_ships_result := ListShips()
+
+	// check if satellite is present at each of the markets in trade_routes
+	// this goes into the satellite role
+	for _, each_trade_route := range trade_routes {
+		fmt.Println("[INFO] BUY " + each_trade_route.TradeGoodSymbol + " AT " + each_trade_route.BuyWaypointSymbol + " SELL AT " + each_trade_route.SellWaypointSymbol)
+		if is_satellite_present_at_marketplace(list_ships_result, each_trade_route.BuyWaypointSymbol) {
+			fmt.Println("[INFO] satellite present at BUY waypoint")
+		} else {
+			fmt.Println("[INFO] no satellite present at BUY waypoint")
+		}
+		if is_satellite_present_at_marketplace(list_ships_result, each_trade_route.SellWaypointSymbol) {
+			fmt.Println("[INFO] satellite present at SELL waypoint")
+		} else {
+			fmt.Println("[DEBUG] no satellite present at SELL waypoint")
+		}
+	}
+
+	fmt.Println("[DEBUG] markets to cover:")
+	//fmt.Println(markets_to_cover)
+
+	for market := range markets_to_cover {
+		fmt.Println(market)
+	}
+
+	fmt.Println("[DEBUG] number of markets to cover:")
+	fmt.Println(len(markets_to_cover))
+
+	turn_number := 1
+
+	// this runs forever
+	for {
+		fmt.Print("[INFO] START OF TURN ")
+		fmt.Print(turn_number)
+		fmt.Println()
+		ships_list := ListShips()
+		wait_between_ships := turn_length / len(ships_list)
+
+		for _, ship := range ships_list {
+			ShipRoleDecider(ship, markets_to_cover, probe_shipyards)
+		}
+
+		// outro
+
+		// inform user of http calls/turn to ease rate limit issues
+		fmt.Print("[INFO] http calls: ")
+		fmt.Print(http_calls / 2)
+		fmt.Print("/m")
+		fmt.Println()
+		fmt.Println("[INFO] END OF TURN")
+
+		// reset call counter
+		http_calls = 0
+
+		turn_number++
+
+		// turns are always turn_length (default 2 minutes) but as we add ships they fill the time between turns
+		time.Sleep(time.Duration(wait_between_ships) * time.Second)
+	}
 }
