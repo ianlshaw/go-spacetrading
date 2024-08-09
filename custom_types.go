@@ -245,11 +245,16 @@ type GetJumpGateResponse struct {
 }
 
 type TradeRoute struct {
-	BuyWaypoint     Waypoint
-	BuyMarket       Market
-	SellWaypoint    Waypoint
-	SellMarket      Market
-	TradeGoodSymbol string
+	BuyMarketplaceWaypointSymbol  string
+	SellMarketplaceWaypointSymbol string
+	BuyWaypoint                   Waypoint
+	BuyMarket                     Market
+	SellWaypoint                  Waypoint
+	SellMarket                    Market
+	TradeGoodSymbol               string
+	ProfitPerUnit                 int64
+	Distance                      float64
+	ProfitabilityRating           float64
 }
 
 type GetShipyardResponseData struct {
