@@ -73,8 +73,8 @@ type Frame struct {
 	ModuleSlots    int64              `json:"moduleSlots"`
 	MountingPoints int64              `json:"mountingPoints"`
 	FuelCapacity   int64              `json:"fuelCapacity"`
-	Condition      int64              `json:"condition"`
-	Integrity      int64              `json:"integrity"`
+	Condition      float64            `json:"condition"`
+	Integrity      float64            `json:"integrity"`
 	Requirements   EngineRequirements `json:"requirements"`
 }
 
@@ -438,4 +438,19 @@ type SellCargoResponse struct {
 
 type GetAgentResponseData struct {
 	Data Agent `json:"data"`
+}
+
+type RefuelShipPayload struct {
+	Units     int64
+	FromCargo bool
+}
+
+type RefuelShipResponseData struct {
+	Data RefuelShipResponse `json:"data"`
+}
+
+type RefuelShipResponse struct {
+	Agent       Agent       `json:"agent"`
+	Fuel        Fuel        `json:"fuel"`
+	Transaction Transaction `json:"transaction"`
 }
