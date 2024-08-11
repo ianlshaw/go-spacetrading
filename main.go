@@ -653,24 +653,41 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 				fmt.Println("[DEBUG] This is where we buy stuff")
 
 				maximum_affordable_units := HowManyTradeGoodCanIAfford(GetAgent(), most_profitable_trade_route.BuyMarketTradeGood)
+				fmt.Print("[DEBUG] maximum_affordable_units = ")
+				fmt.Println(maximum_affordable_units)
 				units_to_purchase := maximum_affordable_units
 				space_in_cargo_hold := ship.Cargo.Capacity - ship.Cargo.Units
+				fmt.Print("[DEBUG] space_in_cargo_hold = ")
+				fmt.Println(space_in_cargo_hold)
 
-				if space_in_cargo_hold < maximum_affordable_units {
+				if space_in_cargo_hold < units_to_purchase {
 					units_to_purchase = space_in_cargo_hold
+					fmt.Print("[DEBUG] units_to_purchase = ")
+					fmt.Println(space_in_cargo_hold)
 				}
 
+				//
 				buy_market_trade_volume := most_profitable_trade_route.BuyMarketTradeGood.TradeVolume
-				if buy_market_trade_volume < units_to_purchase {
-					number_of_purchases_required := units_to_purchase / buy_market_trade_volume
-					units_to_purchase = most_profitable_trade_route.BuyMarketTradeGood.TradeVolume
+				fmt.Print("[DEBUG] buy_market_trade_volume = ")
+				fmt.Println(buy_market_trade_volume)
 
-					for i := 1; i > int(number_of_purchases_required); i++ {
-						purchase_cargo_result := PurchaseCargo(ship.Symbol, most_profitable_trade_route.TradeGoodSymbol, units_to_purchase)
-						if purchase_cargo_result.Transaction.Units < buy_market_trade_volume {
-							units_to_purchase = buy_market_trade_volume
+				if space_in_cargo_hold > buy_market_trade_volume {
+					fmt.Println("[DEBUG] space_in_cargo_hold > buy_market_trade_volume")
+					units_to_purchase = buy_market_trade_volume
+					number_of_purchases_required := space_in_cargo_hold / buy_market_trade_volume
+					fmt.Print("[DEBUG] number_of_purchases_required = ")
+					fmt.Println(number_of_purchases_required)
+
+					for i := 0; i < int(number_of_purchases_required); i++ {
+						fmt.Println("[DEBUG] this never triggers")
+						buy_cargo_result := PurchaseCargo(ship.Symbol, most_profitable_trade_route.TradeGoodSymbol, units_to_purchase)
+						space_in_cargo_hold = buy_cargo_result.Cargo.Units - buy_cargo_result.Cargo.Capacity
+						if space_in_cargo_hold < buy_market_trade_volume {
+							units_to_purchase = space_in_cargo_hold
 						}
 					}
+				} else {
+					PurchaseCargo(ship.Symbol, most_profitable_trade_route.TradeGoodSymbol, units_to_purchase)
 				}
 
 				fmt.Print("[DEBUG] units_to_purchase = ")
@@ -724,7 +741,7 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 					number_of_sales_required := units_in_cargo_hold / sell_market_trade_volume
 
 					units_to_sell := sell_market_trade_volume
-					for i := 1; i > int(number_of_sales_required); i++ {
+					for i := 0; i < int(number_of_sales_required); i++ {
 						sell_cargo_result := SellCargo(ship.Symbol, most_profitable_trade_route_with_inventory_good.TradeGoodSymbol, units_to_sell)
 						if sell_cargo_result.Transaction.Units < sell_market_trade_volume {
 							units_to_sell = sell_market_trade_volume
@@ -923,10 +940,9 @@ func main() {
 	}
 
 	fmt.Println("[DEBUG] markets to cover:")
-	fmt.Println(markets_to_cover)
 
 	for market := range markets_to_cover {
-		fmt.Println(market)
+		fmt.Println("[DEBUG] " + market)
 	}
 
 	turn_number := 1
