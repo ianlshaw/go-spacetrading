@@ -31,9 +31,9 @@ type Ship struct {
 }
 
 type Cargo struct {
-	Capacity  int64         `json:"capacity"`
-	Units     int64         `json:"units"`
-	Inventory []interface{} `json:"inventory"`
+	Capacity  int64           `json:"capacity"`
+	Units     int64           `json:"units"`
+	Inventory []InventoryItem `json:"inventory"`
 }
 
 type Cooldown struct {
@@ -55,8 +55,8 @@ type Engine struct {
 	Symbol       string             `json:"symbol"`
 	Name         string             `json:"name"`
 	Description  string             `json:"description"`
-	Condition    int64              `json:"condition"`
-	Integrity    int64              `json:"integrity"`
+	Condition    float64            `json:"condition"`
+	Integrity    float64            `json:"integrity"`
 	Speed        int64              `json:"speed"`
 	Requirements EngineRequirements `json:"requirements"`
 }
@@ -139,8 +139,8 @@ type Reactor struct {
 	Symbol       string              `json:"symbol"`
 	Name         string              `json:"name"`
 	Description  string              `json:"description"`
-	Condition    int64               `json:"condition"`
-	Integrity    int64               `json:"integrity"`
+	Condition    float64             `json:"condition"`
+	Integrity    float64             `json:"integrity"`
 	PowerOutput  int64               `json:"powerOutput"`
 	Requirements ReactorRequirements `json:"requirements"`
 }
@@ -248,9 +248,9 @@ type TradeRoute struct {
 	BuyMarketplaceWaypointSymbol  string
 	SellMarketplaceWaypointSymbol string
 	BuyWaypoint                   Waypoint
-	BuyMarket                     Market
+	BuyMarketTradeGood            TradeGood
 	SellWaypoint                  Waypoint
-	SellMarket                    Market
+	SellMarketTradeGood           TradeGood
 	TradeGoodSymbol               string
 	ProfitPerUnit                 int64
 	Distance                      float64
@@ -399,7 +399,7 @@ type PurchaseShipResponse struct {
 	Transaction Transaction `json:"transaction"`
 }
 
-type Inventory struct {
+type InventoryItem struct {
 	Symbol      string `json:"symbol"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
