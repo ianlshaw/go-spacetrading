@@ -113,7 +113,7 @@ func pretty_print_json(json_blob string) {
 	os.Stdout.Write(b)
 }
 
-func does_auth_file_exist(callsign string) (result bool) {
+func DoesAuthFileExist(callsign string) (result bool) {
 	var filename = callsign + ".token"
 	if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
 		// path/to/whatever does not exist
@@ -212,11 +212,11 @@ func GetWaypoint(system_symbol string, waypoint_symbol string) (resultant_waypoi
 	return data_container.Data
 }
 
-func get_waypoint_coordinate(waypoint Waypoint) (waypointX int64, waypointY int64) {
+func GetWaypointCoordinate(waypoint Waypoint) (waypointX int64, waypointY int64) {
 	return waypoint.X, waypoint.Y
 }
 
-func distance_between_two_coordinates(waypoint1X int64, waypoint1Y int64, waypoint2X int64, waypoint2Y int64) (resultant_distance float64) {
+func DistanceBetweenTwoCoordinates(waypoint1X int64, waypoint1Y int64, waypoint2X int64, waypoint2Y int64) (resultant_distance float64) {
 	//fmt.Println("[DEBUG] distance_between_two_coordinates")
 	XIntermediate := waypoint1X - waypoint2X
 	YIntermediate := waypoint1Y - waypoint2Y
@@ -228,8 +228,8 @@ func distance_between_two_coordinates(waypoint1X int64, waypoint1Y int64, waypoi
 	return resultant_distance
 }
 
-func distance_between_two_waypoints(waypoint1 Waypoint, waypoint2 Waypoint) float64 {
-	return distance_between_two_coordinates(waypoint1.X, waypoint1.Y, waypoint2.X, waypoint2.Y)
+func DistanceBetweenTwoWaypoints(waypoint1 Waypoint, waypoint2 Waypoint) float64 {
+	return DistanceBetweenTwoCoordinates(waypoint1.X, waypoint1.Y, waypoint2.X, waypoint2.Y)
 }
 
 func list_waypoints_in_system_by_trait(system_symbol string, trait string) []Waypoint {
@@ -281,7 +281,7 @@ func get_jump_gate(system_symbol string, waypoint_symbol string) (get_jump_gate_
 	return get_jump_gate_result
 }
 
-func is_a_satellite_docked_at_marketplace(list_ships_result []Ship, waypoint_symbol string) (answer bool) {
+func IsASatelliteDockedAtMarketplace(list_ships_result []Ship, waypoint_symbol string) (answer bool) {
 	for _, ship := range list_ships_result {
 		if ship.Registration.Role == "SATELLITE" {
 			if ship.Nav.WaypointSymbol == waypoint_symbol {
@@ -294,12 +294,12 @@ func is_a_satellite_docked_at_marketplace(list_ships_result []Ship, waypoint_sym
 	return false
 }
 
-func is_ship_already_at_waypoint(ship_to_test Ship, waypoint_symbol string) bool {
+func IsShipAlreadyAtWaypoint(ship_to_test Ship, waypoint_symbol string) bool {
 	return (ship_to_test.Nav.WaypointSymbol == waypoint_symbol && ship_to_test.Nav.Status != "IN_TRANSIT")
 }
 
 func NavigateShip(ship_symbol string, waypoint_symbol string) NavigateShipResponse {
-	fmt.Println("[DEBUG] NavigateShip " + ship_symbol + " " + waypoint_symbol)
+	//fmt.Println("[DEBUG] NavigateShip " + ship_symbol + " " + waypoint_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/navigate"
 	payload := &NavigateShipPayload{}
 
@@ -315,7 +315,7 @@ func NavigateShip(ship_symbol string, waypoint_symbol string) NavigateShipRespon
 
 }
 
-func is_ship_docked(ship Ship) bool {
+func IsShipDocked(ship Ship) bool {
 	return ship.Nav.Status == "DOCKED"
 }
 
@@ -338,7 +338,7 @@ func OrbitShip(ship_symbol string) OrbitShipResponse {
 }
 
 func DockShip(ship_symbol string) DockShipResponse {
-	fmt.Println("[DEBUG] DockShip")
+	//fmt.Println("[DEBUG] DockShip")
 	endpoint := "my/ships/" + ship_symbol + "/dock"
 	payload := &EmptyPayload{}
 	payloadJSON, err := json.Marshal(payload)
@@ -368,7 +368,7 @@ func PurchaseShip(ship_type string, waypoint_symbol string) PurchaseShipResponse
 }
 
 func PurchaseCargo(ship_symbol string, trade_good_symbol string, units int64) PurchaseCargoResponse {
-	fmt.Println("[DEBUG] PurchaseCargo")
+	//fmt.Println("[DEBUG] PurchaseCargo")
 	endpoint := "my/ships/" + ship_symbol + "/purchase"
 	payload := &PurchaseCargoPayload{}
 	payload.Symbol = trade_good_symbol
@@ -384,7 +384,7 @@ func PurchaseCargo(ship_symbol string, trade_good_symbol string, units int64) Pu
 }
 
 func SellCargo(ship_symbol string, trade_good_symbol string, units int64) SellCargoResponse {
-	fmt.Println("[DEBUG] SellCargo")
+	//fmt.Println("[DEBUG] SellCargo")
 	endpoint := "my/ships/" + ship_symbol + "/sell"
 	payload := &SellCargoPayload{}
 	payload.Symbol = trade_good_symbol
@@ -400,7 +400,7 @@ func SellCargo(ship_symbol string, trade_good_symbol string, units int64) SellCa
 }
 
 func RefuelShip(ship_symbol string) RefuelShipResponse {
-	fmt.Println("[DEBUG] RefuelShip " + ship_symbol)
+	//fmt.Println("[DEBUG] RefuelShip " + ship_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/refuel"
 	payload := &RefuelShipPayload{}
 	//payload.Units = units
@@ -487,7 +487,7 @@ func PopulateTradeRoutesWithWaypointData(trade_routes []TradeRoute, markets_to_c
 
 func PopulateTradeRoutesWithDistances(trade_routes []TradeRoute) {
 	for i, trade_route := range trade_routes {
-		distance := distance_between_two_waypoints(trade_route.BuyWaypoint, trade_route.SellWaypoint)
+		distance := DistanceBetweenTwoWaypoints(trade_route.BuyWaypoint, trade_route.SellWaypoint)
 		trade_routes[i].Distance = distance
 	}
 }
@@ -561,16 +561,14 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 	//fmt.Println("[DEBUG] ApplyRoleCommand")
 
 	if ship.Nav.Status == "IN_TRANSIT" {
-		fmt.Println("[DEBUG] IN_TRANSIT TO")
-		fmt.Println(ship.Nav.Route.Destination)
-		fmt.Println("[DEBUG] Arrival")
-		fmt.Println(ship.Nav.Route.Arrival)
+		fmt.Println("[DEBUG] IN_TRANSIT TO " + ship.Nav.Route.Destination.Symbol)
+		fmt.Println("[DEBUG] Arrival" + ship.Nav.Route.Arrival)
 		return
 	}
 
-	fmt.Print("[DEBUG] ship.Cargo.Inventory")
-	fmt.Print(ship.Cargo.Inventory)
-	fmt.Println()
+	//fmt.Print("[DEBUG] ship.Cargo.Inventory")
+	//fmt.Print(ship.Cargo.Inventory)
+	//fmt.Println()
 
 	// count number of satellites
 	var number_of_satellites int
@@ -593,7 +591,7 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 		best_distance := 99999999.9999999
 		var probe_ship_shipyard_waypoint_symbol string
 		for _, shipyard := range probe_shipyards {
-			distance := distance_between_two_coordinates(shipyard.X, shipyard.Y, current_waypoint.X, current_waypoint.Y)
+			distance := DistanceBetweenTwoCoordinates(shipyard.X, shipyard.Y, current_waypoint.X, current_waypoint.Y)
 			if distance < best_distance {
 				probe_ship_shipyard_waypoint_symbol = shipyard.Symbol
 			}
@@ -605,9 +603,9 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 		fmt.Println("[DEBUG] command ship current location")
 		fmt.Println(ship.Nav.WaypointSymbol)
 
-		if is_ship_already_at_waypoint(ship, probe_ship_shipyard_waypoint_symbol) {
+		if IsShipAlreadyAtWaypoint(ship, probe_ship_shipyard_waypoint_symbol) {
 
-			if !is_ship_docked(ship) {
+			if !IsShipDocked(ship) {
 				DockShip(ship.Symbol)
 			}
 
@@ -619,7 +617,7 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 
 		} else {
 			// TODO: send command ship to shipyard which sells satellites
-			if is_ship_docked(ship) {
+			if IsShipDocked(ship) {
 				OrbitShip(ship.Symbol)
 			}
 			navigate_ship_result := NavigateShip(ship.Symbol, probe_ship_shipyard_waypoint_symbol)
@@ -641,9 +639,9 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 		if is_ship_cargo_empty(ship) {
 			fmt.Println("[INFO] Cargo hold empty")
 			// This is flimsy because the MostProfitableTradeRoute will change, and if it does so while we have cargo this will malfunction
-			if is_ship_already_at_waypoint(ship, most_profitable_trade_route.BuyMarketplaceWaypointSymbol) {
+			if IsShipAlreadyAtWaypoint(ship, most_profitable_trade_route.BuyMarketplaceWaypointSymbol) {
 				fmt.Println("[DEBUG] Already at waypoint")
-				if !is_ship_docked(ship) {
+				if !IsShipDocked(ship) {
 					DockShip(ship.Symbol)
 				}
 
@@ -699,12 +697,9 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 				return
 			}
 
-			// TODO: check if all markets are covered here and return early if not
-
 			if MarketScanComplete(trade_routes) {
-				fmt.Println()
 				fmt.Println("[INFO] Heading to buy marketplace")
-				if is_ship_docked(ship) {
+				if IsShipDocked(ship) {
 					RefuelShip(ship.Symbol)
 					OrbitShip(ship.Symbol)
 				}
@@ -712,7 +707,7 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 
 			}
 		} else {
-			fmt.Println("[DEBUG] Cargo not empty")
+			fmt.Println("[INFO] Cargo not empty")
 
 			first_item_in_inventory := ship.Cargo.Inventory[0]
 
@@ -726,12 +721,12 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 
 			most_profitable_trade_route_with_inventory_good := MostProfitableTradeRoute(trade_routes_with_inventory_good)
 
-			fmt.Print("[DEBUG] most_profitable_trade_route_with_inventory_good")
-			fmt.Println(most_profitable_trade_route_with_inventory_good)
+			//fmt.Print("[DEBUG] most_profitable_trade_route_with_inventory_good")
+			//fmt.Println(most_profitable_trade_route_with_inventory_good)
 
-			if is_ship_already_at_waypoint(ship, most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol) {
+			if IsShipAlreadyAtWaypoint(ship, most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol) {
 				fmt.Println("[DEBUG] Already at sell marketplace")
-				if !is_ship_docked(ship) {
+				if !IsShipDocked(ship) {
 					DockShip(ship.Symbol)
 				}
 				// this doesnt account for TradeVolume < Cargo.Capacity
@@ -760,7 +755,7 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 					fmt.Println("[DEBUG] Market scan not yet complete. Waiting for data")
 					return
 				}
-				if is_ship_docked(ship) {
+				if IsShipDocked(ship) {
 					RefuelShip(ship.Symbol)
 					OrbitShip(ship.Symbol)
 				}
@@ -803,10 +798,9 @@ func ApplyRoleSatellite(ship Ship, markets_to_cover map[string]string, trade_rou
 	fmt.Println("[INFO] " + ship.Symbol)
 
 	if ship.Nav.Status == "IN_TRANSIT" {
-		fmt.Println("[DEBUG] IN_TRANSIT TO")
-		fmt.Println(ship.Nav.Route.Destination)
-		fmt.Println("[DEBUG] Arrival")
-		fmt.Println(ship.Nav.Route.Arrival)
+		fmt.Println("[DEBUG] IN_TRANSIT TO " + ship.Nav.Route.Destination.Symbol)
+		fmt.Println("[DEBUG] Arrival " + ship.Nav.Route.Arrival)
+		fmt.Println()
 		return
 	}
 
@@ -820,15 +814,15 @@ func ApplyRoleSatellite(ship Ship, markets_to_cover map[string]string, trade_rou
 		}
 	}
 
-	if is_ship_already_at_waypoint(ship, assigned_market_waypoint) {
-		fmt.Println("[DEBUG] Already at assigned market waypoint")
-		if !is_ship_docked(ship) {
+	if IsShipAlreadyAtWaypoint(ship, assigned_market_waypoint) {
+		fmt.Println("[INFO] Already at assigned market waypoint")
+		if !IsShipDocked(ship) {
 			DockShip(ship.Symbol)
 		}
 		UpdateTradeRoutesIncludingThisWaypoint(assigned_market_waypoint, trade_routes)
 	} else {
 		fmt.Println("[INFO] Not at assigned market waypoint, heading there now")
-		if is_ship_docked(ship) {
+		if IsShipDocked(ship) {
 			OrbitShip(ship.Symbol)
 		}
 		NavigateShip(ship.Symbol, assigned_market_waypoint)
@@ -862,7 +856,7 @@ func main() {
 	CALLSIGN := os.Args[1]
 
 	// Check if an auth token file is present for the CALLSIGN provided
-	if !does_auth_file_exist(CALLSIGN) {
+	if !DoesAuthFileExist(CALLSIGN) {
 		RegisterAgent(CALLSIGN)
 	}
 
