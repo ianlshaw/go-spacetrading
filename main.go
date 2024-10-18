@@ -299,7 +299,7 @@ func IsShipAlreadyAtWaypoint(ship_to_test Ship, waypoint_symbol string) bool {
 }
 
 func NavigateShip(ship_symbol string, waypoint_symbol string) NavigateShipResponse {
-	//fmt.Println("[DEBUG] NavigateShip " + ship_symbol + " " + waypoint_symbol)
+	fmt.Println("[DEBUG] NavigateShip " + ship_symbol + " " + waypoint_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/navigate"
 	payload := &NavigateShipPayload{}
 
@@ -416,14 +416,22 @@ func RefuelShip(ship_symbol string) RefuelShipResponse {
 }
 
 func MostProfitableTradeRoute(trade_routes []TradeRoute) TradeRoute {
+	println("[DEBUG] MostProfitableTradeRoute")
+	println("[DEBUG] len(trade_routes)")
+	println(len(trade_routes))
+
 	most_profitable_trade_route := TradeRoute{}
-	var best_profitability_score = 0.0
+	var best_profitability_score = 0.00000
 	for _, trade_route := range trade_routes {
+		println("trade_route.ProfitabilityRating")
+		println(trade_route.ProfitabilityRating)
 		if trade_route.ProfitabilityRating > best_profitability_score {
 			most_profitable_trade_route = trade_route
 			best_profitability_score = trade_route.ProfitabilityRating
 		}
 	}
+	println("most_profitable_trade_route.TradeGoodSymbol")
+	print(most_profitable_trade_route.TradeGoodSymbol)
 	return most_profitable_trade_route
 }
 
@@ -458,6 +466,16 @@ func UpdateTradeRoutesIncludingThisWaypoint(waypoint_symbol string, trade_routes
 	}
 }
 
+func SatelliteToMarketAssignmentComplete(markets_to_cover map[string]string) bool {
+	for _, v := range markets_to_cover {
+
+		if len(v) == 0 {
+			return false
+		}
+	}
+	return true
+}
+
 func MarketScanComplete(trade_routes []TradeRoute) bool {
 	for _, trade_route := range trade_routes {
 		if trade_route.BuyMarketTradeGood.PurchasePrice == 0 {
@@ -470,7 +488,7 @@ func MarketScanComplete(trade_routes []TradeRoute) bool {
 }
 
 func PopulateTradeRoutesWithWaypointData(trade_routes []TradeRoute, markets_to_cover map[string]string) {
-	fmt.Println("PopulateTradeRoutesWithWaypointData")
+	fmt.Println("[DEBUG] PopulateTradeRoutesWithWaypointData")
 
 	for market_waypoint := range markets_to_cover {
 		get_waypoint_result := GetWaypoint(base_system_symbol, market_waypoint)
@@ -501,6 +519,7 @@ func CalculateProfitPerUnit(trade_route TradeRoute) float64 {
 }
 
 func PopulateTradeRoutesProfitPerUnit(trade_routes []TradeRoute) {
+	fmt.Println("[DEBUG] PopulateTradeRoutesProfitPerUnit")
 	for i, trade_route := range trade_routes {
 		profit_per_unit := CalculateProfitPerUnit(trade_route)
 		trade_routes[i].ProfitPerUnit = int64(profit_per_unit)
@@ -513,19 +532,21 @@ func PopulateTradeRoutesProfitPerUnit(trade_routes []TradeRoute) {
 func PrintTradeRoutes(ship_list []Ship, trade_routes []TradeRoute) {
 	for _, trade_route := range trade_routes {
 		fmt.Print("[INFO] BUY ")
-		fmt.Print(trade_route.TradeGoodSymbol)
+
+		fmt.Printf("%-15v", trade_route.TradeGoodSymbol)
+
 		fmt.Print(" AT ")
-		fmt.Print(trade_route.BuyMarketplaceWaypointSymbol)
+		fmt.Printf("%-10v", trade_route.BuyMarketplaceWaypointSymbol)
 		fmt.Print(" FOR ")
-		fmt.Print(trade_route.BuyMarketTradeGood.PurchasePrice)
+		fmt.Printf("%-5v", trade_route.BuyMarketTradeGood.PurchasePrice)
 		fmt.Print(" SELL AT ")
-		fmt.Print(trade_route.SellMarketplaceWaypointSymbol)
+		fmt.Printf("%-15v", trade_route.SellMarketplaceWaypointSymbol)
 		fmt.Print(" FOR ")
-		fmt.Print(trade_route.SellMarketTradeGood.SellPrice)
+		fmt.Printf("%-6v", trade_route.SellMarketTradeGood.SellPrice)
 		fmt.Print(" PPU ")
-		fmt.Print(trade_route.ProfitPerUnit)
+		fmt.Printf("%-5v", trade_route.ProfitPerUnit)
 		fmt.Print(" DISTANCE ")
-		fmt.Print(trade_route.Distance)
+		fmt.Printf("%-5v", trade_route.Distance)
 		fmt.Print(" SCORE ")
 		fmt.Print(trade_route.ProfitabilityRating)
 		fmt.Println()
@@ -620,13 +641,17 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 			if IsShipDocked(ship) {
 				OrbitShip(ship.Symbol)
 			}
+			fmt.Println("[INFO] " + ship.Symbol + " Heading to probe shipyard")
 			navigate_ship_result := NavigateShip(ship.Symbol, probe_ship_shipyard_waypoint_symbol)
 			fmt.Println(navigate_ship_result)
 		}
 	} else {
 		// we have enough satellites
 		//fmt.Println("[INFO] We have enough satellites, boss. It's time to start trading!")
-		AssignSatellitesToMarkets(markets_to_cover)
+
+		if !SatelliteToMarketAssignmentComplete(markets_to_cover) {
+			AssignSatellitesToMarkets(markets_to_cover)
+		}
 
 		if MarketScanComplete(trade_routes) {
 			PopulateTradeRoutesProfitPerUnit(trade_routes)
@@ -693,6 +718,7 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 				fmt.Println()
 
 				OrbitShip(ship.Symbol)
+				fmt.Println("[INFO] " + ship.Symbol + " Heading to SellMarketplaceWaypointSymbol")
 				NavigateShip(ship.Symbol, most_profitable_trade_route.SellMarketplaceWaypointSymbol)
 				return
 			}
@@ -704,10 +730,15 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 					OrbitShip(ship.Symbol)
 				}
 				NavigateShip(ship.Symbol, most_profitable_trade_route.BuyMarketplaceWaypointSymbol)
-
+				return
 			}
 		} else {
 			fmt.Println("[INFO] Cargo not empty")
+
+			if !MarketScanComplete(trade_routes) {
+				fmt.Println("[DEBUG] wait for market data")
+				return
+			}
 
 			first_item_in_inventory := ship.Cargo.Inventory[0]
 
@@ -719,10 +750,15 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 			fmt.Print("[DEBUG] trade_routes_with_inventory_good length ")
 			fmt.Println(len(trade_routes_with_inventory_good))
 
+			if !MarketScanComplete(trade_routes) {
+				println("[DEBUG] market data incomplete, returning to avoid running MostProfitableTradeRoute")
+				return
+			}
+
 			most_profitable_trade_route_with_inventory_good := MostProfitableTradeRoute(trade_routes_with_inventory_good)
 
-			//fmt.Print("[DEBUG] most_profitable_trade_route_with_inventory_good")
-			//fmt.Println(most_profitable_trade_route_with_inventory_good)
+			fmt.Print("[DEBUG] most_profitable_trade_route_with_inventory_good")
+			fmt.Println(most_profitable_trade_route_with_inventory_good)
 
 			if IsShipAlreadyAtWaypoint(ship, most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol) {
 				fmt.Println("[DEBUG] Already at sell marketplace")
@@ -759,6 +795,14 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 					RefuelShip(ship.Symbol)
 					OrbitShip(ship.Symbol)
 				}
+				println("most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol")
+				println(most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol)
+
+				// dirty
+				if most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol == "" {
+					println("[ERROR] most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol null. Would have navigated!")
+					return
+				}
 				NavigateShip(ship.Symbol, most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol)
 			}
 		}
@@ -767,6 +811,7 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 
 func AssignSatellitesToMarkets(markets_to_cover map[string]string) {
 
+	fmt.Println("[DEBUG] AssignSatellitesToMarkets")
 	list_of_ships := ListShips()
 	list_of_satellites := []Ship{}
 
@@ -795,7 +840,8 @@ func AssignSatellitesToMarkets(markets_to_cover map[string]string) {
 }
 
 func ApplyRoleSatellite(ship Ship, markets_to_cover map[string]string, trade_routes []TradeRoute) {
-	fmt.Println("[INFO] " + ship.Symbol)
+
+	fmt.Println("[DEBUG] ApplyRoleSatellite " + ship.Symbol)
 
 	if ship.Nav.Status == "IN_TRANSIT" {
 		fmt.Println("[DEBUG] IN_TRANSIT TO " + ship.Nav.Route.Destination.Symbol)
@@ -804,15 +850,35 @@ func ApplyRoleSatellite(ship Ship, markets_to_cover map[string]string, trade_rou
 		return
 	}
 
-	var assigned_market_waypoint string
+	// find my assignment waypoint
+	// am i there?
+	// dock and get market
+	// if no orbit and navigate there
+
+	var assigned_market_waypoint = markets_to_cover[ship.Symbol]
 
 	// find the name of this satellite as a value in the markets_to_cover map, return the key of that value as assigned_market_waypoint
 	for market_symbol, assigned_satellite := range markets_to_cover {
-		if ship.Symbol == assigned_satellite {
+
+		//print("ship.Symbol == ")
+		//println(ship.Symbol)
+		//print("assigned_satellite == ")
+		//println(assigned_satellite)
+
+		if assigned_satellite == ship.Symbol {
+			println("[DEBUG] satellite market assignment found")
 			assigned_market_waypoint = market_symbol
 			break
 		}
+
 	}
+
+	//println("[DEBUG] markets_to_cover:")
+	//
+	//for k, v := range markets_to_cover {
+	//	println(k)
+	//	println(v)
+	//}
 
 	if IsShipAlreadyAtWaypoint(ship, assigned_market_waypoint) {
 		fmt.Println("[INFO] Already at assigned market waypoint")
@@ -825,13 +891,9 @@ func ApplyRoleSatellite(ship Ship, markets_to_cover map[string]string, trade_rou
 		if IsShipDocked(ship) {
 			OrbitShip(ship.Symbol)
 		}
+		fmt.Println("[DEBUG] assigned_market_waypoint: " + assigned_market_waypoint)
 		NavigateShip(ship.Symbol, assigned_market_waypoint)
 	}
-
-	// find my assignment waypoint
-	// am i there?
-	// dock and get market
-	// if no orbit and navigate there
 
 }
 
@@ -891,13 +953,13 @@ func main() {
 						for _, each_market_result_imports := range each_market_result_inner.Imports {
 							if each_export.Symbol == each_market_result_imports.Symbol {
 
-								fmt.Print("[DEBUG] TRADE ROUTE FOUND BUY ")
+								fmt.Println()
+								fmt.Print("[INFO] TRADE ROUTE FOUND BUY ")
 								fmt.Print(each_export.Symbol)
 								fmt.Print(" AT ")
 								fmt.Print(each_market_result.Symbol)
 								fmt.Print(" SELL AT ")
 								fmt.Print(each_market_result_inner.Symbol)
-								fmt.Println()
 
 								trade_route := TradeRoute{}
 								trade_route.TradeGoodSymbol = each_export.Symbol
@@ -934,6 +996,8 @@ func main() {
 	}
 
 	fmt.Println("[DEBUG] markets to cover:")
+
+	fmt.Println(markets_to_cover)
 
 	for market := range markets_to_cover {
 		fmt.Println("[DEBUG] " + market)
