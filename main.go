@@ -124,13 +124,41 @@ func DoesAuthFileExist(callsign string) (result bool) {
 	return true
 }
 
+func DoesTradeRouteFileExist(callsign string) (result bool) {
+	var filename = callsign + ".trade_routes"
+	if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
+		// path/to/whatever does not exist
+		fmt.Println("[INFO] Trade route file does not exist")
+		return false
+	}
+	fmt.Println("[INFO] Trade route file exists")
+	return true
+}
+
 func WriteAuthTokenToFile(auth_token string, filename string) {
 	f, err := os.Create(filename)
 	check(err)
 	defer f.Close()
 	write_string_result, err := f.WriteString(auth_token)
 	check(err)
-	fmt.Printf("wrote %d bytes\n", write_string_result)
+	fmt.Printf("[DEBUG] wrote %d bytes\n", write_string_result)
+}
+
+func WriteTradeRoutesToFile(trade_routes []TradeRoute, filename string) {
+	file_content := ""
+	f, err := os.Create(filename)
+	check(err)
+	defer f.Close()
+
+	for _, trade_route := range trade_routes {
+		marshalled_trade_route, err := json.Marshal(trade_route)
+		check(err)
+		file_content = file_content + string(marshalled_trade_route)
+	}
+
+	write_result, err := f.WriteString(file_content)
+	check(err)
+	fmt.Printf("[DEBUG] wrote %d bytes\n", write_result)
 }
 
 func read_auth_token_from_file(callsign string) {
@@ -216,7 +244,7 @@ func GetWaypointCoordinate(waypoint Waypoint) (waypointX int64, waypointY int64)
 	return waypoint.X, waypoint.Y
 }
 
-func DistanceBetweenTwoCoordinates(waypoint1X int64, waypoint1Y int64, waypoint2X int64, waypoint2Y int64) (resultant_distance float64) {
+func DistanceBetweenTwoCoordinates(waypoint1X int64, waypoint1Y int64, waypoint2X int64, waypoint2Y int64) (resultant_distance int) {
 	//fmt.Println("[DEBUG] distance_between_two_coordinates")
 	XIntermediate := waypoint1X - waypoint2X
 	YIntermediate := waypoint1Y - waypoint2Y
@@ -224,11 +252,13 @@ func DistanceBetweenTwoCoordinates(waypoint1X int64, waypoint1Y int64, waypoint2
 	YSquared := YIntermediate * YIntermediate
 	XPlusY := XSquared + YSquared
 	XPlusYFloat := float64(XPlusY)
-	resultant_distance = math.Sqrt(XPlusYFloat)
+
+	distance_float := math.Sqrt(XPlusYFloat)
+	resultant_distance = int(distance_float)
 	return resultant_distance
 }
 
-func DistanceBetweenTwoWaypoints(waypoint1 Waypoint, waypoint2 Waypoint) float64 {
+func DistanceBetweenTwoWaypoints(waypoint1 Waypoint, waypoint2 Waypoint) int {
 	return DistanceBetweenTwoCoordinates(waypoint1.X, waypoint1.Y, waypoint2.X, waypoint2.Y)
 }
 
@@ -400,11 +430,11 @@ func SellCargo(ship_symbol string, trade_good_symbol string, units int64) SellCa
 }
 
 func RefuelShip(ship_symbol string) RefuelShipResponse {
-	//fmt.Println("[DEBUG] RefuelShip " + ship_symbol)
+	fmt.Println("[DEBUG] RefuelShip " + ship_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/refuel"
 	payload := &RefuelShipPayload{}
-	//payload.Units = units
-	//payload.FromCargo = false
+	payload.Units = 1000
+	payload.FromCargo = false
 	payloadJSON, err := json.Marshal(payload)
 	check(err)
 	response_string := basic_post(endpoint, payloadJSON)
@@ -421,17 +451,15 @@ func MostProfitableTradeRoute(trade_routes []TradeRoute) TradeRoute {
 	println(len(trade_routes))
 
 	most_profitable_trade_route := TradeRoute{}
-	var best_profitability_score = 0.00000
+	best_profitability_score := -9.00
 	for _, trade_route := range trade_routes {
-		println("trade_route.ProfitabilityRating")
-		println(trade_route.ProfitabilityRating)
+		fmt.Printf("%.2f", trade_route.ProfitabilityRating)
 		if trade_route.ProfitabilityRating > best_profitability_score {
 			most_profitable_trade_route = trade_route
 			best_profitability_score = trade_route.ProfitabilityRating
 		}
 	}
-	println("most_profitable_trade_route.TradeGoodSymbol")
-	print(most_profitable_trade_route.TradeGoodSymbol)
+
 	return most_profitable_trade_route
 }
 
@@ -510,6 +538,16 @@ func PopulateTradeRoutesWithDistances(trade_routes []TradeRoute) {
 	}
 }
 
+func RemoveTradeRoutesWithDistancesGreaterThanMaximumFuel(trade_routes []TradeRoute, maximum_fuel int64) {
+	for i, trade_route := range trade_routes {
+		if trade_route.Distance < int(maximum_fuel) {
+			fmt.Println("[INFO] Removing trade route because distance is higher than fuel capacity")
+			// remove trade route because it exceeds  maximum fuel
+			trade_routes = append(trade_routes[:i], trade_routes[i+1:]...)
+		}
+	}
+}
+
 func CalculateProfitPerUnit(trade_route TradeRoute) float64 {
 	//fmt.Println("[DEBUG] CalculateProfitPerUnit")
 	sell_price := float64(trade_route.SellMarketTradeGood.SellPrice)
@@ -523,7 +561,7 @@ func PopulateTradeRoutesProfitPerUnit(trade_routes []TradeRoute) {
 	for i, trade_route := range trade_routes {
 		profit_per_unit := CalculateProfitPerUnit(trade_route)
 		trade_routes[i].ProfitPerUnit = int64(profit_per_unit)
-		profit_per_unit_divide_by_distance_times_two := float64(profit_per_unit) / (trade_route.Distance * 2)
+		profit_per_unit_divide_by_distance_times_two := profit_per_unit / float64(trade_route.Distance*2)
 		trade_routes[i].ProfitabilityRating = profit_per_unit_divide_by_distance_times_two
 	}
 }
@@ -548,7 +586,7 @@ func PrintTradeRoutes(ship_list []Ship, trade_routes []TradeRoute) {
 		fmt.Print(" DISTANCE ")
 		fmt.Printf("%-5v", trade_route.Distance)
 		fmt.Print(" SCORE ")
-		fmt.Print(trade_route.ProfitabilityRating)
+		fmt.Printf("%.2f", trade_route.ProfitabilityRating)
 		fmt.Println()
 	}
 }
@@ -575,7 +613,7 @@ func HowManyTradeGoodCanIAfford(agent Agent, trade_good TradeGood) int64 {
 	return max_buy_count
 }
 
-func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipyards []Waypoint, trade_routes []TradeRoute) {
+func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipyards []Waypoint, trade_routes []TradeRoute, callsign string) {
 
 	fmt.Println("[INFO] " + ship.Symbol)
 
@@ -586,10 +624,6 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 		fmt.Println("[DEBUG] Arrival" + ship.Nav.Route.Arrival)
 		return
 	}
-
-	//fmt.Print("[DEBUG] ship.Cargo.Inventory")
-	//fmt.Print(ship.Cargo.Inventory)
-	//fmt.Println()
 
 	// count number of satellites
 	var number_of_satellites int
@@ -613,7 +647,7 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 		var probe_ship_shipyard_waypoint_symbol string
 		for _, shipyard := range probe_shipyards {
 			distance := DistanceBetweenTwoCoordinates(shipyard.X, shipyard.Y, current_waypoint.X, current_waypoint.Y)
-			if distance < best_distance {
+			if distance < int(best_distance) {
 				probe_ship_shipyard_waypoint_symbol = shipyard.Symbol
 			}
 		}
@@ -655,6 +689,7 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 
 		if MarketScanComplete(trade_routes) {
 			PopulateTradeRoutesProfitPerUnit(trade_routes)
+			WriteTradeRoutesToFile(trade_routes, callsign+".trade_routes")
 		}
 
 		PrintTradeRoutes(ship_list, trade_routes)
@@ -669,8 +704,6 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 				if !IsShipDocked(ship) {
 					DockShip(ship.Symbol)
 				}
-
-				RefuelShip(ship.Symbol)
 
 				// BUY STUFF
 				fmt.Println("[DEBUG] This is where we buy stuff")
@@ -733,7 +766,7 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 				return
 			}
 		} else {
-			fmt.Println("[INFO] Cargo not empty")
+			fmt.Println("[INFO] Cargo not empty, we have " + ship.Cargo.Inventory[0].Symbol)
 
 			if !MarketScanComplete(trade_routes) {
 				fmt.Println("[DEBUG] wait for market data")
@@ -757,14 +790,15 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 
 			most_profitable_trade_route_with_inventory_good := MostProfitableTradeRoute(trade_routes_with_inventory_good)
 
-			fmt.Print("[DEBUG] most_profitable_trade_route_with_inventory_good")
-			fmt.Println(most_profitable_trade_route_with_inventory_good)
+			fmt.Println("[DEBUG] most_profitable_trade_route_with_inventory_good")
+			//fmt.Println(most_profitable_trade_route_with_inventory_good)
 
 			if IsShipAlreadyAtWaypoint(ship, most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol) {
 				fmt.Println("[DEBUG] Already at sell marketplace")
 				if !IsShipDocked(ship) {
 					DockShip(ship.Symbol)
 				}
+
 				// this doesnt account for TradeVolume < Cargo.Capacity
 				units_in_cargo_hold := CountTradeGoodCargo(ship, most_profitable_trade_route_with_inventory_good.TradeGoodSymbol)
 				sell_market_trade_volume := most_profitable_trade_route_with_inventory_good.SellMarketTradeGood.TradeVolume
@@ -803,6 +837,7 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 					println("[ERROR] most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol null. Would have navigated!")
 					return
 				}
+
 				NavigateShip(ship.Symbol, most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol)
 			}
 		}
@@ -866,7 +901,7 @@ func ApplyRoleSatellite(ship Ship, markets_to_cover map[string]string, trade_rou
 		//println(assigned_satellite)
 
 		if assigned_satellite == ship.Symbol {
-			println("[DEBUG] satellite market assignment found")
+			//println("[DEBUG] satellite market assignment found")
 			assigned_market_waypoint = market_symbol
 			break
 		}
@@ -897,9 +932,9 @@ func ApplyRoleSatellite(ship Ship, markets_to_cover map[string]string, trade_rou
 
 }
 
-func ShipRoleDecider(ship Ship, markets_to_cover map[string]string, probe_shipyards []Waypoint, trade_routes []TradeRoute) {
+func ShipRoleDecider(ship Ship, markets_to_cover map[string]string, probe_shipyards []Waypoint, trade_routes []TradeRoute, callsign string) {
 	if ship.Registration.Role == "COMMAND" {
-		ApplyRoleCommand(ship, markets_to_cover, probe_shipyards, trade_routes)
+		ApplyRoleCommand(ship, markets_to_cover, probe_shipyards, trade_routes, callsign)
 	}
 
 	if ship.Registration.Role == "SATELLITE" {
@@ -924,8 +959,14 @@ func main() {
 
 	read_auth_token_from_file(CALLSIGN)
 
+	if !DoesTradeRouteFileExist(CALLSIGN) {
+		fmt.Println("[INFO] DoesTradeRouteFileExist?")
+	}
+
 	// TODO: globals are bad, this should be removed
 	populate_base_system_symbol()
+
+	// FUNTION FROM HERE
 
 	// cache for full response from every get_market call
 	all_market_results := []Market{}
@@ -978,6 +1019,9 @@ func main() {
 
 	PopulateTradeRoutesWithWaypointData(trade_routes, markets_to_cover)
 	PopulateTradeRoutesWithDistances(trade_routes)
+	RemoveTradeRoutesWithDistancesGreaterThanMaximumFuel(trade_routes, 400)
+
+	// FUNCTION TO HERE
 
 	// there can be multiple SHIPYARDs which sell SHIP_PROBE
 	probe_shipyards := []Waypoint{}
@@ -1031,7 +1075,7 @@ func main() {
 		wait_between_ships := turn_length / len(ships_list)
 
 		for _, ship := range ships_list {
-			ShipRoleDecider(ship, markets_to_cover, probe_shipyards, trade_routes)
+			ShipRoleDecider(ship, markets_to_cover, probe_shipyards, trade_routes, CALLSIGN)
 
 			// turns are always turn_length (default 2 minutes) but as we add ships they fill the time between turns
 			time.Sleep(time.Duration(wait_between_ships) * time.Second)
