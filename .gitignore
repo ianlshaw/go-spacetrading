@@ -21,3 +21,4 @@
 go.work
 /spacetraders
 *.token
+*.trade_routes
