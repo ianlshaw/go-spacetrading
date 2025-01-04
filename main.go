@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -19,7 +20,7 @@ var base_system_symbol = ""
 var http_calls = 0
 var turn_length = 120
 
-func check(e error) {
+func PanicOnError(e error) {
 	if e != nil {
 		panic(e)
 	}
@@ -36,10 +37,10 @@ func basic_get(endpoint string) (response_body string) {
 	request.Header.Add("Content-Type", "application/json")
 	request.Header.Add("Authorization", bearer_token)
 	result, err := http.DefaultClient.Do(request)
-	check(err)
+	PanicOnError(err)
 	defer result.Body.Close()
 	body, err := io.ReadAll(result.Body)
-	check(err)
+	PanicOnError(err)
 
 	error_container := ErrorResponse{}
 	if err := json.Unmarshal(body, &error_container); err != nil {
@@ -68,15 +69,15 @@ func basic_post(endpoint string, payload []byte) (response_body string) {
 	// DEBUG
 
 	request, err := http.NewRequest("POST", posturl, bytes.NewBuffer(payload))
-	check(err)
+	PanicOnError(err)
 	request.Header.Add("Content-Type", "application/json")
 	request.Header.Add("Authorization", bearer_token)
 	client := &http.Client{}
 	result, err := client.Do(request)
-	check(err)
+	PanicOnError(err)
 	defer result.Body.Close()
 	body, err := io.ReadAll(result.Body)
-	check(err)
+	PanicOnError(err)
 
 	error_container := ErrorResponse{}
 	if err := json.Unmarshal(body, &error_container); err != nil {
@@ -137,34 +138,47 @@ func DoesTradeRouteFileExist(callsign string) (result bool) {
 
 func WriteAuthTokenToFile(auth_token string, filename string) {
 	f, err := os.Create(filename)
-	check(err)
+	PanicOnError(err)
 	defer f.Close()
 	write_string_result, err := f.WriteString(auth_token)
-	check(err)
-	fmt.Printf("[DEBUG] wrote %d bytes\n", write_string_result)
+	PanicOnError(err)
+	fmt.Printf("[DEBUG] WriteAuthTokenToFile wrote %d bytes\n", write_string_result)
+}
+
+func ReadAuthTokenFromFile(callsign string) {
+	f, err := os.ReadFile(callsign + ".token")
+	PanicOnError(err)
+	bearer_token += (string(f))
 }
 
 func WriteTradeRoutesToFile(trade_routes []TradeRoute, filename string) {
 	file_content := ""
 	f, err := os.Create(filename)
-	check(err)
+	PanicOnError(err)
 	defer f.Close()
 
 	for _, trade_route := range trade_routes {
 		marshalled_trade_route, err := json.Marshal(trade_route)
-		check(err)
-		file_content = file_content + string(marshalled_trade_route)
+		PanicOnError(err)
+		file_content = file_content + string(marshalled_trade_route) + "\n"
 	}
 
 	write_result, err := f.WriteString(file_content)
-	check(err)
-	fmt.Printf("[DEBUG] wrote %d bytes\n", write_result)
+	PanicOnError(err)
+	fmt.Printf("[DEBUG] WriteTradeRoutesToFile wrote %d bytes\n", write_result)
 }
 
-func read_auth_token_from_file(callsign string) {
-	f, err := os.ReadFile(callsign + ".token") // just pass the file name
-	check(err)
-	bearer_token += (string(f))
+func ReadTradeRoutesFromFile(callsign string, trade_routes []TradeRoute) {
+	fmt.Println("[DEBUG] ReadTradeRoutesFromFile")
+	f, err := os.Open(callsign + ".trade_routes")
+	PanicOnError(err)
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		trade_route := TradeRoute{}
+		err := json.Unmarshal([]byte(scanner.Text()), &trade_route)
+		PanicOnError(err)
+		trade_routes = append(trade_routes, trade_route)
+	}
 }
 
 func get_status() {
@@ -178,7 +192,7 @@ func RegisterAgent(callsign string) (result RegisterAgentResponse) {
 	payload.Faction = "COSMIC"
 	payload.Symbol = callsign
 	payloadJSON, err := json.Marshal(payload)
-	check(err)
+	PanicOnError(err)
 	response_string := basic_post("register", payloadJSON)
 	data_container := RegisterAgentResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
@@ -335,7 +349,7 @@ func NavigateShip(ship_symbol string, waypoint_symbol string) NavigateShipRespon
 
 	payload.WaypointSymbol = waypoint_symbol
 	payloadJSON, err := json.Marshal(payload)
-	check(err)
+	PanicOnError(err)
 	response_string := basic_post(endpoint, payloadJSON)
 	data_container := NavigateShipResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
@@ -358,7 +372,7 @@ func OrbitShip(ship_symbol string) OrbitShipResponse {
 	endpoint := "my/ships/" + ship_symbol + "/orbit"
 	payload := &EmptyPayload{}
 	payloadJSON, err := json.Marshal(payload)
-	check(err)
+	PanicOnError(err)
 	response_string := basic_post(endpoint, payloadJSON)
 	data_container := OrbitShipResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
@@ -372,7 +386,7 @@ func DockShip(ship_symbol string) DockShipResponse {
 	endpoint := "my/ships/" + ship_symbol + "/dock"
 	payload := &EmptyPayload{}
 	payloadJSON, err := json.Marshal(payload)
-	check(err)
+	PanicOnError(err)
 	response_string := basic_post(endpoint, payloadJSON)
 	data_container := DockShipResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
@@ -388,7 +402,7 @@ func PurchaseShip(ship_type string, waypoint_symbol string) PurchaseShipResponse
 	payload.WaypointSymbol = waypoint_symbol
 	payload.ShipType = ship_type
 	payloadJSON, err := json.Marshal(payload)
-	check(err)
+	PanicOnError(err)
 	response_string := basic_post(endpoint, payloadJSON)
 	data_container := PurchaseShipResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
@@ -404,7 +418,7 @@ func PurchaseCargo(ship_symbol string, trade_good_symbol string, units int64) Pu
 	payload.Symbol = trade_good_symbol
 	payload.Units = units
 	payloadJSON, err := json.Marshal(payload)
-	check(err)
+	PanicOnError(err)
 	response_string := basic_post(endpoint, payloadJSON)
 	data_container := PurchaseCargoResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
@@ -420,7 +434,7 @@ func SellCargo(ship_symbol string, trade_good_symbol string, units int64) SellCa
 	payload.Symbol = trade_good_symbol
 	payload.Units = units
 	payloadJSON, err := json.Marshal(payload)
-	check(err)
+	PanicOnError(err)
 	response_string := basic_post(endpoint, payloadJSON)
 	data_container := SellCargoResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
@@ -436,7 +450,7 @@ func RefuelShip(ship_symbol string) RefuelShipResponse {
 	payload.Units = 1000
 	payload.FromCargo = false
 	payloadJSON, err := json.Marshal(payload)
-	check(err)
+	PanicOnError(err)
 	response_string := basic_post(endpoint, payloadJSON)
 	data_container := RefuelShipResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
@@ -505,6 +519,12 @@ func SatelliteToMarketAssignmentComplete(markets_to_cover map[string]string) boo
 }
 
 func MarketScanComplete(trade_routes []TradeRoute) bool {
+
+	if len(trade_routes) == 0 {
+		fmt.Println("[WARN] NO TRADE ROUTES")
+		return false
+	}
+
 	for _, trade_route := range trade_routes {
 		if trade_route.BuyMarketTradeGood.PurchasePrice == 0 {
 			fmt.Println("[INFO] MARKET DATA INCOMPLETE, WAIT FOR INPUT")
@@ -942,34 +962,12 @@ func ShipRoleDecider(ship Ship, markets_to_cover map[string]string, probe_shipya
 	}
 }
 
-func main() {
-
-	// Ensure the CALLSIGN is provided as a command line argument
-	if len(os.Args) != 2 {
-		fmt.Println("go-spacetrade CALLSIGN")
-		os.Exit(1)
-	}
-
-	CALLSIGN := os.Args[1]
-
-	// Check if an auth token file is present for the CALLSIGN provided
-	if !DoesAuthFileExist(CALLSIGN) {
-		RegisterAgent(CALLSIGN)
-	}
-
-	read_auth_token_from_file(CALLSIGN)
-
-	if !DoesTradeRouteFileExist(CALLSIGN) {
-		fmt.Println("[INFO] DoesTradeRouteFileExist?")
-	}
-
-	// TODO: globals are bad, this should be removed
-	populate_base_system_symbol()
-
-	// FUNTION FROM HERE
-
+func IdentifyTradeRoutes(markets_to_cover map[string]string) []TradeRoute {
 	// cache for full response from every get_market call
 	all_market_results := []Market{}
+
+	// return value container
+	trade_routes := []TradeRoute{}
 
 	// populate all_market results with the result of get_market against each waypoint which has a MARKETPLACE
 	marketplaces_in_system := list_waypoints_in_system_by_trait(base_system_symbol, "MARKETPLACE")
@@ -977,12 +975,6 @@ func main() {
 		get_market_result := GetMarket(base_system_symbol, marketplace.Symbol)
 		all_market_results = append(all_market_results, get_market_result)
 	}
-
-	// association for places to BUY and SELL TradeGoods
-	trade_routes := []TradeRoute{}
-
-	// each unique market waypoint symbol (unordered)
-	markets_to_cover := make(map[string]string)
 
 	// populate both trade_routes and markets_to_cover by iterating through A) every MARKETPLACE B) each of their Imports and C) their Exports
 	// associations of import/export are added to trade_routes, and we keep one copy of each waypoint_symbol in markets_to_cover
@@ -1001,6 +993,7 @@ func main() {
 								fmt.Print(each_market_result.Symbol)
 								fmt.Print(" SELL AT ")
 								fmt.Print(each_market_result_inner.Symbol)
+								fmt.Print("")
 
 								trade_route := TradeRoute{}
 								trade_route.TradeGoodSymbol = each_export.Symbol
@@ -1020,8 +1013,38 @@ func main() {
 	PopulateTradeRoutesWithWaypointData(trade_routes, markets_to_cover)
 	PopulateTradeRoutesWithDistances(trade_routes)
 	RemoveTradeRoutesWithDistancesGreaterThanMaximumFuel(trade_routes, 400)
+	return trade_routes
+}
 
-	// FUNCTION TO HERE
+func main() {
+
+	// Ensure the CALLSIGN is provided as a command line argument
+	if len(os.Args) != 2 {
+		fmt.Println("go-spacetrade CALLSIGN")
+		os.Exit(1)
+	}
+
+	CALLSIGN := os.Args[1]
+
+	// Check if an auth token file is present for the CALLSIGN provided
+	if !DoesAuthFileExist(CALLSIGN) {
+		RegisterAgent(CALLSIGN)
+	}
+
+	ReadAuthTokenFromFile(CALLSIGN)
+
+	// TODO: globals are bad, this should be removed
+	populate_base_system_symbol()
+
+	// each unique market waypoint symbol (unordered)
+	markets_to_cover := make(map[string]string)
+
+	// association for places to BUY and SELL TradeGoods
+	trade_routes := IdentifyTradeRoutes(markets_to_cover)
+
+	if DoesTradeRouteFileExist(CALLSIGN) {
+		ReadTradeRoutesFromFile(CALLSIGN, trade_routes)
+	}
 
 	// there can be multiple SHIPYARDs which sell SHIP_PROBE
 	probe_shipyards := []Waypoint{}
