@@ -253,7 +253,7 @@ type TradeRoute struct {
 	SellMarketTradeGood           TradeGood
 	TradeGoodSymbol               string
 	ProfitPerUnit                 int64
-	Distance                      float64
+	Distance                      int
 	ProfitabilityRating           float64
 }
 
