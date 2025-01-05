@@ -530,11 +530,11 @@ func MarketScanComplete(trade_routes []TradeRoute) bool {
 
 	for _, trade_route := range trade_routes {
 		if trade_route.BuyMarketTradeGood.PurchasePrice == 0 {
-			fmt.Println("[INFO] MARKET DATA INCOMPLETE, WAIT FOR INPUT")
+			fmt.Println("[INFO] Market data incomplete, wait for input...")
 			return false
 		}
 	}
-	fmt.Println("[INFO] MARKET DATA COMPLETE. LETS TRADE")
+	fmt.Println("[INFO] Market data complete, let's trade...")
 	return true
 }
 
@@ -1077,8 +1077,8 @@ func main() {
 		get_shipyard_result := GetShipyard(base_system_symbol, shipyard_waypoint.Symbol)
 		for _, ship := range get_shipyard_result.ShipTypes {
 			if ship.Type == "SHIP_PROBE" {
-				fmt.Println("[INFO] shipyard with satellites for sale found: ")
-				fmt.Println("[INFO] " + get_shipyard_result.Symbol)
+				//fmt.Println("[DEBUG] shipyard with satellites for sale found: ")
+				//fmt.Println("[DEBUG] " + get_shipyard_result.Symbol)
 				probe_shipyards = append(probe_shipyards, shipyard_waypoint)
 			}
 		}
