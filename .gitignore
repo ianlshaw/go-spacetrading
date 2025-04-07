@@ -22,3 +22,5 @@ go.work
 /spacetraders
 *.token
 *.trade_routes
+
+ACCOUNTTOKENDONOTEXPOSE.txt
