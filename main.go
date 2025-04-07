@@ -15,7 +15,9 @@ import (
 )
 
 var url_base string = "https://api.spacetraders.io/v2/"
-var bearer_token = "Bearer "
+var account_token = "Bearer "
+var account_token_filename = "ACCOUNTTOKENDONOTEXPOSE.txt"
+var agent_token = "Bearer "
 var base_system_symbol = ""
 var http_calls = 0
 var turn_length = 120
@@ -35,7 +37,7 @@ func basic_get(endpoint string) (response_body string) {
 
 	request, _ := http.NewRequest("GET", url, nil)
 	request.Header.Add("Content-Type", "application/json")
-	request.Header.Add("Authorization", bearer_token)
+	request.Header.Add("Authorization", agent_token)
 	result, err := http.DefaultClient.Do(request)
 	PanicOnError(err)
 	defer result.Body.Close()
@@ -70,8 +72,15 @@ func basic_post(endpoint string, payload []byte) (response_body string) {
 
 	request, err := http.NewRequest("POST", posturl, bytes.NewBuffer(payload))
 	PanicOnError(err)
+	request.Header.Add("Accept", "application/json")
 	request.Header.Add("Content-Type", "application/json")
-	request.Header.Add("Authorization", bearer_token)
+	if endpoint == "register" {
+		auth_token := account_token
+		request.Header.Add("Authorization", auth_token)
+	} else {
+		auth_token := agent_token
+		request.Header.Add("Authorization", auth_token)
+	}
 	client := &http.Client{}
 	result, err := client.Do(request)
 	PanicOnError(err)
@@ -114,7 +123,7 @@ func pretty_print_json(json_blob string) {
 	os.Stdout.Write(b)
 }
 
-func DoesAuthFileExist(callsign string) (result bool) {
+func DoesAgentTokenFileExist(callsign string) (result bool) {
 	var filename = callsign + ".token"
 	if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
 		// path/to/whatever does not exist
@@ -145,15 +154,21 @@ func WriteAuthTokenToFile(auth_token string, filename string) {
 	fmt.Printf("[DEBUG] WriteAuthTokenToFile wrote %d bytes\n", write_string_result)
 }
 
-func ReadAuthTokenFromFile(callsign string) {
-	f, err := os.ReadFile(callsign + ".token")
+func ReadAccountTokenFromFile() {
+	f, err := os.ReadFile(account_token_filename)
 	PanicOnError(err)
-	bearer_token += (string(f))
+	account_token += (string(f))
 }
 
-func WriteTradeRoutesToFile(trade_routes []TradeRoute, filename string) {
+func ReadAgentTokenFromFile(callsign string) {
+	f, err := os.ReadFile(callsign + ".token")
+	PanicOnError(err)
+	agent_token += (string(f))
+}
+
+func WriteTradeRoutesToFile(trade_routes []TradeRoute, callsign string) {
 	file_content := ""
-	f, err := os.Create(filename)
+	f, err := os.Create(callsign + ".trade_routes")
 	PanicOnError(err)
 	defer f.Close()
 
@@ -195,6 +210,7 @@ func RegisterAgent(callsign string) (result RegisterAgentResponse) {
 	payloadJSON, err := json.Marshal(payload)
 	PanicOnError(err)
 	response_string := basic_post("register", payloadJSON)
+	pretty_print_json(response_string)
 	data_container := RegisterAgentResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
@@ -275,6 +291,14 @@ func DistanceBetweenTwoCoordinates(waypoint1X int64, waypoint1Y int64, waypoint2
 
 func DistanceBetweenTwoWaypoints(waypoint1 Waypoint, waypoint2 Waypoint) int {
 	return DistanceBetweenTwoCoordinates(waypoint1.X, waypoint1.Y, waypoint2.X, waypoint2.Y)
+}
+
+func IsWaypointWithinDistanceOfWaypoint(waypoint1 Waypoint, waypoint2 Waypoint, distance int) bool {
+	return DistanceBetweenTwoWaypoints(waypoint1, waypoint2) < distance
+}
+
+func IsWaypointWithinDistanceOfTwoWaypoints(waypoint_to_test Waypoint, origin_waypoint Waypoint, destination_waypoint Waypoint, max_distance int) bool {
+	return IsWaypointWithinDistanceOfWaypoint(waypoint_to_test, origin_waypoint, max_distance) && IsWaypointWithinDistanceOfWaypoint(waypoint_to_test, destination_waypoint, max_distance)
 }
 
 func list_waypoints_in_system_by_trait(system_symbol string, trait string) []Waypoint {
@@ -710,12 +734,18 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 
 		if MarketScanComplete(trade_routes) {
 			PopulateTradeRoutesProfitPerUnit(trade_routes)
-			WriteTradeRoutesToFile(trade_routes, callsign+".trade_routes")
+			WriteTradeRoutesToFile(trade_routes, callsign)
 		}
 
 		PrintTradeRoutes(ship_list, trade_routes)
 
 		most_profitable_trade_route := MostProfitableTradeRoute(trade_routes)
+
+		if IsWaypointWithinDistanceOfWaypoint(most_profitable_trade_route.BuyWaypoint, most_profitable_trade_route.SellWaypoint, int(ship.Frame.FuelCapacity)) {
+			fmt.Println("[DEBUG] IsWaypointWithinDistanceOfWaypoint true")
+		} else {
+			fmt.Println("[DEBUG] IsWaypointWithinDistanceOfWaypoint false")
+		}
 
 		if is_ship_cargo_empty(ship) {
 			fmt.Println("[INFO] Cargo hold empty")
@@ -897,6 +927,11 @@ func ApplyRoleSatellite(ship Ship, markets_to_cover map[string]string, trade_rou
 
 	fmt.Println("[DEBUG] ApplyRoleSatellite " + ship.Symbol)
 
+	if !SatelliteToMarketAssignmentComplete(markets_to_cover) {
+		fmt.Println("[DEBUG] Satellites have not yet been assigned to markets. Waiting...")
+		return
+	}
+
 	if ship.Nav.Status == "IN_TRANSIT" {
 		fmt.Println("[DEBUG] IN_TRANSIT TO " + ship.Nav.Route.Destination.Symbol)
 		fmt.Println("[DEBUG] Arrival " + ship.Nav.Route.Arrival)
@@ -928,7 +963,7 @@ func ApplyRoleSatellite(ship Ship, markets_to_cover map[string]string, trade_rou
 	}
 
 	//println("[DEBUG] markets_to_cover:")
-	//
+
 	//for k, v := range markets_to_cover {
 	//	println(k)
 	//	println(v)
@@ -1012,6 +1047,25 @@ func IdentifyTradeRoutes(markets_to_cover map[string]string) []TradeRoute {
 	PopulateTradeRoutesWithWaypointData(trade_routes, markets_to_cover)
 	PopulateTradeRoutesWithDistances(trade_routes)
 	//RemoveTradeRoutesWithDistancesGreaterThanMaximumFuel(trade_routes, 400)
+
+	for _, trade_route := range trade_routes {
+		if IsWaypointWithinDistanceOfWaypoint(trade_route.BuyWaypoint, trade_route.SellWaypoint, 400) {
+			fmt.Println("[DEBUG] Trade route within max fuel")
+		} else {
+			fmt.Println("[DEBUG] Trade route exceeds max fuel")
+			for _, marketplace := range marketplaces_in_system {
+				refuel_waypoint := Waypoint{}
+				refuel_waypoint.X = marketplace.X
+				refuel_waypoint.Y = marketplace.Y
+				if IsWaypointWithinDistanceOfTwoWaypoints(refuel_waypoint, trade_route.BuyWaypoint, trade_route.SellWaypoint, 400) {
+					fmt.Println("[DEBUG] " + marketplace.Symbol + " is within 400 of both " + trade_route.BuyMarketplaceWaypointSymbol + " and " + trade_route.SellMarketplaceWaypointSymbol)
+				} else {
+					fmt.Println("[DEBUG] " + marketplace.Symbol + " is NOT within 400 of both " + trade_route.BuyMarketplaceWaypointSymbol + " and " + trade_route.SellMarketplaceWaypointSymbol)
+				}
+			}
+		}
+	}
+
 	return trade_routes
 }
 
@@ -1022,6 +1076,17 @@ func PopulateMarketsToCover(trade_routes []TradeRoute) map[string]string {
 		markets_to_cover[trade_route.SellMarketplaceWaypointSymbol] = ""
 	}
 	return markets_to_cover
+}
+
+func HowManySatellitesDoIOwn() int {
+	satellite_count := 0
+	list_ships := ListShips()
+	for _, ship := range list_ships {
+		if ship.Frame.Name == "SATELLITE" {
+			satellite_count++
+		}
+	}
+	return satellite_count
 }
 
 func main() {
@@ -1035,11 +1100,12 @@ func main() {
 	CALLSIGN := os.Args[1]
 
 	// Check if an auth token file is present for the CALLSIGN provided
-	if !DoesAuthFileExist(CALLSIGN) {
+	if !DoesAgentTokenFileExist(CALLSIGN) {
+		ReadAccountTokenFromFile()
 		RegisterAgent(CALLSIGN)
 	}
 
-	ReadAuthTokenFromFile(CALLSIGN)
+	ReadAgentTokenFromFile(CALLSIGN)
 
 	// TODO: globals are bad, this should be removed
 	populate_base_system_symbol()
@@ -1053,6 +1119,7 @@ func main() {
 	if !DoesTradeRouteFileExist(CALLSIGN) {
 		fmt.Println("[INFO] Trade route file does not exist. Initializing...")
 		trade_routes = IdentifyTradeRoutes(markets_to_cover)
+		WriteTradeRoutesToFile(trade_routes, CALLSIGN)
 	} else {
 		fmt.Println("[INFO] Trade file exists. Reading from file...")
 		trade_routes = ReadTradeRoutesFromFile(CALLSIGN, trade_routes)
@@ -1062,10 +1129,17 @@ func main() {
 
 	markets_to_cover = PopulateMarketsToCover(trade_routes)
 
-	fmt.Println("[DEBUG] markets_to_cover: " + string(len(markets_to_cover)))
+	number_of_markets_to_cover := len(markets_to_cover)
 
-	if !SatelliteToMarketAssignmentComplete(markets_to_cover) {
-		AssignSatellitesToMarkets(markets_to_cover)
+	number_of_satellites := HowManySatellitesDoIOwn()
+
+	if number_of_satellites >= number_of_markets_to_cover {
+		fmt.Println("[INFO] Enough satellites")
+		if !SatelliteToMarketAssignmentComplete(markets_to_cover) {
+			AssignSatellitesToMarkets(markets_to_cover)
+		}
+	} else {
+		fmt.Println("[INFO] Not enough satellites, postponing market assignments...")
 	}
 
 	// there can be multiple SHIPYARDs which sell SHIP_PROBE
