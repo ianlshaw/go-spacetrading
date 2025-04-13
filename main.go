@@ -28,11 +28,11 @@ func PanicOnError(e error) {
 	}
 }
 
-func basic_get(endpoint string) (response_body string) {
+func BasicGet(endpoint string) (response_body string) {
 	url := url_base + endpoint
 
 	// DEBUG
-	fmt.Println("[DEBUG] " + url)
+	//fmt.Println("[DEBUG] " + url)
 	// DEBUG
 
 	request, _ := http.NewRequest("GET", url, nil)
@@ -67,7 +67,7 @@ func basic_post(endpoint string, payload []byte) (response_body string) {
 	posturl := url_base + endpoint
 
 	// DEBUG
-	fmt.Println("[DEBUG] " + posturl)
+	//fmt.Println("[DEBUG] " + posturl)
 	// DEBUG
 
 	request, err := http.NewRequest("POST", posturl, bytes.NewBuffer(payload))
@@ -198,7 +198,7 @@ func ReadTradeRoutesFromFile(callsign string, trade_routes []TradeRoute) []Trade
 }
 
 func get_status() {
-	result := basic_get("")
+	result := BasicGet("")
 	pretty_print_json(result)
 }
 
@@ -223,7 +223,7 @@ func RegisterAgent(callsign string) (result RegisterAgentResponse) {
 
 func GetAgent() Agent {
 	endpoint := "my/agent"
-	response_string := basic_get(endpoint)
+	response_string := BasicGet(endpoint)
 
 	data_container := GetAgentResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
@@ -236,7 +236,7 @@ func GetAgent() Agent {
 func ListShips() (ships []Ship) {
 	//fmt.Println("[DEBUG] list_ships")
 	endpoint := "my/ships"
-	response_string := basic_get(endpoint)
+	response_string := BasicGet(endpoint)
 
 	data_container := ListShipsResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
@@ -252,7 +252,7 @@ func ListShips() (ships []Ship) {
 func populate_base_system_symbol() {
 	//fmt.Println("[DEBUG] populate_base_system_symbol")
 	endpoint := "my/ships"
-	response_string := basic_get(endpoint)
+	response_string := BasicGet(endpoint)
 
 	response_typed := ListShipsResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &response_typed); err != nil {
@@ -263,7 +263,7 @@ func populate_base_system_symbol() {
 
 func GetWaypoint(system_symbol string, waypoint_symbol string) (resultant_waypoint Waypoint) {
 	endpoint := "systems/" + system_symbol + "/waypoints/" + waypoint_symbol
-	response_string := basic_get(endpoint)
+	response_string := BasicGet(endpoint)
 	data_container := GetWaypointResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
@@ -303,7 +303,7 @@ func IsWaypointWithinDistanceOfTwoWaypoints(waypoint_to_test Waypoint, origin_wa
 
 func list_waypoints_in_system_by_trait(system_symbol string, trait string) []Waypoint {
 	endpoint := "systems/" + system_symbol + "/waypoints?traits=" + trait
-	response_string := basic_get(endpoint)
+	response_string := BasicGet(endpoint)
 	data_container := ListWaypointsInSystemResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
@@ -313,7 +313,7 @@ func list_waypoints_in_system_by_trait(system_symbol string, trait string) []Way
 
 func list_waypoints_in_system_by_type(system_symbol string, query_type string) (list_waypoints_in_system_result []Waypoint) {
 	endpoint := "systems/" + system_symbol + "/waypoints?type=" + query_type
-	response_string := basic_get(endpoint)
+	response_string := BasicGet(endpoint)
 	data_container := ListWaypointsInSystemResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &list_waypoints_in_system_result); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
@@ -323,7 +323,7 @@ func list_waypoints_in_system_by_type(system_symbol string, query_type string) (
 
 func GetMarket(system_symbol string, waypoint_symbol string) Market {
 	endpoint := "systems/" + system_symbol + "/waypoints/" + waypoint_symbol + "/market"
-	response_string := basic_get(endpoint)
+	response_string := BasicGet(endpoint)
 	data_container := GetMarketResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
@@ -333,7 +333,7 @@ func GetMarket(system_symbol string, waypoint_symbol string) Market {
 
 func GetShipyard(system_symbol string, waypoint_symbol string) (get_shipyard_result Shipyard) {
 	endpoint := "systems/" + system_symbol + "/waypoints/" + waypoint_symbol + "/shipyard"
-	response_string := basic_get(endpoint)
+	response_string := BasicGet(endpoint)
 	data_container := GetShipyardResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
@@ -343,7 +343,7 @@ func GetShipyard(system_symbol string, waypoint_symbol string) (get_shipyard_res
 
 func get_jump_gate(system_symbol string, waypoint_symbol string) (get_jump_gate_result GetJumpGateResponseData) {
 	endpoint := "systems/" + system_symbol + "/waypoints/" + waypoint_symbol + "jump-gate"
-	response_string := basic_get(endpoint)
+	response_string := BasicGet(endpoint)
 	if err := json.Unmarshal([]byte(response_string), &get_jump_gate_result); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
 	}
@@ -407,7 +407,7 @@ func OrbitShip(ship_symbol string) OrbitShipResponse {
 }
 
 func DockShip(ship_symbol string) DockShipResponse {
-	//fmt.Println("[DEBUG] DockShip")
+	fmt.Println("[INFO] DockShip")
 	endpoint := "my/ships/" + ship_symbol + "/dock"
 	payload := &EmptyPayload{}
 	payloadJSON, err := json.Marshal(payload)
@@ -437,7 +437,7 @@ func PurchaseShip(ship_type string, waypoint_symbol string) PurchaseShipResponse
 }
 
 func PurchaseCargo(ship_symbol string, trade_good_symbol string, units int64) PurchaseCargoResponse {
-	//fmt.Println("[DEBUG] PurchaseCargo")
+	fmt.Println("[DEBUG] PurchaseCargo " + string(units) + " " + trade_good_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/purchase"
 	payload := &PurchaseCargoPayload{}
 	payload.Symbol = trade_good_symbol
@@ -449,11 +449,12 @@ func PurchaseCargo(ship_symbol string, trade_good_symbol string, units int64) Pu
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
 	}
+
 	return data_container.Data
 }
 
 func SellCargo(ship_symbol string, trade_good_symbol string, units int64) SellCargoResponse {
-	//fmt.Println("[DEBUG] SellCargo")
+	fmt.Println("[DEBUG] SellCargo")
 	endpoint := "my/ships/" + ship_symbol + "/sell"
 	payload := &SellCargoPayload{}
 	payload.Symbol = trade_good_symbol
@@ -537,11 +538,11 @@ func SatelliteToMarketAssignmentComplete(markets_to_cover map[string]string) boo
 	for _, v := range markets_to_cover {
 
 		if len(v) == 0 {
-			fmt.Println("[DEBUG] SatelliteToMarketAssignment Incomplete")
+			//fmt.Println("[DEBUG] SatelliteToMarketAssignment Incomplete")
 			return false
 		}
 	}
-	fmt.Println("[DEBUG] SatelliteToMarketAssignment Complete")
+	//fmt.Println("[DEBUG] SatelliteToMarketAssignment Complete")
 	return true
 }
 
@@ -747,6 +748,11 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 			fmt.Println("[DEBUG] IsWaypointWithinDistanceOfWaypoint false")
 		}
 
+		if most_profitable_trade_route.ProfitabilityRating < 2 {
+			fmt.Println("[INFO] Most profitable trade route is not profitable enough. Doing nothing...")
+			return
+		}
+
 		if is_ship_cargo_empty(ship) {
 			fmt.Println("[INFO] Cargo hold empty")
 			if IsShipAlreadyAtWaypoint(ship, most_profitable_trade_route.BuyMarketplaceWaypointSymbol) {
@@ -784,7 +790,7 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 					fmt.Println(number_of_purchases_required)
 
 					for i := 0; i < int(number_of_purchases_required); i++ {
-						fmt.Println("[DEBUG] this never triggers")
+						fmt.Println("[DEBUG] i = " + string(i))
 						buy_cargo_result := PurchaseCargo(ship.Symbol, most_profitable_trade_route.TradeGoodSymbol, units_to_purchase)
 						space_in_cargo_hold = buy_cargo_result.Cargo.Units - buy_cargo_result.Cargo.Capacity
 						if space_in_cargo_hold < buy_market_trade_volume {
@@ -925,16 +931,16 @@ func AssignSatellitesToMarkets(markets_to_cover map[string]string) {
 
 func ApplyRoleSatellite(ship Ship, markets_to_cover map[string]string, trade_routes []TradeRoute) {
 
-	fmt.Println("[DEBUG] ApplyRoleSatellite " + ship.Symbol)
+	fmt.Println("[INFO] ApplyRoleSatellite " + ship.Symbol)
 
 	if !SatelliteToMarketAssignmentComplete(markets_to_cover) {
-		fmt.Println("[DEBUG] Satellites have not yet been assigned to markets. Waiting...")
+		fmt.Println("[INFO] Satellites have not yet been assigned to markets. Waiting...")
 		return
 	}
 
 	if ship.Nav.Status == "IN_TRANSIT" {
-		fmt.Println("[DEBUG] IN_TRANSIT TO " + ship.Nav.Route.Destination.Symbol)
-		fmt.Println("[DEBUG] Arrival " + ship.Nav.Route.Arrival)
+		fmt.Println("[INFO] IN_TRANSIT TO " + ship.Nav.Route.Destination.Symbol)
+		fmt.Println("[INFO] Arrival " + ship.Nav.Route.Arrival)
 		fmt.Println()
 		return
 	}
@@ -974,6 +980,7 @@ func ApplyRoleSatellite(ship Ship, markets_to_cover map[string]string, trade_rou
 		if !IsShipDocked(ship) {
 			DockShip(ship.Symbol)
 		}
+		fmt.Println("[INFO] Updating trade data...")
 		UpdateTradeRoutesIncludingThisWaypoint(assigned_market_waypoint, trade_routes)
 	} else {
 		fmt.Println("[INFO] Not at assigned market waypoint, heading there now")
@@ -1050,17 +1057,17 @@ func IdentifyTradeRoutes(markets_to_cover map[string]string) []TradeRoute {
 
 	for _, trade_route := range trade_routes {
 		if IsWaypointWithinDistanceOfWaypoint(trade_route.BuyWaypoint, trade_route.SellWaypoint, 400) {
-			fmt.Println("[DEBUG] Trade route within max fuel")
+			//fmt.Println("[DEBUG] Trade route within max fuel")
 		} else {
-			fmt.Println("[DEBUG] Trade route exceeds max fuel")
+			//fmt.Println("[DEBUG] Trade route exceeds max fuel")
 			for _, marketplace := range marketplaces_in_system {
 				refuel_waypoint := Waypoint{}
 				refuel_waypoint.X = marketplace.X
 				refuel_waypoint.Y = marketplace.Y
 				if IsWaypointWithinDistanceOfTwoWaypoints(refuel_waypoint, trade_route.BuyWaypoint, trade_route.SellWaypoint, 400) {
-					fmt.Println("[DEBUG] " + marketplace.Symbol + " is within 400 of both " + trade_route.BuyMarketplaceWaypointSymbol + " and " + trade_route.SellMarketplaceWaypointSymbol)
+					//fmt.Println("[DEBUG] " + marketplace.Symbol + " is within 400 of both " + trade_route.BuyMarketplaceWaypointSymbol + " and " + trade_route.SellMarketplaceWaypointSymbol)
 				} else {
-					fmt.Println("[DEBUG] " + marketplace.Symbol + " is NOT within 400 of both " + trade_route.BuyMarketplaceWaypointSymbol + " and " + trade_route.SellMarketplaceWaypointSymbol)
+					//fmt.Println("[DEBUG] " + marketplace.Symbol + " is NOT within 400 of both " + trade_route.BuyMarketplaceWaypointSymbol + " and " + trade_route.SellMarketplaceWaypointSymbol)
 				}
 			}
 		}
