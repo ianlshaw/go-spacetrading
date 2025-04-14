@@ -233,20 +233,39 @@ func GetAgent() Agent {
 	return data_container.Data
 }
 
+func GetSystem(system_symbol string) (system System) {
+	endpoint := "systems/" + system_symbol
+	response_string := BasicGet(endpoint)
+	data_container := GetSystemResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("[ERROR] failed to unmarshal")
+	}
+	return data_container.Data
+}
+
+func ListContracts() (contracts []Contract) {
+	endpoint := "my/contracts"
+	response_string := BasicGet(endpoint)
+	data_container := ListContractsResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("failed to unmarshal")
+		//fmt.Println(response_string)
+		fmt.Println(err)
+	}
+	return data_container.Data
+}
+
 func ListShips() (ships []Ship) {
 	//fmt.Println("[DEBUG] list_ships")
 	endpoint := "my/ships"
 	response_string := BasicGet(endpoint)
-
 	data_container := ListShipsResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("failed to unmarshal")
 		//fmt.Println(response_string)
 		fmt.Println(err)
 	}
-
 	return data_container.Data
-
 }
 
 func populate_base_system_symbol() {
@@ -301,22 +320,22 @@ func IsWaypointWithinDistanceOfTwoWaypoints(waypoint_to_test Waypoint, origin_wa
 	return IsWaypointWithinDistanceOfWaypoint(waypoint_to_test, origin_waypoint, max_distance) && IsWaypointWithinDistanceOfWaypoint(waypoint_to_test, destination_waypoint, max_distance)
 }
 
-func list_waypoints_in_system_by_trait(system_symbol string, trait string) []Waypoint {
+func ListWaypointInSystemByTrait(system_symbol string, trait string) []Waypoint {
 	endpoint := "systems/" + system_symbol + "/waypoints?traits=" + trait
 	response_string := BasicGet(endpoint)
 	data_container := ListWaypointsInSystemResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] ListWaypointInSystemByTrait failed to unmarshal")
 	}
 	return data_container.Data
 }
 
-func list_waypoints_in_system_by_type(system_symbol string, query_type string) (list_waypoints_in_system_result []Waypoint) {
+func ListWaypointInSystemByType(system_symbol string, query_type string) []Waypoint {
 	endpoint := "systems/" + system_symbol + "/waypoints?type=" + query_type
 	response_string := BasicGet(endpoint)
 	data_container := ListWaypointsInSystemResponseData{}
-	if err := json.Unmarshal([]byte(response_string), &list_waypoints_in_system_result); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("[ERROR] ListWaypointInSystemByType failed to unmarshal")
 	}
 	return data_container.Data
 }
@@ -341,13 +360,24 @@ func GetShipyard(system_symbol string, waypoint_symbol string) (get_shipyard_res
 	return data_container.Data
 }
 
-func get_jump_gate(system_symbol string, waypoint_symbol string) (get_jump_gate_result GetJumpGateResponseData) {
-	endpoint := "systems/" + system_symbol + "/waypoints/" + waypoint_symbol + "jump-gate"
+func GetJumpGate(system_symbol string, waypoint_symbol string) JumpGate {
+	endpoint := "systems/" + system_symbol + "/waypoints/" + waypoint_symbol + "/jump-gate"
 	response_string := BasicGet(endpoint)
-	if err := json.Unmarshal([]byte(response_string), &get_jump_gate_result); err != nil {
+	data_container := GetJumpGateResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
 	}
-	return get_jump_gate_result
+	return data_container.Data
+}
+
+func GetConstructionSite(system_symbol string, waypoint_symbol string) ConstructionSite {
+	endpoint := "systems/" + system_symbol + "/waypoints/" + waypoint_symbol + "/construction"
+	response_string := BasicGet(endpoint)
+	data_container := GetConstructionSiteResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("[ERROR] failed to unmarshal")
+	}
+	return data_container.Data
 }
 
 func IsASatelliteDockedAtMarketplace(list_ships_result []Ship, waypoint_symbol string) (answer bool) {
@@ -743,9 +773,9 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 		most_profitable_trade_route := MostProfitableTradeRoute(trade_routes)
 
 		if IsWaypointWithinDistanceOfWaypoint(most_profitable_trade_route.BuyWaypoint, most_profitable_trade_route.SellWaypoint, int(ship.Frame.FuelCapacity)) {
-			fmt.Println("[DEBUG] IsWaypointWithinDistanceOfWaypoint true")
+			//fmt.Println("[DEBUG] IsWaypointWithinDistanceOfWaypoint true")
 		} else {
-			fmt.Println("[DEBUG] IsWaypointWithinDistanceOfWaypoint false")
+			//fmt.Println("[DEBUG] IsWaypointWithinDistanceOfWaypoint false")
 		}
 
 		if most_profitable_trade_route.ProfitabilityRating < 2 {
@@ -1011,7 +1041,7 @@ func IdentifyTradeRoutes(markets_to_cover map[string]string) []TradeRoute {
 	trade_routes := []TradeRoute{}
 
 	// populate all_market results with the result of get_market against each waypoint which has a MARKETPLACE
-	marketplaces_in_system := list_waypoints_in_system_by_trait(base_system_symbol, "MARKETPLACE")
+	marketplaces_in_system := ListWaypointInSystemByTrait(base_system_symbol, "MARKETPLACE")
 	for _, marketplace := range marketplaces_in_system {
 		get_market_result := GetMarket(base_system_symbol, marketplace.Symbol)
 		all_market_results = append(all_market_results, get_market_result)
@@ -1117,6 +1147,23 @@ func main() {
 	// TODO: globals are bad, this should be removed
 	populate_base_system_symbol()
 
+	//jump_gates := ListWaypointInSystemByType(base_system_symbol, "JUMP_GATE")
+	//
+	//for _, jump_gate := range jump_gates {
+	//	fmt.Println(jump_gate.Symbol)
+	//
+	//	a_jump_gate := GetJumpGate(base_system_symbol, jump_gate.Symbol)
+	//	fmt.Println(a_jump_gate.Symbol)
+	//	fmt.Println(a_jump_gate.Connections)
+	//	a_construction_site := GetConstructionSite(base_system_symbol, jump_gate.Symbol)
+	//	fmt.Println(a_construction_site.IsComplete)
+	//	fmt.Println(jump_gate.IsUnderConstruction)
+	//	fmt.Println(a_construction_site.Materials)
+	//}
+	//
+	//// early exit while testing
+	//os.Exit(0)
+
 	// each unique market waypoint symbol (unordered)
 	markets_to_cover := make(map[string]string)
 
@@ -1153,7 +1200,7 @@ func main() {
 	probe_shipyards := []Waypoint{}
 
 	// populate probe_shipyards with Waypoints which have SHIPYARDs which sell SHIP_PROBEs
-	shipyards_in_system := list_waypoints_in_system_by_trait(base_system_symbol, "SHIPYARD")
+	shipyards_in_system := ListWaypointInSystemByTrait(base_system_symbol, "SHIPYARD")
 	for _, shipyard_waypoint := range shipyards_in_system {
 		get_shipyard_result := GetShipyard(base_system_symbol, shipyard_waypoint.Symbol)
 		for _, ship := range get_shipyard_result.ShipTypes {

@@ -15,6 +15,11 @@ type ListShipsResponseData struct {
 	Meta Meta   `json:"meta"`
 }
 
+type ListContractsResponseData struct {
+	Data []Contract `json:"data"`
+	Meta Meta       `json:"meta"`
+}
+
 type Ship struct {
 	Symbol       string       `json:"symbol"`
 	Nav          Nav          `json:"nav"`
@@ -166,6 +171,23 @@ type ListWaypointsInSystemResponseData struct {
 	Meta Meta       `json:"meta"`
 }
 
+type System struct {
+	Symbol        string     `json:"symbol"`
+	SectorSymbol  string     `json:"sectorSymbol"`
+	Constellation string     `json:"constellation"`
+	Name          string     `json:"name"`
+	Type          string     `json:"type"`
+	X             int64      `json:"x"`
+	Y             int64      `json:"y"`
+	Waypoints     []Waypoint `json:"waypoints"`
+	Factions      []Faction  `json:"factions"`
+}
+
+type GetSystemResponseData struct {
+	Data System `json:"data"`
+	Meta Meta   `json:"meta"`
+}
+
 type Waypoint struct {
 	SystemSymbol        string        `json:"systemSymbol"`
 	Symbol              string        `json:"symbol"`
@@ -236,12 +258,28 @@ type Transaction struct {
 }
 
 type GetJumpGateResponseData struct {
-	Data GetJumpGateResponse `json:"data"`
+	Data JumpGate `json:"data"`
 }
 
-type GetJumpGateResponse struct {
+type JumpGate struct {
 	Symbol      string   `json:"symbol"`
 	Connections []string `json:"connections"`
+}
+
+type GetConstructionSiteResponseData struct {
+	Data ConstructionSite `json:"data"`
+}
+
+type ConstructionSite struct {
+	Symbol     string     `json:"symbol"`
+	Materials  []Material `json:"materials"`
+	IsComplete bool       `json:"isComplete"`
+}
+
+type Material struct {
+	TradeSymbol string `json:"tradeSymbol"`
+	Required    int64  `json:"required"`
+	Fulfilled   int64  `json:"fulfilled"`
 }
 
 type TradeRoute struct {
