@@ -480,6 +480,16 @@ func PurchaseCargo(ship_symbol string, trade_good_symbol string, units int64) Pu
 		fmt.Println("[ERROR] failed to unmarshal")
 	}
 
+	fmt.Print("[INFO] ")
+	fmt.Print(ship_symbol)
+	fmt.Print(" Purchased ")
+	fmt.Print(data_container.Data.Transaction.Units)
+	fmt.Print(" ")
+	fmt.Print(trade_good_symbol)
+	fmt.Print(" for ")
+	fmt.Print(data_container.Data.Transaction.TotalPrice)
+	fmt.Print("\n")
+
 	return data_container.Data
 }
 
@@ -496,6 +506,15 @@ func SellCargo(ship_symbol string, trade_good_symbol string, units int64) SellCa
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
 	}
+	fmt.Print("[INFO] ")
+	fmt.Print(ship_symbol)
+	fmt.Print(" Sold ")
+	fmt.Print(data_container.Data.Transaction.Units)
+	fmt.Print(" ")
+	fmt.Print(trade_good_symbol)
+	fmt.Print(" for ")
+	fmt.Print(data_container.Data.Transaction.TotalPrice)
+	fmt.Print("\n")
 	return data_container.Data
 }
 
@@ -778,7 +797,7 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 			//fmt.Println("[DEBUG] IsWaypointWithinDistanceOfWaypoint false")
 		}
 
-		if most_profitable_trade_route.ProfitabilityRating < 2 {
+		if most_profitable_trade_route.ProfitabilityRating < 1 {
 			fmt.Println("[INFO] Most profitable trade route is not profitable enough. Doing nothing...")
 			return
 		}
@@ -815,11 +834,11 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 				if space_in_cargo_hold > buy_market_trade_volume {
 					fmt.Println("[DEBUG] space_in_cargo_hold > buy_market_trade_volume")
 					units_to_purchase = buy_market_trade_volume
-					number_of_purchases_required := space_in_cargo_hold / buy_market_trade_volume
-					fmt.Print("[DEBUG] number_of_purchases_required = ")
+					number_of_purchases_required := float64(space_in_cargo_hold) / float64(buy_market_trade_volume)
+					fmt.Print("[DEBUG] rounded_number_of_purchases_required = ")
 					fmt.Println(number_of_purchases_required)
 
-					for i := 0; i < int(number_of_purchases_required); i++ {
+					for i := 0; float64(i) < number_of_purchases_required; i++ {
 						fmt.Println("[DEBUG] i = " + string(i))
 						buy_cargo_result := PurchaseCargo(ship.Symbol, most_profitable_trade_route.TradeGoodSymbol, units_to_purchase)
 						space_in_cargo_hold = buy_cargo_result.Cargo.Units - buy_cargo_result.Cargo.Capacity
@@ -834,7 +853,7 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, probe_shipy
 				fmt.Print("[DEBUG] units_to_purchase = ")
 				fmt.Print(units_to_purchase)
 				fmt.Println()
-
+				RefuelShip(ship.Symbol)
 				OrbitShip(ship.Symbol)
 				fmt.Println("[INFO] " + ship.Symbol + " Heading to SellMarketplaceWaypointSymbol")
 				NavigateShip(ship.Symbol, most_profitable_trade_route.SellMarketplaceWaypointSymbol)
@@ -1147,21 +1166,36 @@ func main() {
 	// TODO: globals are bad, this should be removed
 	populate_base_system_symbol()
 
-	//jump_gates := ListWaypointInSystemByType(base_system_symbol, "JUMP_GATE")
+	//marketplace_waypoints := ListWaypointInSystemByTrait(base_system_symbol, "MARKETPLACE")
+	//for _, marketplace_waypoint := range marketplace_waypoints {
+	//	marketplace := GetMarket(base_system_symbol, marketplace_waypoint.Symbol)
+	//	fmt.Println(marketplace.Symbol)
 	//
-	//for _, jump_gate := range jump_gates {
-	//	fmt.Println(jump_gate.Symbol)
+	//	//fmt.Println("Exchange")
+	//	//for _, exchange_good := range marketplace.Exchange {
+	//	//	fmt.Println(exchange_good.Symbol)
+	//	//}
+	//	//
+	//	//fmt.Println("Exports")
+	//	//for _, export_good := range marketplace.Exports {
+	//	//	fmt.Println(export_good.Symbol)
+	//	//}
 	//
-	//	a_jump_gate := GetJumpGate(base_system_symbol, jump_gate.Symbol)
-	//	fmt.Println(a_jump_gate.Symbol)
-	//	fmt.Println(a_jump_gate.Connections)
-	//	a_construction_site := GetConstructionSite(base_system_symbol, jump_gate.Symbol)
-	//	fmt.Println(a_construction_site.IsComplete)
-	//	fmt.Println(jump_gate.IsUnderConstruction)
-	//	fmt.Println(a_construction_site.Materials)
+	//	fmt.Println("Imports")
+	//	for _, import_good := range marketplace.Imports {
+	//		fmt.Println(import_good.Symbol)
+	//	}
+	//
+	//	//fmt.Println("TradeGoods")
+	//	//for _, tradegood_good := range marketplace.TradeGoods {
+	//	//	fmt.Println(tradegood_good.Symbol)
+	//	//}
+	//
+	//	fmt.Println()
+	//
 	//}
-	//
-	//// early exit while testing
+
+	// early exit while testing
 	//os.Exit(0)
 
 	// each unique market waypoint symbol (unordered)
