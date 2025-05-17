@@ -8,6 +8,10 @@ import (
 	"os"
 )
 
+var waypoints_filename = ".waypoints.json"
+var shipyards_filename = ".shipyards.json"
+var markets_filename = ".markets.json"
+
 func DoesAgentTokenFileExist(callsign string) (result bool) {
 	var filename = callsign + ".token"
 	if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
@@ -28,6 +32,48 @@ func DoesTradeRouteFileExist(callsign string) (result bool) {
 	}
 	fmt.Println("[INFO] Trade route file exists")
 	return true
+}
+
+func DoesWaypointsFileExist(callsign string) (result bool) {
+	var filename = callsign + waypoints_filename
+	if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
+		// path/to/whatever does not exist
+		fmt.Println("[INFO] Waypoints file does not exist")
+		return false
+	}
+	fmt.Println("[INFO] Waypoints file exists")
+	return true
+}
+
+func WriteWaypointsToFile(waypoints []Waypoint, callsign string) {
+	file_content := ""
+	f, err := os.Create(callsign + waypoints_filename)
+	PanicOnError(err)
+	defer f.Close()
+
+	for _, waypoint := range waypoints {
+		marshalled_waypoint, err := json.Marshal(waypoint)
+		PanicOnError(err)
+		file_content = file_content + string(marshalled_waypoint) + "\n"
+	}
+
+	write_result, err := f.WriteString(file_content)
+	PanicOnError(err)
+	fmt.Printf("[DEBUG] WriteWaypointsToFile wrote %d bytes\n", write_result)
+}
+
+func ReadWaypointsFromFile(callsign string, waypoints []Waypoint) []Waypoint {
+	fmt.Println("[DEBUG] ReadWaypointsFromFile")
+	f, err := os.Open(callsign + waypoints_filename)
+	PanicOnError(err)
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		waypoint := Waypoint{}
+		err := json.Unmarshal([]byte(scanner.Text()), &waypoint)
+		PanicOnError(err)
+		waypoints = append(waypoints, waypoint)
+	}
+	return waypoints
 }
 
 func WriteAuthTokenToFile(auth_token string, filename string) {
@@ -80,4 +126,86 @@ func ReadTradeRoutesFromFile(callsign string, trade_routes []TradeRoute) []Trade
 		trade_routes = append(trade_routes, trade_route)
 	}
 	return trade_routes
+}
+
+func DoesShipyardsFileExist(callsign string) (result bool) {
+	var filename = callsign + shipyards_filename
+	if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
+		fmt.Println("[INFO] Shipyards file does not exist")
+		return false
+	}
+	fmt.Println("[INFO] Shipyards file exists")
+	return true
+}
+
+func WriteShipyardsToFile(shipyards []Shipyard, callsign string) {
+	file_content := ""
+	f, err := os.Create(callsign + shipyards_filename)
+	PanicOnError(err)
+	defer f.Close()
+
+	for _, shipyard := range shipyards {
+		marshalled_shipyard, err := json.Marshal(shipyard)
+		PanicOnError(err)
+		file_content = file_content + string(marshalled_shipyard) + "\n"
+	}
+
+	write_result, err := f.WriteString(file_content)
+	PanicOnError(err)
+	fmt.Printf("[DEBUG] WriteShipyardsToFile wrote %d bytes\n", write_result)
+}
+
+func ReadShipyardsFromFile(callsign string, shipyards []Shipyard) []Shipyard {
+	fmt.Println("[DEBUG] ReadShipyardsFromFile")
+	f, err := os.Open(callsign + shipyards_filename)
+	PanicOnError(err)
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		shipyard := Shipyard{}
+		err := json.Unmarshal([]byte(scanner.Text()), &shipyard)
+		PanicOnError(err)
+		shipyards = append(shipyards, shipyard)
+	}
+	return shipyards
+}
+
+func DoesMarketsFileExist(callsign string) (result bool) {
+	var filename = callsign + markets_filename
+	if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
+		fmt.Println("[INFO] Markets file does not exist")
+		return false
+	}
+	fmt.Println("[INFO] Markets file exists")
+	return true
+}
+
+func WriteMarketsToFile(markets []Market, callsign string) {
+	file_content := ""
+	f, err := os.Create(callsign + markets_filename)
+	PanicOnError(err)
+	defer f.Close()
+
+	for _, market := range markets {
+		marshalled_market, err := json.Marshal(market)
+		PanicOnError(err)
+		file_content = file_content + string(marshalled_market) + "\n"
+	}
+
+	write_result, err := f.WriteString(file_content)
+	PanicOnError(err)
+	fmt.Printf("[DEBUG] WriteMarketsToFile wrote %d bytes\n", write_result)
+}
+
+func ReadMarketsFromFile(callsign string, markets []Market) []Market {
+	fmt.Println("[DEBUG] ReadMarketsFromFile")
+	f, err := os.Open(callsign + markets_filename)
+	PanicOnError(err)
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		market := Market{}
+		err := json.Unmarshal([]byte(scanner.Text()), &market)
+		PanicOnError(err)
+		markets = append(markets, market)
+	}
+	return markets
 }

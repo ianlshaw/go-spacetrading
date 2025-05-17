@@ -138,11 +138,17 @@ func MarketScanComplete(trade_routes []TradeRoute) bool {
 	return true
 }
 
-func PopulateTradeRoutesWithWaypointData(trade_routes []TradeRoute, markets_to_cover map[string]string) {
+func PopulateTradeRoutesWithWaypointData(callsign string, trade_routes []TradeRoute, markets_to_cover map[string]string) {
 	fmt.Println("[DEBUG] PopulateTradeRoutesWithWaypointData")
-
+	all_waypoints_in_system := []Waypoint{}
+	all_waypoints_in_system = ReadWaypointsFromFile(callsign, all_waypoints_in_system)
 	for market_waypoint := range markets_to_cover {
-		get_waypoint_result := GetWaypoint(base_system_symbol, market_waypoint)
+		get_waypoint_result := Waypoint{}
+		for _, waypoint := range all_waypoints_in_system {
+			if market_waypoint == waypoint.Symbol {
+				get_waypoint_result = waypoint
+			}
+		}
 		for i, trade_route := range trade_routes {
 			if market_waypoint == trade_route.BuyMarketplaceWaypointSymbol {
 				trade_routes[i].BuyWaypoint = get_waypoint_result
@@ -171,19 +177,19 @@ func RemoveTradeRoutesWithDistancesGreaterThanMaximumFuel(trade_routes []TradeRo
 	}
 }
 
-func IdentifyTradeRoutes(markets_to_cover map[string]string) []TradeRoute {
+func IdentifyTradeRoutes(callsign string, markets_to_cover map[string]string, markets []Market, market_waypoints []Waypoint) []TradeRoute {
+	fmt.Println("[DEBUG] IdentifyTradeRoutes")
+
 	// cache for full response from every get_market call
 	all_market_results := []Market{}
+	all_market_results = ReadMarketsFromFile(callsign, all_market_results)
 
 	// return value container
 	trade_routes := []TradeRoute{}
 
 	// populate all_market results with the result of get_market against each waypoint which has a MARKETPLACE
-	marketplaces_in_system := ListWaypointInSystemByTrait(base_system_symbol, "MARKETPLACE")
-	for _, marketplace := range marketplaces_in_system {
-		get_market_result := GetMarket(base_system_symbol, marketplace.Symbol)
-		all_market_results = append(all_market_results, get_market_result)
-	}
+	// listing waypoints by trait is broken.
+	//marketplaces_in_system := ListWaypointInSystemByTrait(base_system_symbol, "MARKETPLACE")
 
 	// populate both trade_routes and markets_to_cover by iterating through A) every MARKETPLACE B) each of their Imports and C) their Exports
 	// associations of import/export are added to trade_routes, and we keep one copy of each waypoint_symbol in markets_to_cover
@@ -202,7 +208,7 @@ func IdentifyTradeRoutes(markets_to_cover map[string]string) []TradeRoute {
 								fmt.Print(each_market_result.Symbol)
 								fmt.Print(" SELL AT ")
 								fmt.Print(each_market_result_inner.Symbol)
-								fmt.Print("")
+								fmt.Println()
 
 								trade_route := TradeRoute{}
 								trade_route.TradeGoodSymbol = each_export.Symbol
@@ -219,7 +225,7 @@ func IdentifyTradeRoutes(markets_to_cover map[string]string) []TradeRoute {
 		}
 	}
 
-	PopulateTradeRoutesWithWaypointData(trade_routes, markets_to_cover)
+	PopulateTradeRoutesWithWaypointData(callsign, trade_routes, markets_to_cover)
 	PopulateTradeRoutesWithDistances(trade_routes)
 	//RemoveTradeRoutesWithDistancesGreaterThanMaximumFuel(trade_routes, 400)
 
@@ -228,7 +234,7 @@ func IdentifyTradeRoutes(markets_to_cover map[string]string) []TradeRoute {
 			//fmt.Println("[DEBUG] Trade route within max fuel")
 		} else {
 			//fmt.Println("[DEBUG] Trade route exceeds max fuel")
-			for _, marketplace := range marketplaces_in_system {
+			for _, marketplace := range market_waypoints {
 				refuel_waypoint := Waypoint{}
 				refuel_waypoint.X = marketplace.X
 				refuel_waypoint.Y = marketplace.Y

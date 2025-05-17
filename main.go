@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -79,37 +80,85 @@ func main() {
 	// TODO: globals are bad, this should be removed
 	populate_base_system_symbol()
 
-	//marketplace_waypoints := ListWaypointInSystemByTrait(base_system_symbol, "MARKETPLACE")
-	//for _, marketplace_waypoint := range marketplace_waypoints {
-	//	marketplace := GetMarket(base_system_symbol, marketplace_waypoint.Symbol)
-	//	fmt.Println(marketplace.Symbol)
-	//
-	//	//fmt.Println("Exchange")
-	//	//for _, exchange_good := range marketplace.Exchange {
-	//	//	fmt.Println(exchange_good.Symbol)
-	//	//}
-	//	//
-	//	//fmt.Println("Exports")
-	//	//for _, export_good := range marketplace.Exports {
-	//	//	fmt.Println(export_good.Symbol)
-	//	//}
-	//
-	//	fmt.Println("Imports")
-	//	for _, import_good := range marketplace.Imports {
-	//		fmt.Println(import_good.Symbol)
-	//	}
-	//
-	//	//fmt.Println("TradeGoods")
-	//	//for _, tradegood_good := range marketplace.TradeGoods {
-	//	//	fmt.Println(tradegood_good.Symbol)
-	//	//}
-	//
-	//	fmt.Println()
-	//
-	//}
+	//agent := GetAgent()
+	//contracts := ListContracts()
 
-	// early exit while testing
-	//os.Exit(0)
+	// do waypoint files exist?
+
+	if !DoesWaypointsFileExist(CALLSIGN) {
+		fmt.Println("[INFO] Gathering waypoint data...")
+		all_waypoints_in_system := []Waypoint{}
+
+		list_waypoints_result := ListWaypointsInSystem(base_system_symbol, "1")
+
+		total_waypoints := list_waypoints_result.Meta.Total
+
+		limit := list_waypoints_result.Meta.Limit
+
+		loop_iterations_required := total_waypoints / int64(limit)
+
+		for i := 1; i < int(loop_iterations_required+2); i++ {
+			a_page_of_waypoints := ListWaypointsInSystem(base_system_symbol, strconv.FormatInt(int64(i), 10))
+			all_waypoints_in_system = append(all_waypoints_in_system, a_page_of_waypoints.Data...)
+			fmt.Println(len(all_waypoints_in_system))
+		}
+		WriteWaypointsToFile(all_waypoints_in_system, CALLSIGN)
+	}
+
+	// read all waypoint data from file
+	all_waypoints_in_system := []Waypoint{}
+	all_waypoints_in_system = ReadWaypointsFromFile(CALLSIGN, all_waypoints_in_system)
+
+	if !DoesShipyardsFileExist(CALLSIGN) {
+		shipyard_waypoints := []Waypoint{}
+
+		for _, waypoint := range all_waypoints_in_system {
+			for _, trait := range waypoint.Traits {
+				if trait.Symbol == "SHIPYARD" {
+					shipyard_waypoints = append(shipyard_waypoints, waypoint)
+				}
+			}
+		}
+
+		all_shipyards_in_system := []Shipyard{}
+
+		for _, shipyard_waypoint := range shipyard_waypoints {
+			get_shipyard_result := GetShipyard(base_system_symbol, shipyard_waypoint.Symbol)
+			all_shipyards_in_system = append(all_shipyards_in_system, get_shipyard_result)
+		}
+
+		WriteShipyardsToFile(all_shipyards_in_system, CALLSIGN)
+	}
+
+	all_shipyards_in_system := []Shipyard{}
+	ReadShipyardsFromFile(CALLSIGN, all_shipyards_in_system)
+
+	if !DoesMarketsFileExist(CALLSIGN) {
+		all_markets_in_system := []Market{}
+		for _, waypoint := range all_waypoints_in_system {
+			for _, trait := range waypoint.Traits {
+				if trait.Symbol == "MARKETPLACE" {
+					get_market_result := GetMarket(base_system_symbol, waypoint.Symbol)
+					all_markets_in_system = append(all_markets_in_system, get_market_result)
+					time.Sleep(2 * time.Second)
+				}
+			}
+		}
+		WriteMarketsToFile(all_markets_in_system, CALLSIGN)
+	}
+
+	all_markets_in_system := []Market{}
+	ReadMarketsFromFile(CALLSIGN, all_markets_in_system)
+
+	marketplace_waypoints := []Waypoint{}
+
+	for _, market := range all_markets_in_system {
+		for _, waypoint := range all_waypoints_in_system {
+			if market.Symbol == waypoint.Symbol {
+				marketplace_waypoints = append(marketplace_waypoints, waypoint)
+			}
+		}
+	}
 
 	// each unique market waypoint symbol (unordered)
 	markets_to_cover := make(map[string]string)
@@ -119,18 +168,19 @@ func main() {
 
 	if !DoesTradeRouteFileExist(CALLSIGN) {
 		fmt.Println("[INFO] Trade route file does not exist. Initializing...")
-		trade_routes = IdentifyTradeRoutes(markets_to_cover)
+		trade_routes = IdentifyTradeRoutes(CALLSIGN, markets_to_cover, all_markets_in_system, marketplace_waypoints)
 		WriteTradeRoutesToFile(trade_routes, CALLSIGN)
 	} else {
 		fmt.Println("[INFO] Trade file exists. Reading from file...")
 		trade_routes = ReadTradeRoutesFromFile(CALLSIGN, trade_routes)
 	}
 
-	//fmt.Println("[DEBUG] markets_to_cover: " + string(len(markets_to_cover)))
-
 	markets_to_cover = PopulateMarketsToCover(trade_routes)
 
 	number_of_markets_to_cover := len(markets_to_cover)
+
+	fmt.Println("[DEBUG] number_of_markets_to_cover = ")
+	fmt.Println(number_of_markets_to_cover)
 
 	number_of_satellites := HowManySatellitesDoIOwn()
 
@@ -143,27 +193,19 @@ func main() {
 		fmt.Println("[INFO] Not enough satellites, postponing market assignments...")
 	}
 
-	// there can be multiple SHIPYARDs which sell SHIP_PROBE
-	probe_shipyards := []Waypoint{}
-
-	// populate probe_shipyards with Waypoints which have SHIPYARDs which sell SHIP_PROBEs
-	shipyards_in_system := ListWaypointInSystemByTrait(base_system_symbol, "SHIPYARD")
-	for _, shipyard_waypoint := range shipyards_in_system {
-		get_shipyard_result := GetShipyard(base_system_symbol, shipyard_waypoint.Symbol)
-		for _, ship := range get_shipyard_result.ShipTypes {
+	probe_shipyards := []Shipyard{}
+	probe_shipyard_waypoints := []Waypoint{}
+	for _, shipyard := range all_shipyards_in_system {
+		for _, ship := range shipyard.ShipTypes {
 			if ship.Type == "SHIP_PROBE" {
-				//fmt.Println("[DEBUG] shipyard with satellites for sale found: ")
-				//fmt.Println("[DEBUG] " + get_shipyard_result.Symbol)
-				probe_shipyards = append(probe_shipyards, shipyard_waypoint)
+				probe_shipyards = append(probe_shipyards, shipyard)
+				for _, waypoint := range all_waypoints_in_system {
+					if waypoint.Symbol == shipyard.Symbol {
+						probe_shipyard_waypoints = append(probe_shipyard_waypoints, waypoint)
+					}
+				}
 			}
 		}
-	}
-
-	//fmt.Println("[DEBUG] markets to cover:")
-	//fmt.Println(markets_to_cover)
-
-	for market := range markets_to_cover {
-		fmt.Println("[DEBUG] " + market)
 	}
 
 	turn_number := 1
@@ -194,7 +236,7 @@ func main() {
 		wait_between_ships := turn_length / len(ships_list)
 
 		for _, ship := range ships_list {
-			ShipRoleDecider(ship, markets_to_cover, probe_shipyards, trade_routes, CALLSIGN)
+			ShipRoleDecider(ship, markets_to_cover, probe_shipyard_waypoints, trade_routes, CALLSIGN)
 
 			// turns are always turn_length (default 2 minutes) but as we add ships they fill the time between turns
 			time.Sleep(time.Duration(wait_between_ships) * time.Second)

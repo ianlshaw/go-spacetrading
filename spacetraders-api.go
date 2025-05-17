@@ -52,6 +52,23 @@ func ListContracts() (contracts []Contract) {
 	return data_container.Data
 }
 
+func NegotiateContract(ship_symbol string) (contract Contract) {
+	endpoint := "my/ships/" + ship_symbol + "/negotiate/contract"
+	payload := &EmptyPayload{}
+	payloadJSON, err := json.Marshal(payload)
+	PanicOnError(err)
+	response_string := BasicPost(endpoint, payloadJSON)
+	data_container := NegotiateContractResponseData{}
+
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("failed to unmarshal")
+		//fmt.Println(response_string)
+		fmt.Println(err)
+	}
+
+	return data_container.Data[0]
+}
+
 // Fleet
 func ListShips() (ships []Ship) {
 	//fmt.Println("[DEBUG] list_ships")
@@ -177,6 +194,11 @@ func SellCargo(ship_symbol string, trade_good_symbol string, units int64) SellCa
 	fmt.Print(" for ")
 	fmt.Print(data_container.Data.Transaction.TotalPrice)
 	fmt.Print("\n")
+
+	fmt.Print("[INFO] New balance: ")
+	fmt.Print(data_container.Data.Agent.Credits)
+	fmt.Print("\n")
+
 	return data_container.Data
 }
 
@@ -217,8 +239,18 @@ func GetWaypoint(system_symbol string, waypoint_symbol string) (resultant_waypoi
 	return data_container.Data
 }
 
+func ListWaypointsInSystem(system_symbol string, offset string) ListWaypointsInSystemResponseData {
+	endpoint := "systems/" + system_symbol + "/waypoints?page=" + offset + "&limit=20"
+	response_string := BasicGet(endpoint)
+	data_container := ListWaypointsInSystemResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("[ERROR] ListWaypointInSystem failed to unmarshal")
+	}
+	return data_container
+}
+
 func ListWaypointInSystemByTrait(system_symbol string, trait string) []Waypoint {
-	endpoint := "systems/" + system_symbol + "/waypoints?traits=" + trait
+	endpoint := "systems/" + system_symbol + "/waypoints?traits[]=" + trait
 	response_string := BasicGet(endpoint)
 	data_container := ListWaypointsInSystemResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
@@ -238,6 +270,7 @@ func ListWaypointInSystemByType(system_symbol string, query_type string) []Waypo
 }
 
 func GetMarket(system_symbol string, waypoint_symbol string) Market {
+	fmt.Println("[DEBUG] GetMarket")
 	endpoint := "systems/" + system_symbol + "/waypoints/" + waypoint_symbol + "/market"
 	response_string := BasicGet(endpoint)
 	data_container := GetMarketResponseData{}

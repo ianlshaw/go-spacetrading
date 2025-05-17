@@ -6,19 +6,31 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 )
 
 func BasicGet(endpoint string) (response_body string) {
 	url := url_base + endpoint
 
 	// DEBUG
-	//fmt.Println("[DEBUG] " + url)
+	fmt.Println("[DEBUG] " + url)
 	// DEBUG
 
-	request, _ := http.NewRequest("GET", url, nil)
+	payload := EmptyPayload{}
+	payloadJSON, err := json.Marshal(payload)
+	PanicOnError(err)
+
+	//fmt.Println("payload:")
+	//fmt.Println(payload)
+
+	request, _ := http.NewRequest("GET", url, bytes.NewBuffer(payloadJSON))
 	request.Header.Add("Content-Type", "application/json")
 	request.Header.Add("Authorization", agent_token)
 	result, err := http.DefaultClient.Do(request)
+
+	//fmt.Println("request:")
+	//fmt.Println(request)
+
 	PanicOnError(err)
 	defer result.Body.Close()
 	body, err := io.ReadAll(result.Body)
@@ -35,7 +47,9 @@ func BasicGet(endpoint string) (response_body string) {
 		fmt.Println("Error Code:")
 		fmt.Println(error_container.Error.Code)
 		fmt.Println(error_container.Error.Message)
-		fmt.Println(error_container.Error.Message)
+
+		fmt.Println(error_container)
+		os.Exit(1)
 	}
 
 	sb := string(body)
