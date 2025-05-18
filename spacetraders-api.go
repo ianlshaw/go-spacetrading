@@ -130,7 +130,7 @@ func DockShip(ship_symbol string) DockShipResponse {
 
 func PurchaseShip(ship_type string, waypoint_symbol string) PurchaseShipResponse {
 	fmt.Println("[DEBUG] PurchaseShip")
-	endpoint := "my/ships/"
+	endpoint := "my/ships"
 	payload := &PurchaseShipPayload{}
 	payload.WaypointSymbol = waypoint_symbol
 	payload.ShipType = ship_type
@@ -140,6 +140,8 @@ func PurchaseShip(ship_type string, waypoint_symbol string) PurchaseShipResponse
 	data_container := PurchaseShipResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
 	}
 	return data_container.Data
 }
@@ -157,6 +159,8 @@ func PurchaseCargo(ship_symbol string, trade_good_symbol string, units int64) Pu
 	data_container := PurchaseCargoResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
 	}
 
 	fmt.Print("[INFO] ")
@@ -184,6 +188,8 @@ func SellCargo(ship_symbol string, trade_good_symbol string, units int64) SellCa
 	data_container := SellCargoResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
 	}
 	fmt.Print("[INFO] ")
 	fmt.Print(ship_symbol)
@@ -214,6 +220,8 @@ func RefuelShip(ship_symbol string) RefuelShipResponse {
 	data_container := RefuelShipResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
 	}
 	return data_container.Data
 }
@@ -225,6 +233,8 @@ func GetSystem(system_symbol string) (system System) {
 	data_container := GetSystemResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
 	}
 	return data_container.Data
 }
@@ -235,6 +245,8 @@ func GetWaypoint(system_symbol string, waypoint_symbol string) (resultant_waypoi
 	data_container := GetWaypointResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
 	}
 	return data_container.Data
 }
@@ -245,6 +257,8 @@ func ListWaypointsInSystem(system_symbol string, offset string) ListWaypointsInS
 	data_container := ListWaypointsInSystemResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] ListWaypointInSystem failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
 	}
 	return data_container
 }
@@ -255,6 +269,8 @@ func ListWaypointInSystemByTrait(system_symbol string, trait string) []Waypoint 
 	data_container := ListWaypointsInSystemResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] ListWaypointInSystemByTrait failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
 	}
 	return data_container.Data
 }
@@ -265,6 +281,8 @@ func ListWaypointInSystemByType(system_symbol string, query_type string) []Waypo
 	data_container := ListWaypointsInSystemResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] ListWaypointInSystemByType failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
 	}
 	return data_container.Data
 }
@@ -276,6 +294,8 @@ func GetMarket(system_symbol string, waypoint_symbol string) Market {
 	data_container := GetMarketResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
 	}
 	return data_container.Data
 }
@@ -286,6 +306,8 @@ func GetShipyard(system_symbol string, waypoint_symbol string) (get_shipyard_res
 	data_container := GetShipyardResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
 	}
 	return data_container.Data
 }
@@ -296,6 +318,8 @@ func GetJumpGate(system_symbol string, waypoint_symbol string) JumpGate {
 	data_container := GetJumpGateResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
 	}
 	return data_container.Data
 }
@@ -307,5 +331,22 @@ func GetConstructionSite(system_symbol string, waypoint_symbol string) Construct
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] failed to unmarshal")
 	}
+	return data_container.Data
+}
+
+func SiphonResources(ship_symbol string) SiphonResourcesResponse {
+	endpoint := "my/ships/" + ship_symbol + "/siphon"
+	payload := &EmptyPayload{}
+	payloadJSON, err := json.Marshal(payload)
+	PanicOnError(err)
+	response_string := BasicPost(endpoint, payloadJSON)
+	data_container := SiphonResourcesResponseData{}
+
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
+	}
+
 	return data_container.Data
 }

@@ -426,6 +426,27 @@ type DockShipResponse struct {
 	Nav Nav `json:"nav"`
 }
 
+type SiphonResourcesResponseData struct {
+	Data SiphonResourcesResponse `json:"data"`
+}
+
+type SiphonResourcesResponse struct {
+	Siphon   Siphon   `json:"siphon"`
+	Cooldown Cooldown `json:"cooldown"`
+	Cargo    Cargo    `json:"cargo"`
+	Events   []Event  `json:"events"`
+}
+
+type Siphon struct {
+	ShipSymbol string `json:"shipSymbol"`
+	Yield      Yield  `json:"yield"`
+}
+
+type Yield struct {
+	Symbol string `json:"symbol"`
+	Units  int64  `json:"units"`
+}
+
 type PurchaseShipPayload struct {
 	ShipType       string `json:"shipType"`
 	WaypointSymbol string `json:"waypointSymbol"`

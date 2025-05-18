@@ -49,13 +49,69 @@ func populate_base_system_symbol() {
 	base_system_symbol = response_typed.Data[0].Nav.SystemSymbol
 }
 
-func ShipRoleDecider(ship Ship, markets_to_cover map[string]string, probe_shipyards []Waypoint, trade_routes []TradeRoute, callsign string) {
+func ShipRoleDecider(
+	ship Ship,
+	all_waypoints_in_system []Waypoint,
+	markets_to_cover map[string]string,
+	probe_shipyard_waypoints []Waypoint,
+	mining_drone_shipyard_waypoints []Waypoint,
+	siphon_drone_shipyard_waypoints []Waypoint,
+	surveyor_shipyard_waypoints []Waypoint,
+	trade_routes []TradeRoute,
+	ship_list []Ship,
+	agent Agent,
+	callsign string) {
+
 	if ship.Registration.Role == "COMMAND" {
-		ApplyRoleCommand(ship, markets_to_cover, probe_shipyards, trade_routes, callsign)
+		ApplyRoleCommand(ship, markets_to_cover, trade_routes, callsign)
+		return
 	}
 
+	all_probes := []Ship{}
+
+	for _, ship := range ship_list {
+		if ship.Registration.Role == "SATELLITE" {
+			all_probes = append(all_probes, ship)
+		}
+	}
+
+	buyer_ship := all_probes[0]
+
 	if ship.Registration.Role == "SATELLITE" {
+		if ship.Symbol == buyer_ship.Symbol {
+
+			ApplyRoleBuyer(
+				ship,
+				ship_list,
+				markets_to_cover,
+				probe_shipyard_waypoints,
+				mining_drone_shipyard_waypoints,
+				siphon_drone_shipyard_waypoints,
+				surveyor_shipyard_waypoints,
+				agent)
+			return
+		}
 		ApplyRoleSatellite(ship, markets_to_cover, trade_routes)
+		return
+	}
+
+	if ship.Registration.Role == "EXCAVATOR" {
+		for _, mount := range ship.Mounts {
+			if mount.Symbol == "MOUNT_MINING_LASER_I" {
+				ApplyRoleMiner()
+				return
+			}
+
+			if mount.Symbol == "MOUNT_GAS_SIPHON_I" {
+				ApplyRoleSiphoner(ship, all_waypoints_in_system)
+				return
+			}
+		}
+	}
+
+	if ship.Registration.Role == "SURVEYOR" {
+		ApplyRoleSurveyor()
+		return
 	}
 }
 
@@ -88,26 +144,23 @@ func main() {
 	if !DoesWaypointsFileExist(CALLSIGN) {
 		fmt.Println("[INFO] Gathering waypoint data...")
 		all_waypoints_in_system := []Waypoint{}
-
 		list_waypoints_result := ListWaypointsInSystem(base_system_symbol, "1")
-
 		total_waypoints := list_waypoints_result.Meta.Total
-
 		limit := list_waypoints_result.Meta.Limit
-
 		loop_iterations_required := total_waypoints / int64(limit)
-
 		for i := 1; i < int(loop_iterations_required+2); i++ {
 			a_page_of_waypoints := ListWaypointsInSystem(base_system_symbol, strconv.FormatInt(int64(i), 10))
 			all_waypoints_in_system = append(all_waypoints_in_system, a_page_of_waypoints.Data...)
-			fmt.Println(len(all_waypoints_in_system))
 		}
 		WriteWaypointsToFile(all_waypoints_in_system, CALLSIGN)
 	}
 
-	// read all waypoint data from file
-	all_waypoints_in_system := []Waypoint{}
-	all_waypoints_in_system = ReadWaypointsFromFile(CALLSIGN, all_waypoints_in_system)
+	all_waypoints_in_system := ReadWaypointsFromFile(CALLSIGN)
+
+	for _, waypoint := range all_waypoints_in_system {
+		//AddWaypointToSystemGraph(waypoint)
+		PopulateSystemGraphDistancesForWaypoint(all_waypoints_in_system, waypoint)
+	}
 
 	if !DoesShipyardsFileExist(CALLSIGN) {
 		shipyard_waypoints := []Waypoint{}
@@ -130,8 +183,7 @@ func main() {
 		WriteShipyardsToFile(all_shipyards_in_system, CALLSIGN)
 	}
 
-	all_shipyards_in_system := []Shipyard{}
-	ReadShipyardsFromFile(CALLSIGN, all_shipyards_in_system)
+	all_shipyards_in_system := ReadShipyardsFromFile(CALLSIGN)
 
 	if !DoesMarketsFileExist(CALLSIGN) {
 		all_markets_in_system := []Market{}
@@ -147,9 +199,7 @@ func main() {
 		WriteMarketsToFile(all_markets_in_system, CALLSIGN)
 	}
 
-	all_markets_in_system := []Market{}
-	ReadMarketsFromFile(CALLSIGN, all_markets_in_system)
-
+	all_markets_in_system := ReadMarketsFromFile(CALLSIGN)
 	marketplace_waypoints := []Waypoint{}
 
 	for _, market := range all_markets_in_system {
@@ -172,41 +222,30 @@ func main() {
 		WriteTradeRoutesToFile(trade_routes, CALLSIGN)
 	} else {
 		fmt.Println("[INFO] Trade file exists. Reading from file...")
-		trade_routes = ReadTradeRoutesFromFile(CALLSIGN, trade_routes)
+		trade_routes = ReadTradeRoutesFromFile(CALLSIGN)
 	}
 
 	markets_to_cover = PopulateMarketsToCover(trade_routes)
 
-	number_of_markets_to_cover := len(markets_to_cover)
+	probe_shipyards, probe_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_PROBE")
+	fmt.Println("probe shipyards:")
+	fmt.Println(len(probe_shipyards))
+	fmt.Println(len(probe_shipyard_waypoints))
 
-	fmt.Println("[DEBUG] number_of_markets_to_cover = ")
-	fmt.Println(number_of_markets_to_cover)
+	mining_drone_shipyards, mining_drone_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_MINING_DRONE")
+	fmt.Println("mining_drone shipyards:")
+	fmt.Println(len(mining_drone_shipyards))
+	fmt.Println(len(mining_drone_shipyard_waypoints))
 
-	number_of_satellites := HowManySatellitesDoIOwn()
+	siphon_drone_shipyards, siphon_drone_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_SIPHON_DRONE")
+	fmt.Println("siphon_drone shipyards:")
+	fmt.Println(len(siphon_drone_shipyards))
+	fmt.Println(len(siphon_drone_shipyard_waypoints))
 
-	if number_of_satellites >= number_of_markets_to_cover {
-		fmt.Println("[INFO] Enough satellites")
-		if !SatelliteToMarketAssignmentComplete(markets_to_cover) {
-			AssignSatellitesToMarkets(markets_to_cover)
-		}
-	} else {
-		fmt.Println("[INFO] Not enough satellites, postponing market assignments...")
-	}
-
-	probe_shipyards := []Shipyard{}
-	probe_shipyard_waypoints := []Waypoint{}
-	for _, shipyard := range all_shipyards_in_system {
-		for _, ship := range shipyard.ShipTypes {
-			if ship.Type == "SHIP_PROBE" {
-				probe_shipyards = append(probe_shipyards, shipyard)
-				for _, waypoint := range all_waypoints_in_system {
-					if waypoint.Symbol == shipyard.Symbol {
-						probe_shipyard_waypoints = append(probe_shipyard_waypoints, waypoint)
-					}
-				}
-			}
-		}
-	}
+	surveyor_shipyards, surveyor_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_SURVEYOR")
+	fmt.Println("surveyor shipyards:")
+	fmt.Println(len(surveyor_shipyards))
+	fmt.Println(len(surveyor_shipyard_waypoints))
 
 	turn_number := 1
 
@@ -217,7 +256,6 @@ func main() {
 
 	// this runs forever
 	for {
-
 		fmt.Print("[INFO] START OF TURN ")
 		fmt.Print(turn_number)
 		fmt.Println()
@@ -236,7 +274,18 @@ func main() {
 		wait_between_ships := turn_length / len(ships_list)
 
 		for _, ship := range ships_list {
-			ShipRoleDecider(ship, markets_to_cover, probe_shipyard_waypoints, trade_routes, CALLSIGN)
+			ShipRoleDecider(
+				ship,
+				all_waypoints_in_system,
+				markets_to_cover,
+				probe_shipyard_waypoints,
+				mining_drone_shipyard_waypoints,
+				siphon_drone_shipyard_waypoints,
+				surveyor_shipyard_waypoints,
+				trade_routes,
+				ships_list,
+				agent,
+				CALLSIGN)
 
 			// turns are always turn_length (default 2 minutes) but as we add ships they fill the time between turns
 			time.Sleep(time.Duration(wait_between_ships) * time.Second)

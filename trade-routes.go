@@ -141,7 +141,7 @@ func MarketScanComplete(trade_routes []TradeRoute) bool {
 func PopulateTradeRoutesWithWaypointData(callsign string, trade_routes []TradeRoute, markets_to_cover map[string]string) {
 	fmt.Println("[DEBUG] PopulateTradeRoutesWithWaypointData")
 	all_waypoints_in_system := []Waypoint{}
-	all_waypoints_in_system = ReadWaypointsFromFile(callsign, all_waypoints_in_system)
+	all_waypoints_in_system = ReadWaypointsFromFile(callsign)
 	for market_waypoint := range markets_to_cover {
 		get_waypoint_result := Waypoint{}
 		for _, waypoint := range all_waypoints_in_system {
@@ -181,8 +181,7 @@ func IdentifyTradeRoutes(callsign string, markets_to_cover map[string]string, ma
 	fmt.Println("[DEBUG] IdentifyTradeRoutes")
 
 	// cache for full response from every get_market call
-	all_market_results := []Market{}
-	all_market_results = ReadMarketsFromFile(callsign, all_market_results)
+	all_market_results := ReadMarketsFromFile(callsign)
 
 	// return value container
 	trade_routes := []TradeRoute{}
@@ -201,14 +200,15 @@ func IdentifyTradeRoutes(callsign string, markets_to_cover map[string]string, ma
 						for _, each_market_result_imports := range each_market_result_inner.Imports {
 							if each_export.Symbol == each_market_result_imports.Symbol {
 
-								fmt.Println()
-								fmt.Print("[INFO] TRADE ROUTE FOUND BUY ")
-								fmt.Print(each_export.Symbol)
-								fmt.Print(" AT ")
-								fmt.Print(each_market_result.Symbol)
-								fmt.Print(" SELL AT ")
-								fmt.Print(each_market_result_inner.Symbol)
-								fmt.Println()
+								// print all trade routes
+								//fmt.Println()
+								//fmt.Print("[INFO] TRADE ROUTE FOUND BUY ")
+								//fmt.Print(each_export.Symbol)
+								//fmt.Print(" AT ")
+								//fmt.Print(each_market_result.Symbol)
+								//fmt.Print(" SELL AT ")
+								//fmt.Print(each_market_result_inner.Symbol)
+								//fmt.Println()
 
 								trade_route := TradeRoute{}
 								trade_route.TradeGoodSymbol = each_export.Symbol
