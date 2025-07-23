@@ -1,6 +1,8 @@
 package main
 
-import "math"
+import (
+	"math"
+)
 
 func IsShipAlreadyAtWaypoint(ship_to_test Ship, waypoint_symbol string) bool {
 	return (ship_to_test.Nav.WaypointSymbol == waypoint_symbol && ship_to_test.Nav.Status != "IN_TRANSIT")
@@ -12,6 +14,10 @@ func IsShipDocked(ship Ship) bool {
 
 func IsShipCargoEmpty(ship Ship) bool {
 	return ship.Cargo.Units == 0
+}
+
+func IsShipCargoFull(ship Ship) bool {
+	return ship.Cargo.Units == ship.Cargo.Capacity
 }
 
 func IsASatelliteDockedAtMarketplace(list_ships_result []Ship, waypoint_symbol string) (answer bool) {
@@ -67,13 +73,89 @@ func CountTradeGoodCargo(ship Ship, trade_good_symbol string) int64 {
 	return 0
 }
 
-func HowManySatellitesDoIOwn() int {
-	satellite_count := 0
-	list_ships := ListShips()
-	for _, ship := range list_ships {
-		if ship.Frame.Name == "SATELLITE" {
-			satellite_count++
+func CountShipsByFrame(ship_list []Ship, frame string) int {
+	count := 0
+	for _, ship := range ship_list {
+		if ship.Frame.Symbol == frame {
+			count++
 		}
 	}
-	return satellite_count
+	return count
+}
+
+func FindPurcahseableShipByFrame(all_waypoints_in_system []Waypoint, all_shipyards_in_system []Shipyard, frame string) ([]Shipyard, []Waypoint) {
+	shipyards := []Shipyard{}
+	shipyard_waypoints := []Waypoint{}
+	for _, shipyard := range all_shipyards_in_system {
+		for _, ship := range shipyard.ShipTypes {
+			if ship.Type == frame {
+				shipyards = append(shipyards, shipyard)
+				for _, waypoint := range all_waypoints_in_system {
+					if waypoint.Symbol == shipyard.Symbol {
+						shipyard_waypoints = append(shipyard_waypoints, waypoint)
+					}
+				}
+			}
+		}
+	}
+	return shipyards, shipyard_waypoints
+}
+
+func CountShipsByModule(ship_list []Ship, module_to_check string) int {
+	count := 0
+	for _, ship := range ship_list {
+		for _, ship_module := range ship.Modules {
+			if module_to_check == ship_module.Symbol {
+				count++
+			}
+		}
+	}
+	return count
+}
+
+func CountShipsByMount(ship_list []Ship, mount_to_check string) int {
+	count := 0
+	for _, ship := range ship_list {
+		for _, ship_mount := range ship.Mounts {
+			if mount_to_check == ship_mount.Symbol {
+				count++
+			}
+		}
+	}
+	return count
+}
+
+func ClosestWaypointFromSliceToWaypoint(waypoint_slice []Waypoint, singular_waypoint Waypoint) Waypoint {
+	best_distance := 99999999
+	closest_waypoint := Waypoint{}
+	for _, slice_waypoint := range waypoint_slice {
+		distance := DistanceBetweenTwoCoordinates(slice_waypoint.X, slice_waypoint.Y, singular_waypoint.X, singular_waypoint.Y)
+		if distance < best_distance {
+			closest_waypoint = slice_waypoint
+			best_distance = distance
+		}
+	}
+	return closest_waypoint
+}
+
+func WaypointsWithTrait(waypoint_slice []Waypoint, trait_to_check string) []Waypoint {
+	waypoints_with_trait := []Waypoint{}
+	for _, waypoint := range waypoint_slice {
+		for _, trait := range waypoint.Traits {
+			if trait.Symbol == trait_to_check {
+				waypoints_with_trait = append(waypoints_with_trait, waypoint)
+			}
+		}
+	}
+	return waypoints_with_trait
+}
+
+func WaypointFromWaypointSymbol(waypoint_slice []Waypoint, waypoint_symbol_to_check string) Waypoint {
+	default_waypoint := Waypoint{}
+	for _, waypoint := range waypoint_slice {
+		if waypoint.Symbol == waypoint_symbol_to_check {
+			return waypoint
+		}
+	}
+	return default_waypoint
 }

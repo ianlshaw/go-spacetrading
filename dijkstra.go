@@ -18,23 +18,28 @@ func AddWaypointToSystemGraph(waypoint Waypoint) {
 func PopulateSystemGraphDistancesForWaypoint(all_waypoints_in_system []Waypoint, waypoint_to_populate Waypoint) {
 	system_graph_row := make(map[string]int)
 	for _, other_waypoint := range all_waypoints_in_system {
-		if waypoint_to_populate.Symbol != other_waypoint.Symbol {
-			distance := DistanceBetweenTwoWaypoints(other_waypoint, waypoint_to_populate)
-			system_graph_row[other_waypoint.Symbol] = distance
-		}
+		distance := DistanceBetweenTwoWaypoints(other_waypoint, waypoint_to_populate)
+		system_graph_row[other_waypoint.Symbol] = distance
 	}
 	system_graph[waypoint_to_populate.Symbol] = system_graph_row
 	fmt.Println(len(system_graph))
 }
 
-func CalculateShortestPathBetweenTwoWaypoints(SourceWaypoint Waypoint, DestinationWaypoint Waypoint) (resultant_path []string, resultant_cost int) {
-	g := dijkstra.Graph{
-		"a": {"b": 20, "c": 80},
-		"b": {"a": 20, "c": 20},
-		"c": {"a": 80, "b": 20},
+func ProduceGraphWithMaxDistanceBetweenHops(input_graph dijkstra.Graph, max_distance int) dijkstra.Graph {
+	//new_system_graph := make(dijkstra.Graph)
+	for _, distances_map := range input_graph {
+		for destination_waypoint_symbol, distance := range distances_map {
+			if distance > max_distance {
+				delete(distances_map, destination_waypoint_symbol)
+			}
+		}
 	}
+	return input_graph
+}
 
-	path, cost, _ := g.Path("a", "c") // skipping error handling
+func CalculateShortestPathBetweenTwoWaypoints(SourceWaypoint Waypoint, DestinationWaypoint Waypoint) (resultant_path []string, resultant_cost int) {
+
+	path, cost, _ := system_graph.Path(SourceWaypoint.Symbol, DestinationWaypoint.Symbol) // skipping error handling
 
 	fmt.Printf("path: %v, cost: %v", path, cost)
 	return path, cost

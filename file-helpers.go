@@ -62,8 +62,9 @@ func WriteWaypointsToFile(waypoints []Waypoint, callsign string) {
 	fmt.Printf("[DEBUG] WriteWaypointsToFile wrote %d bytes\n", write_result)
 }
 
-func ReadWaypointsFromFile(callsign string, waypoints []Waypoint) []Waypoint {
+func ReadWaypointsFromFile(callsign string) []Waypoint {
 	fmt.Println("[DEBUG] ReadWaypointsFromFile")
+	waypoints := []Waypoint{}
 	f, err := os.Open(callsign + waypoints_filename)
 	PanicOnError(err)
 	scanner := bufio.NewScanner(f)
@@ -114,8 +115,9 @@ func WriteTradeRoutesToFile(trade_routes []TradeRoute, callsign string) {
 	fmt.Printf("[DEBUG] WriteTradeRoutesToFile wrote %d bytes\n", write_result)
 }
 
-func ReadTradeRoutesFromFile(callsign string, trade_routes []TradeRoute) []TradeRoute {
+func ReadTradeRoutesFromFile(callsign string) []TradeRoute {
 	fmt.Println("[DEBUG] ReadTradeRoutesFromFile")
+	trade_routes := []TradeRoute{}
 	f, err := os.Open(callsign + ".trade_routes")
 	PanicOnError(err)
 	scanner := bufio.NewScanner(f)
@@ -155,8 +157,9 @@ func WriteShipyardsToFile(shipyards []Shipyard, callsign string) {
 	fmt.Printf("[DEBUG] WriteShipyardsToFile wrote %d bytes\n", write_result)
 }
 
-func ReadShipyardsFromFile(callsign string, shipyards []Shipyard) []Shipyard {
+func ReadShipyardsFromFile(callsign string) []Shipyard {
 	fmt.Println("[DEBUG] ReadShipyardsFromFile")
+	shipyards := []Shipyard{}
 	f, err := os.Open(callsign + shipyards_filename)
 	PanicOnError(err)
 	scanner := bufio.NewScanner(f)
@@ -196,8 +199,9 @@ func WriteMarketsToFile(markets []Market, callsign string) {
 	fmt.Printf("[DEBUG] WriteMarketsToFile wrote %d bytes\n", write_result)
 }
 
-func ReadMarketsFromFile(callsign string, markets []Market) []Market {
+func ReadMarketsFromFile(callsign string) []Market {
 	fmt.Println("[DEBUG] ReadMarketsFromFile")
+	markets := []Market{}
 	f, err := os.Open(callsign + markets_filename)
 	PanicOnError(err)
 	scanner := bufio.NewScanner(f)
