@@ -52,6 +52,7 @@ func populate_base_system_symbol() {
 func ShipRoleDecider(
 	ship Ship,
 	all_waypoints_in_system []Waypoint,
+	all_markets_in_system []Market,
 	markets_to_cover map[string]string,
 	probe_shipyard_waypoints []Waypoint,
 	mining_drone_shipyard_waypoints []Waypoint,
@@ -63,7 +64,7 @@ func ShipRoleDecider(
 	callsign string) {
 
 	if ship.Registration.Role == "COMMAND" {
-		ApplyRoleCommand(ship, markets_to_cover, trade_routes, callsign)
+		ApplyRoleCommand(ship, all_markets_in_system, markets_to_cover, trade_routes, callsign)
 		return
 	}
 
@@ -256,19 +257,15 @@ func main() {
 
 	// this runs forever
 	for {
-		fmt.Print("[INFO] START OF TURN ")
-		fmt.Print(turn_number)
-		fmt.Println()
 
 		agent := GetAgent()
-
-		fmt.Println("[INFO] " + agent.Symbol)
 		fmt.Print("[INFO] ShipCount: ")
 		fmt.Print(agent.ShipCount)
 		fmt.Println()
 		fmt.Print("[INFO] Credits: ")
 		fmt.Print(agent.Credits)
 		fmt.Println()
+
 
 		ships_list := ListShips()
 		wait_between_ships := turn_length / len(ships_list)
@@ -277,6 +274,7 @@ func main() {
 			ShipRoleDecider(
 				ship,
 				all_waypoints_in_system,
+				all_markets_in_system,
 				markets_to_cover,
 				probe_shipyard_waypoints,
 				mining_drone_shipyard_waypoints,
@@ -286,7 +284,6 @@ func main() {
 				ships_list,
 				agent,
 				CALLSIGN)
-
 			// turns are always turn_length (default 2 minutes) but as we add ships they fill the time between turns
 			time.Sleep(time.Duration(wait_between_ships) * time.Second)
 		}
@@ -297,8 +294,7 @@ func main() {
 		fmt.Print("[INFO] http calls: ")
 		fmt.Print(http_calls / 2)
 		fmt.Print("/m")
-		fmt.Println()
-		fmt.Println("[INFO] END OF TURN")
+
 
 		// reset call counter
 		http_calls = 0

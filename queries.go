@@ -73,6 +73,18 @@ func CountTradeGoodCargo(ship Ship, trade_good_symbol string) int64 {
 	return 0
 }
 
+func MarketplacesWhichSellTradeGood(markets []Market, trade_good_symbol string) (markets_selling_trade_good []Market) {
+	for _, market := range markets {
+		exports := market.Exports
+		for _, export := range exports {
+			if export.Symbol == trade_good_symbol {
+				markets_selling_trade_good = append(markets_selling_trade_good, market)
+			}
+		}
+	}
+	return markets_selling_trade_good
+}
+
 func CountShipsByFrame(ship_list []Ship, frame string) int {
 	count := 0
 	for _, ship := range ship_list {
@@ -158,4 +170,30 @@ func WaypointFromWaypointSymbol(waypoint_slice []Waypoint, waypoint_symbol_to_ch
 		}
 	}
 	return default_waypoint
+}
+
+func IsContractNegotiated(contracts []Contract) bool {
+	return len(contracts) > 0
+}
+
+func IsContractAccepted(contract Contract) bool {
+	return contract.Accepted
+}
+
+func CanContractBeCompleted(contract Contract) bool {
+	return contract.Terms.Deliver[0].UnitsFulfilled >= contract.Terms.Deliver[0].UnitsRequired
+}
+
+func ClosestMarketSellingTradeGood(ship Ship, trade_good string, markets []Market) Market {
+	shortest_distance := 9999
+	closest_market := Market{}
+	ship_waypoint := GetWaypoint(base_system_symbol, ship.Nav.WaypointSymbol)
+	for _, market := range markets {
+		market_waypoint := GetWaypoint(base_system_symbol, market.Symbol)
+		distance := DistanceBetweenTwoWaypoints(ship_waypoint, market_waypoint)
+		if distance < shortest_distance {
+			closest_market = market
+		}
+	}
+	return closest_market
 }

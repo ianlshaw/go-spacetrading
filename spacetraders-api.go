@@ -52,7 +52,8 @@ func ListContracts() (contracts []Contract) {
 	return data_container.Data
 }
 
-func NegotiateContract(ship_symbol string) (contract Contract) {
+func NegotiateContract(ship_symbol string) Contract {
+	fmt.Println("[DEBUG] NegotiateContract")
 	endpoint := "my/ships/" + ship_symbol + "/negotiate/contract"
 	payload := &EmptyPayload{}
 	payloadJSON, err := json.Marshal(payload)
@@ -62,11 +63,29 @@ func NegotiateContract(ship_symbol string) (contract Contract) {
 
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("failed to unmarshal")
-		//fmt.Println(response_string)
+		fmt.Println(response_string)
 		fmt.Println(err)
 	}
 
 	return data_container.Data[0]
+}
+
+func AcceptContract(contract_id string) Contract{
+	fmt.Println("[DEBUG] AcceptContract")
+	endpoint := "my/contracts/" + contract_id + "/accept"
+	payload := &EmptyPayload{}
+	payloadJSON, err := json.Marshal(payload)
+	PanicOnError(err)
+	response_string := BasicPost(endpoint, payloadJSON)
+	data_container := AcceptContractResponseData{}
+
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
+	}
+
+	return data_container.Data
 }
 
 // Fleet

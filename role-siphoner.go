@@ -3,6 +3,7 @@ package main
 import "fmt"
 
 func ApplyRoleSiphoner(ship Ship, all_waypoints_in_system []Waypoint) {
+	return
 	fmt.Println(ship.Fuel)
 	AddWaypointToSystemGraph(all_waypoints_in_system[0])
 

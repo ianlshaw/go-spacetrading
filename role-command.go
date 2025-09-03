@@ -5,9 +5,9 @@ import (
 	"math"
 )
 
-func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, trade_routes []TradeRoute, callsign string) {
+func ApplyRoleCommand(ship Ship, all_markets_in_system []Market, markets_to_cover map[string]string, trade_routes []TradeRoute, callsign string) {
 
-	fmt.Println("[INFO] " + ship.Symbol)
+	fmt.Println("[INFO] " + ship.Symbol + " " + ship.Registration.Role)
 
 	//fmt.Println("[DEBUG] ApplyRoleCommand")
 
@@ -18,11 +18,84 @@ func ApplyRoleCommand(ship Ship, markets_to_cover map[string]string, trade_route
 	}
 
 	ship_list := ListShips()
+	contracts := ListContracts()
+	if IsContractNegotiated(contracts) {
+		contract := contracts[0]
+		contract_delivery_waypoint_symbol := contract.Terms.Deliver[0].DestinationSymbol
+		if IsContractAccepted(contracts[0]){
+			fmt.Println("[INFO] Contract is accepted")
+			if len(contract.Terms.Deliver) > 1 {
+				fmt.Println("[ERROR] CONTRACT DELIVER OBJECT HAS MORE THAN ONE ELEMENT")
+			}
+			fmt.Print(contract.Type + " ")
+			fmt.Print(contract.Terms.Deliver[0].UnitsRequired)
+			fmt.Print(" ")
+			fmt.Print(contract.Terms.Deliver[0].TradeSymbol + " to ")
+			fmt.Print(contract_delivery_waypoint_symbol + " by ")
+			fmt.Print(contract.Terms.Deadline + " for ")
+			fmt.Println(contract.Terms.Payment.OnFulfilled)
+
+			if CanContractBeCompleted(contract) {
+				// Complete Contract
+			} else {
+				// Do we have any contract good in our hold?
+				contract_good_in_hold := CountTradeGoodCargo(ship, contract.Terms.Deliver[0].TradeSymbol)
+				if contract_good_in_hold > 0 {
+					fmt.Println("[INFO] We have contract goods in our hold")
+					if IsShipAlreadyAtWaypoint(ship, contract_delivery_waypoint_symbol) {
+						if !IsShipDocked(ship) {
+							DockShip(ship.Symbol)
+						}
+						//TODO
+						//DeliverCargoToContract()
+					}
+					fmt.Println("[INFO] Heading to contract destination.")
+					NavigateShip(ship.Symbol, contract_delivery_waypoint_symbol)
+					return
+				} else {
+					// go pick up contract trade good
+					// find closest out of a []Market
+					markets_with_contract_trade_good := MarketplacesWhichSellTradeGood(all_markets_in_system, contract.Terms.Deliver[0].TradeSymbol)
+					fmt.Println("[INFO] The following markets sell " + contract.Terms.Deliver[0].TradeSymbol + ":")
+					for _, market_symbol := range markets_with_contract_trade_good {
+						fmt.Println("[INFO] " + market_symbol.Symbol)
+					}
+					closest_market := ClosestMarketSellingTradeGood(ship, contract.Terms.Deliver[0].TradeSymbol, markets_with_contract_trade_good)
+					if IsShipAlreadyAtWaypoint(ship, closest_market.Symbol){
+						if IsShipCargoEmpty(ship) {
+							if !IsShipDocked(ship) {
+								DockShip(ship.Symbol)
+							}
+							fmt.Println("[INFO] Purchase contract cargo.")
+							return
+						} else {
+							if IsShipDocked(ship) {
+								OrbitShip(ship.Symbol)
+							}
+							NavigateShip(ship.Symbol, contract_delivery_waypoint_symbol)
+							return
+						}
+					}
+
+					fmt.Println("[INFO] Heading to marketplace selling contract goods")
+					NavigateShip(ship.Symbol, closest_market.Symbol)
+				}
+			}
+		} else {
+			fmt.Println("[INFO] Contract is negotiated but not accepted")
+			fmt.Println("[INFO] Terms:")
+			fmt.Println(contract)
+			accept_contract_result := AcceptContract(contract.ID)
+			fmt.Println(accept_contract_result)
+		}
+	} else {
+		fmt.Println("[INFO] No contract negotiated")
+		negotiate_contract_result := NegotiateContract(ship.Symbol)
+		fmt.Println(negotiate_contract_result)
+	}
 
 	// TESTING
-	//PrintTradeRoutes(ship_list, trade_routes)
-	//fmt.Println(len(markets_to_cover))
-	//os.Exit(1)
+
 	return
 	// TESTING
 

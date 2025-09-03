@@ -24,6 +24,10 @@ type NegotiateContractResponseData struct {
 	Data []Contract `json:"data"`
 }
 
+type AcceptContractResponseData struct {
+	Data Contract `json:"data"`
+}
+
 type Ship struct {
 	Symbol       string       `json:"symbol"`
 	Nav          Nav          `json:"nav"`
