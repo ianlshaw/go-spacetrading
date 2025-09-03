@@ -1,0 +1,17 @@
+is jump gate built?
+
+what resources does jump gate need?
+
+are those resources available?
+
+if yes -> go get them and deliver them to jump gate
+
+if no what do those resources need?
+  resource dependency model
+
+
+
+
+trade floating balance
+
+contract fulfilment loop
