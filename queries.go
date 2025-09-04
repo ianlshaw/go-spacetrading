@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"fmt"
 )
 
 func IsShipAlreadyAtWaypoint(ship_to_test Ship, waypoint_symbol string) bool {
@@ -196,4 +197,26 @@ func ClosestMarketSellingTradeGood(ship Ship, trade_good string, markets []Marke
 		}
 	}
 	return closest_market
+}
+
+func TradeGoodFromMarket(trade_good_symbol string, market Market) TradeGood {
+	default_trade_good := TradeGood{}
+	for _, trade_good := range market.TradeGoods {
+		if trade_good.Symbol == trade_good_symbol {
+			fmt.Println("[DEBUG] TradeGoodFromMarket: Trade good found")
+			fmt.Println(trade_good)
+			return trade_good
+		}
+	}
+	fmt.Println("[ERROR] TradeGoodFromMarket market does not contain trade good")
+	fmt.Println(trade_good_symbol)
+	fmt.Println(market.TradeGoods)
+	fmt.Println(market)
+	return default_trade_good
+}
+
+func ContractRemainingRequired(contract Contract) int64 {
+	units_required := contract.Terms.Deliver[0].UnitsRequired
+	units_fulfilled := contract.Terms.Deliver[0].UnitsFulfilled
+	return units_required - units_fulfilled
 }

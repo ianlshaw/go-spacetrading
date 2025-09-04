@@ -19,7 +19,7 @@ func RegisterAgent(callsign string) (result RegisterAgentResponse) {
 	pretty_print_json(response_string)
 	data_container := RegisterAgentResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] RegisterAgent failed to unmarshal")
 	}
 	token := data_container.Data.Token
 	auth_token := token
@@ -33,7 +33,7 @@ func GetAgent() Agent {
 
 	data_container := GetAgentResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("failed to unmarshal")
+		fmt.Println("[ERROR] GetAgent failed to unmarshal")
 	}
 
 	return data_container.Data
@@ -45,7 +45,7 @@ func ListContracts() (contracts []Contract) {
 	response_string := BasicGet(endpoint)
 	data_container := ListContractsResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("failed to unmarshal")
+		fmt.Println("[ERROR] ListContracts failed to unmarshal")
 		//fmt.Println(response_string)
 		fmt.Println(err)
 	}
@@ -62,7 +62,7 @@ func NegotiateContract(ship_symbol string) Contract {
 	data_container := NegotiateContractResponseData{}
 
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("failed to unmarshal")
+		fmt.Println("[ERROR] NegotiateContract failed to unmarshal")
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
@@ -80,7 +80,7 @@ func AcceptContract(contract_id string) Contract{
 	data_container := AcceptContractResponseData{}
 
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("failed to unmarshal")
+		fmt.Println("[ERROR] AcceptContract failed to unmarshal")
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
@@ -95,7 +95,7 @@ func ListShips() (ships []Ship) {
 	response_string := BasicGet(endpoint)
 	data_container := ListShipsResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("failed to unmarshal")
+		fmt.Println("[ERROR] ListShips failed to unmarshal")
 		//fmt.Println(response_string)
 		fmt.Println(err)
 	}
@@ -113,7 +113,7 @@ func NavigateShip(ship_symbol string, waypoint_symbol string) NavigateShipRespon
 	response_string := BasicPost(endpoint, payloadJSON)
 	data_container := NavigateShipResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] NavigateShip failed to unmarshal")
 	}
 	return data_container.Data
 
@@ -128,7 +128,7 @@ func OrbitShip(ship_symbol string) OrbitShipResponse {
 	response_string := BasicPost(endpoint, payloadJSON)
 	data_container := OrbitShipResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] OrbitShip failed to unmarshal")
 	}
 	return data_container.Data
 }
@@ -142,7 +142,7 @@ func DockShip(ship_symbol string) DockShipResponse {
 	response_string := BasicPost(endpoint, payloadJSON)
 	data_container := DockShipResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] DockShip failed to unmarshal")
 	}
 	return data_container.Data
 }
@@ -158,7 +158,7 @@ func PurchaseShip(ship_type string, waypoint_symbol string) PurchaseShipResponse
 	response_string := BasicPost(endpoint, payloadJSON)
 	data_container := PurchaseShipResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] PurchaseShip failed to unmarshal")
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
@@ -177,7 +177,7 @@ func PurchaseCargo(ship_symbol string, trade_good_symbol string, units int64) Pu
 	response_string := BasicPost(endpoint, payloadJSON)
 	data_container := PurchaseCargoResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] PurchaseCargo failed to unmarshal")
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
@@ -206,7 +206,7 @@ func SellCargo(ship_symbol string, trade_good_symbol string, units int64) SellCa
 	response_string := BasicPost(endpoint, payloadJSON)
 	data_container := SellCargoResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] SellCargo failed to unmarshal")
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
@@ -238,7 +238,7 @@ func RefuelShip(ship_symbol string) RefuelShipResponse {
 	response_string := BasicPost(endpoint, payloadJSON)
 	data_container := RefuelShipResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] RefuelShip failed to unmarshal")
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
@@ -251,7 +251,7 @@ func GetSystem(system_symbol string) (system System) {
 	response_string := BasicGet(endpoint)
 	data_container := GetSystemResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] GetSystem failed to unmarshal")
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
@@ -263,7 +263,7 @@ func GetWaypoint(system_symbol string, waypoint_symbol string) (resultant_waypoi
 	response_string := BasicGet(endpoint)
 	data_container := GetWaypointResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] GetWaypoint failed to unmarshal")
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
@@ -312,7 +312,7 @@ func GetMarket(system_symbol string, waypoint_symbol string) Market {
 	response_string := BasicGet(endpoint)
 	data_container := GetMarketResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] GetMarket failed to unmarshal")
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
@@ -324,7 +324,7 @@ func GetShipyard(system_symbol string, waypoint_symbol string) (get_shipyard_res
 	response_string := BasicGet(endpoint)
 	data_container := GetShipyardResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] GetShipyard failed to unmarshal")
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
@@ -336,7 +336,7 @@ func GetJumpGate(system_symbol string, waypoint_symbol string) JumpGate {
 	response_string := BasicGet(endpoint)
 	data_container := GetJumpGateResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] GetJumpGate failed to unmarshal")
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
@@ -348,7 +348,7 @@ func GetConstructionSite(system_symbol string, waypoint_symbol string) Construct
 	response_string := BasicGet(endpoint)
 	data_container := GetConstructionSiteResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] GetConstructionSite failed to unmarshal")
 	}
 	return data_container.Data
 }
@@ -362,10 +362,41 @@ func SiphonResources(ship_symbol string) SiphonResourcesResponse {
 	data_container := SiphonResourcesResponseData{}
 
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
-		fmt.Println("failed to unmarshal")
+		fmt.Println("[ERROR] SiphonResources failed to unmarshal")
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
 
+	return data_container.Data
+}
+
+func DeliverCargoToContract(contract_id string, ship_symbol string, trade_symbol string, units int64) DeliverCargoToContractResponse {
+	fmt.Println("[DEBUG] DeliverCargoToContract")
+
+	fmt.Println("contract_id")
+	fmt.Println(contract_id)
+	fmt.Println("ship_symbol")
+	fmt.Println(ship_symbol)
+	fmt.Println("trade_symbol")
+	fmt.Println(trade_symbol)
+	fmt.Println("units")
+	fmt.Println(units)
+
+	endpoint := "my/contracts/" + contract_id + "/deliver"
+	payload := &DeliverCargoToContractPayload{}
+	payload.ShipSymbol = ship_symbol
+	payload.TradeSymbol = trade_symbol
+	payload.Units = units
+	fmt.Println(payload)
+	payloadJSON, err := json.Marshal(payload)
+	PanicOnError(err)
+	response_string := BasicPost(endpoint, payloadJSON)
+
+	data_container := DeliverCargoToContractResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("[ERROR] DeliverCargoToContract: failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
+	}
 	return data_container.Data
 }

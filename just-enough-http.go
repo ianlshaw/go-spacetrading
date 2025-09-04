@@ -38,7 +38,7 @@ func BasicGet(endpoint string) (response_body string) {
 
 	error_container := ErrorResponse{}
 	if err := json.Unmarshal(body, &error_container); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] BasicGet failed to unmarshal")
 	}
 
 	// If the error["message"] field exists, the game returned an error.
@@ -84,7 +84,7 @@ func BasicPost(endpoint string, payload []byte) (response_body string) {
 
 	error_container := ErrorResponse{}
 	if err := json.Unmarshal(body, &error_container); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] BasicPost failed to unmarshal")
 	}
 
 	// If the error["message"] field exists, the game returned an error.

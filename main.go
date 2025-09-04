@@ -44,7 +44,7 @@ func populate_base_system_symbol() {
 
 	response_typed := ListShipsResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &response_typed); err != nil {
-		fmt.Println("[ERROR] failed to unmarshal")
+		fmt.Println("[ERROR] populate_base_system_symbol failed to unmarshal")
 	}
 	base_system_symbol = response_typed.Data[0].Nav.SystemSymbol
 }

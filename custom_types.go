@@ -229,6 +229,15 @@ type GetMarketResponseData struct {
 	Data Market `json:"data"`
 }
 
+type DeliverCargoToContractResponseData struct {
+	Data DeliverCargoToContractResponse `json:"data"`
+}
+
+type DeliverCargoToContractResponse struct {
+	Contract Contract `json:"contract"`
+	Cargo Cargo `json:"cargo"`
+}
+
 type Market struct {
 	Symbol       string        `json:"symbol"`
 	Exports      []Exchange    `json:"exports"`
@@ -420,6 +429,12 @@ type OrbitShipResponse struct {
 }
 
 type EmptyPayload struct {
+}
+
+type DeliverCargoToContractPayload struct {
+	ShipSymbol  string `json:"shipSymbol"`
+	TradeSymbol string `json:"tradeSymbol"`
+	Units int64 `json:"units"`
 }
 
 type DockShipResponseData struct {

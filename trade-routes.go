@@ -5,6 +5,8 @@ import (
 	"sort"
 )
 
+// TODO
+// This should be a query which accepts a market, it's incovation in the context of trade_routes should pass the relavent market
 func HowManyTradeGoodCanIAfford(agent Agent, trade_good TradeGood) int64 {
 	fmt.Println("[DEBUG] HowManyTradeGoodCanIAfford")
 	fmt.Print("[DEBUG] agent.Credits = ")
