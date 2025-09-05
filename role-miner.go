@@ -3,7 +3,7 @@ package main
 import "fmt"
 
 func ApplyRoleMiner() {
-	fmt.Println("ApplyRoleMiner")
+	fmt.Println("[DEBUG] ApplyRoleMiner")
 
 	// if contract_is_minable {
 

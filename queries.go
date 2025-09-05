@@ -173,12 +173,36 @@ func WaypointFromWaypointSymbol(waypoint_slice []Waypoint, waypoint_symbol_to_ch
 	return default_waypoint
 }
 
-func IsContractNegotiated(contracts []Contract) bool {
-	return len(contracts) > 0
+func IsNewContractRequired(contracts []Contract) bool {
+	// if we do not have any contracts
+	if len(contracts) == 0 {
+		fmt.Println("[DEBUG] we have 0 contracts")
+		return true
+	}
+
+	// or all contracts are fulfilled
+	number_of_unfulfilled_contracts := 0
+	for _, contract := range contracts {
+		if !IsContractFulfilled(contract) {
+			fmt.Println("[DEBUG] unfulfilled contract found")
+			number_of_unfulfilled_contracts++
+		}
+	}
+
+	if number_of_unfulfilled_contracts == 0 {
+		return true
+	}
+
+	fmt.Println("[DEBUG] new contract is not required")
+	return false
 }
 
 func IsContractAccepted(contract Contract) bool {
 	return contract.Accepted
+}
+
+func IsContractFulfilled(contract Contract) bool {
+	return contract.Fulfilled
 }
 
 func CanContractBeCompleted(contract Contract) bool {
@@ -219,4 +243,32 @@ func ContractRemainingRequired(contract Contract) int64 {
 	units_required := contract.Terms.Deliver[0].UnitsRequired
 	units_fulfilled := contract.Terms.Deliver[0].UnitsFulfilled
 	return units_required - units_fulfilled
+}
+
+func IsShipAtFactionWaypoint(ship Ship, waypoints []Waypoint, faction string) bool {
+	waypoint := WaypointFromWaypointSymbol(waypoints, ship.Nav.WaypointSymbol)
+	return waypoint.Faction.Symbol == faction
+}
+
+func ClosestFactionWaypointToShip(ship Ship, waypoints []Waypoint) Waypoint {
+	faction := ship.Registration.FactionSymbol
+	faction_waypoints := make([]Waypoint, 0)
+	for _, waypoint := range waypoints {
+		if waypoint.Faction.Symbol == faction {
+			faction_waypoints = append(faction_waypoints, waypoint)
+		}
+	}
+	ship_waypoint := WaypointFromWaypointSymbol(waypoints, ship.Nav.WaypointSymbol)
+	return ClosestWaypointFromSliceToWaypoint(faction_waypoints, ship_waypoint)
+}
+
+func ActiveContract(contracts []Contract) Contract {
+	default_contract := Contract{}
+	for _, contract := range contracts {
+		if contract.Fulfilled == false {
+			return contract
+		}
+	}
+	fmt.Println("[ERROR] returning null contract - this should never happen - Please call Theo on 1800-bug")
+	return default_contract
 }

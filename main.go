@@ -64,7 +64,7 @@ func ShipRoleDecider(
 	callsign string) {
 
 	if ship.Registration.Role == "COMMAND" {
-		ApplyRoleCommand(ship, all_markets_in_system, markets_to_cover, trade_routes, callsign)
+		ApplyRoleCommand(ship, all_waypoints_in_system, all_markets_in_system, markets_to_cover, trade_routes, callsign)
 		return
 	}
 
@@ -211,6 +211,11 @@ func main() {
 		}
 	}
 
+	for _, waypoint := range marketplace_waypoints {
+		//AddWaypointToSystemGraph(waypoint)
+		PopulateMarketplaceGraphDistancesForWaypoint(marketplace_waypoints, waypoint)
+	}
+
 	// each unique market waypoint symbol (unordered)
 	markets_to_cover := make(map[string]string)
 
@@ -293,7 +298,7 @@ func main() {
 		// inform user of http calls/turn to ease rate limit issues
 		fmt.Print("[INFO] http calls: ")
 		fmt.Print(http_calls / 2)
-		fmt.Print("/m")
+		fmt.Println("/m")
 
 
 		// reset call counter

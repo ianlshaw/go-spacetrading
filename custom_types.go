@@ -424,6 +424,15 @@ type OrbitShipResponseData struct {
 	Data OrbitShipResponse `json:"data"`
 }
 
+type FulfillContractResponseData struct {
+	Data FulfillContractResponse `json:"data"`
+}
+
+type FulfillContractResponse struct {
+	Contract Contract `json:"contract"`
+	Agent Agent `json:"agent"`
+}
+
 type OrbitShipResponse struct {
 	Nav Nav `json:"nav"`
 }

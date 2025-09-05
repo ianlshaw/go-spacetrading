@@ -17,7 +17,7 @@ func ApplyRoleBuyer(
 	agent Agent) {
 
 	fmt.Println("[DEBUG] ApplyRoleBuyer")
-
+	return
 	if ship.Nav.Status == "IN_TRANSIT" {
 		fmt.Println("[DEBUG] IN_TRANSIT TO " + ship.Nav.Route.Destination.Symbol)
 		fmt.Println("[DEBUG] Arrival " + ship.Nav.Route.Arrival)

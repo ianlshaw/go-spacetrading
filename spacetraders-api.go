@@ -120,7 +120,7 @@ func NavigateShip(ship_symbol string, waypoint_symbol string) NavigateShipRespon
 }
 
 func OrbitShip(ship_symbol string) OrbitShipResponse {
-	//fmt.Println("[DEBUG] OrbitShip")
+	fmt.Println("[DEBUG] OrbitShip " + ship_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/orbit"
 	payload := &EmptyPayload{}
 	payloadJSON, err := json.Marshal(payload)
@@ -372,22 +372,11 @@ func SiphonResources(ship_symbol string) SiphonResourcesResponse {
 
 func DeliverCargoToContract(contract_id string, ship_symbol string, trade_symbol string, units int64) DeliverCargoToContractResponse {
 	fmt.Println("[DEBUG] DeliverCargoToContract")
-
-	fmt.Println("contract_id")
-	fmt.Println(contract_id)
-	fmt.Println("ship_symbol")
-	fmt.Println(ship_symbol)
-	fmt.Println("trade_symbol")
-	fmt.Println(trade_symbol)
-	fmt.Println("units")
-	fmt.Println(units)
-
 	endpoint := "my/contracts/" + contract_id + "/deliver"
 	payload := &DeliverCargoToContractPayload{}
 	payload.ShipSymbol = ship_symbol
 	payload.TradeSymbol = trade_symbol
 	payload.Units = units
-	fmt.Println(payload)
 	payloadJSON, err := json.Marshal(payload)
 	PanicOnError(err)
 	response_string := BasicPost(endpoint, payloadJSON)
@@ -398,5 +387,23 @@ func DeliverCargoToContract(contract_id string, ship_symbol string, trade_symbol
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
+	return data_container.Data
+}
+
+func FulfillContract(contract_id string) FulfillContractResponse {
+	fmt.Println("[DEBUG] FulfillContract")
+	endpoint := "my/contracts/" + contract_id + "/fulfill"
+	payload := &EmptyPayload{}
+	payloadJSON, err := json.Marshal(payload)
+	PanicOnError(err)
+	response_string := BasicPost(endpoint, payloadJSON)
+	data_container := FulfillContractResponseData{}
+
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("[ERROR] FulfillContract failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
+	}
+
 	return data_container.Data
 }
