@@ -81,6 +81,8 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 		fmt.Println(contract)
 	}
 
+	ship_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, ship.Nav.WaypointSymbol)
+
 	// do we need to negotiate a contract?
 	// do we have 0 contracts
 	// is our current contract fulfilled
@@ -168,6 +170,7 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 				fmt.Println("[INFO] " + market_symbol.Symbol)
 			}
 			closest_market := ClosestMarketSellingTradeGood(ship, contract_delivery_trade_good_symbol, markets_with_contract_trade_good)
+			closest_market_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, closest_market.Symbol)
 			if IsShipAlreadyAtWaypoint(ship, closest_market.Symbol){
 				if IsShipCargoEmpty(ship) {
 					if !IsShipDocked(ship) {
@@ -198,9 +201,21 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 			} else {
 				fmt.Println("[INFO] Heading to marketplace selling contract goods")
 				if IsShipDocked(ship) {
+					RefuelShip(ship.Symbol)
 					OrbitShip(ship.Symbol)
 				}
-				NavigateShip(ship.Symbol, closest_market.Symbol)
+				// calculate path
+				fmt.Println(ship.Nav.WaypointSymbol)
+				fmt.Println(len(SystemGraph))
+				fmt.Println(len(MarketplaceGraph))
+				for _, graph_row := range MarketplaceGraph {
+					fmt.Println(graph_row)
+					for _, v := range graph_row {
+						fmt.Println(v)
+					}
+				}
+				path, _ := CalculateShortestPathBetweenTwoWaypoints(MarketplaceGraph, ship_waypoint, closest_market_waypoint)
+				FollowPath(ship, path)				
 			}
 		}
 	}

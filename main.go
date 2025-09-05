@@ -160,7 +160,7 @@ func main() {
 
 	for _, waypoint := range all_waypoints_in_system {
 		//AddWaypointToSystemGraph(waypoint)
-		PopulateSystemGraphDistancesForWaypoint(all_waypoints_in_system, waypoint)
+		PopulateGraphDistancesForWaypoint(SystemGraph, all_waypoints_in_system, waypoint)
 	}
 
 	if !DoesShipyardsFileExist(CALLSIGN) {
@@ -213,7 +213,7 @@ func main() {
 
 	for _, waypoint := range marketplace_waypoints {
 		//AddWaypointToSystemGraph(waypoint)
-		PopulateMarketplaceGraphDistancesForWaypoint(marketplace_waypoints, waypoint)
+		PopulateGraphDistancesForWaypointWithMaximum(MarketplaceGraph, marketplace_waypoints, waypoint, 400)
 	}
 
 	// each unique market waypoint symbol (unordered)

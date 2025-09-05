@@ -5,7 +5,7 @@ import "fmt"
 func ApplyRoleSiphoner(ship Ship, all_waypoints_in_system []Waypoint) {
 	return
 	fmt.Println(ship.Fuel)
-	AddWaypointToSystemGraph(all_waypoints_in_system[0])
+	AddWaypointToGraph(SystemGraph, all_waypoints_in_system[0])
 
 	fmt.Println("ApplyRoleSiphoner")
 	explosive_gas_waypoints := WaypointsWithTrait(all_waypoints_in_system, "EXPLOSIVE_GASES")
@@ -23,7 +23,7 @@ func ApplyRoleSiphoner(ship Ship, all_waypoints_in_system []Waypoint) {
 		if IsShipDocked(ship) {
 			OrbitShip(ship.Symbol)
 		}
-		CalculateShortestPathBetweenTwoWaypoints(current_waypoint, closest_explosive_gas_waypoint)
+		CalculateShortestPathBetweenTwoWaypoints(SystemGraph, current_waypoint, closest_explosive_gas_waypoint)
 		NavigateShip(ship.Symbol, closest_explosive_gas_waypoint.Symbol)
 	}
 	// Go to closest gas deposit
