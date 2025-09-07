@@ -21,7 +21,7 @@ type ListContractsResponseData struct {
 }
 
 type NegotiateContractResponseData struct {
-	Data []Contract `json:"data"`
+	Data Contract `json:"data"`
 }
 
 type AcceptContractResponseData struct {

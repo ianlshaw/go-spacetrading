@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 )
 
 // Agents
@@ -67,7 +68,7 @@ func NegotiateContract(ship_symbol string) Contract {
 		fmt.Println(err)
 	}
 
-	return data_container.Data[0]
+	return data_container.Data
 }
 
 func AcceptContract(contract_id string) Contract{
@@ -102,7 +103,7 @@ func ListShips() (ships []Ship) {
 	return data_container.Data
 }
 
-func NavigateShip(ship_symbol string, waypoint_symbol string) NavigateShipResponse {
+func NavigateShip(ship_symbol string, waypoint_symbol string) (NavigateShipResponse, time.Time) {
 	fmt.Println("[DEBUG] NavigateShip " + ship_symbol + " " + waypoint_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/navigate"
 	payload := &NavigateShipPayload{}
@@ -115,7 +116,8 @@ func NavigateShip(ship_symbol string, waypoint_symbol string) NavigateShipRespon
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] NavigateShip failed to unmarshal")
 	}
-	return data_container.Data
+	arrival_time := StringToTimestamp(data_container.Data.Nav.Route.Arrival)
+	return data_container.Data, arrival_time
 
 }
 

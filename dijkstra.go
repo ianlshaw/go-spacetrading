@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/albertorestifo/dijkstra"
 	"slices"
+	"time"
 )
 
 var SystemGraph dijkstra.Graph = make(dijkstra.Graph)
@@ -37,20 +38,29 @@ func PopulateGraphDistancesForWaypointWithMaximum(graph dijkstra.Graph, all_wayp
 
 func CalculateShortestPathBetweenTwoWaypoints(Graph dijkstra.Graph, SourceWaypoint Waypoint, DestinationWaypoint Waypoint) (resultant_path []string, resultant_cost int) {
 	path, cost, _ := Graph.Path(SourceWaypoint.Symbol, DestinationWaypoint.Symbol) // skipping error handling
-	fmt.Printf("path: %v, cost: %v", path, cost)
+	//fmt.Printf("path: %v, cost: %v", path, cost)
 	return path, cost
 }
 
-func FollowPath(ship Ship, path []string) {
+func FollowPath(ship Ship, path []string) time.Time {
 	ship_waypoint_symbol := ship.Nav.WaypointSymbol
 	last_waypoint_in_path := path[len(path)-1]
 	if ship_waypoint_symbol == last_waypoint_in_path {
 		fmt.Println("[ERROR] Already at path final destination. FollowPath shouldnt have been called")
-		return
+		return time.Now()
 	}
+
+	if !IsShipDocked(ship){
+		DockShip(ship.Symbol)
+	}
+
+	RefuelShip(ship.Symbol)
+
+	OrbitShip(ship.Symbol)
 
 	current_waypoint_path_index := slices.Index(path, ship_waypoint_symbol)
 	target_waypoint_path_index := current_waypoint_path_index + 1
 	target_waypoint := path[target_waypoint_path_index]
-	NavigateShip(ship.Symbol, target_waypoint)
+	_, arrival_time := NavigateShip(ship.Symbol, target_waypoint)
+	return arrival_time
 }

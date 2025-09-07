@@ -3,6 +3,7 @@ package main
 import (
 	"math"
 	"fmt"
+	"time"
 )
 
 func IsShipAlreadyAtWaypoint(ship_to_test Ship, waypoint_symbol string) bool {
@@ -223,12 +224,29 @@ func ClosestMarketSellingTradeGood(ship Ship, trade_good string, markets []Marke
 	return closest_market
 }
 
+func ClosestMarketToWaypoint(target_waypoint Waypoint, all_waypoints []Waypoint, markets []Market) Market {
+	shortest_distance := 9001
+	closest_market := Market{}
+	for _, market := range markets {
+		market_waypoint := WaypointFromWaypointSymbol(all_waypoints, market.Symbol)
+		distance := DistanceBetweenTwoWaypoints(target_waypoint, market_waypoint)
+		if distance < shortest_distance {
+			shortest_distance = distance
+			closest_market = market
+		}
+	}
+	fmt.Print("[DEBUG] Closest market to " + target_waypoint.Symbol + " is ")
+	fmt.Print(closest_market.Symbol + "  which is ")
+	fmt.Print(shortest_distance)
+	fmt.Print(" away from it.")
+	return closest_market
+}
+
 func TradeGoodFromMarket(trade_good_symbol string, market Market) TradeGood {
 	default_trade_good := TradeGood{}
 	for _, trade_good := range market.TradeGoods {
 		if trade_good.Symbol == trade_good_symbol {
 			fmt.Println("[DEBUG] TradeGoodFromMarket: Trade good found")
-			fmt.Println(trade_good)
 			return trade_good
 		}
 	}
@@ -271,4 +289,14 @@ func ActiveContract(contracts []Contract) Contract {
 	}
 	fmt.Println("[ERROR] returning null contract - this should never happen - Please call Theo on 1800-bug")
 	return default_contract
+}
+
+func StringToTimestamp(input_string string) time.Time {
+	t, err := time.Parse(time.RFC3339, input_string)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(t)
+	return(t)
 }

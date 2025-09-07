@@ -49,6 +49,8 @@ func populate_base_system_symbol() {
 	base_system_symbol = response_typed.Data[0].Nav.SystemSymbol
 }
 
+
+
 func ShipRoleDecider(
 	ship Ship,
 	all_waypoints_in_system []Waypoint,
@@ -61,11 +63,11 @@ func ShipRoleDecider(
 	trade_routes []TradeRoute,
 	ship_list []Ship,
 	agent Agent,
-	callsign string) {
+	callsign string) time.Time {
 
 	if ship.Registration.Role == "COMMAND" {
-		ApplyRoleCommand(ship, all_waypoints_in_system, all_markets_in_system, markets_to_cover, trade_routes, callsign)
-		return
+		next_execution_at := ApplyRoleCommand(ship, all_waypoints_in_system, all_markets_in_system, markets_to_cover, trade_routes, callsign)
+		return next_execution_at
 	}
 
 	all_probes := []Ship{}
@@ -76,44 +78,43 @@ func ShipRoleDecider(
 		}
 	}
 
-	buyer_ship := all_probes[0]
+	//buyer_ship := all_probes[0]
 
-	if ship.Registration.Role == "SATELLITE" {
-		if ship.Symbol == buyer_ship.Symbol {
-
-			ApplyRoleBuyer(
-				ship,
-				ship_list,
-				markets_to_cover,
-				probe_shipyard_waypoints,
-				mining_drone_shipyard_waypoints,
-				siphon_drone_shipyard_waypoints,
-				surveyor_shipyard_waypoints,
-				agent)
-			return
-		}
-		ApplyRoleSatellite(ship, markets_to_cover, trade_routes)
-		return
-	}
-
-	if ship.Registration.Role == "EXCAVATOR" {
-		for _, mount := range ship.Mounts {
-			if mount.Symbol == "MOUNT_MINING_LASER_I" {
-				ApplyRoleMiner()
-				return
-			}
-
-			if mount.Symbol == "MOUNT_GAS_SIPHON_I" {
-				ApplyRoleSiphoner(ship, all_waypoints_in_system)
-				return
-			}
-		}
-	}
-
-	if ship.Registration.Role == "SURVEYOR" {
-		ApplyRoleSurveyor()
-		return
-	}
+	//if ship.Registration.Role == "SATELLITE" {
+	//	if ship.Symbol == buyer_ship.Symbol {
+	//		ApplyRoleBuyer(
+	//			ship,
+	//			ship_list,
+	//			markets_to_cover,
+	//			probe_shipyard_waypoints,
+	//			mining_drone_shipyard_waypoints,
+	//			siphon_drone_shipyard_waypoints,
+	//			surveyor_shipyard_waypoints,
+	//			agent)
+	//		return
+	//	}
+	//	ApplyRoleSatellite(ship, markets_to_cover, trade_routes)
+	//	return
+	//}
+	//if ship.Registration.Role == "EXCAVATOR" {
+	//	for _, mount := range ship.Mounts {
+	//		if mount.Symbol == "MOUNT_MINING_LASER_I" {
+	//			ApplyRoleMiner()
+	//			return
+	//		}
+//
+	//		if mount.Symbol == "MOUNT_GAS_SIPHON_I" {
+	//			ApplyRoleSiphoner(ship, all_waypoints_in_system, all_markets_in_system)
+	//			return
+	//		}
+	//	}
+	//}
+	//if ship.Registration.Role == "SURVEYOR" {
+	//	ApplyRoleSurveyor()
+	//	return
+	//}
+	fmt.Println("[ERROR] ShipRoleDecider detected uncaught ship")
+	return time.Now()
 }
 
 func main() {
@@ -214,6 +215,7 @@ func main() {
 	for _, waypoint := range marketplace_waypoints {
 		//AddWaypointToSystemGraph(waypoint)
 		PopulateGraphDistancesForWaypointWithMaximum(MarketplaceGraph, marketplace_waypoints, waypoint, 400)
+		PopulateGraphDistancesForWaypointWithMaximum(SiphonerMarketplaceGraph, marketplace_waypoints, waypoint, 80)
 	}
 
 	// each unique market waypoint symbol (unordered)
@@ -291,6 +293,7 @@ func main() {
 				CALLSIGN)
 			// turns are always turn_length (default 2 minutes) but as we add ships they fill the time between turns
 			time.Sleep(time.Duration(wait_between_ships) * time.Second)
+
 		}
 
 		// outro
@@ -304,5 +307,8 @@ func main() {
 		// reset call counter
 		http_calls = 0
 		turn_number++
+
+		// Global scheduling delay
+		time.Sleep(15 * time.Second)
 	}
 }

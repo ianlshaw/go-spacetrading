@@ -145,8 +145,7 @@ func ApplyRoleBuyer(
 				OrbitShip(ship.Symbol)
 			}
 			fmt.Println("[INFO] " + ship.Symbol + " Heading to probe shipyard")
-			navigate_ship_result := NavigateShip(ship.Symbol, probe_ship_shipyard_waypoint_symbol)
-			fmt.Println(navigate_ship_result)
+			NavigateShip(ship.Symbol, probe_ship_shipyard_waypoint_symbol)
 		}
 	}
 }
