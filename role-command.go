@@ -173,8 +173,9 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 	}
 	// Again we waste a turn here, we should be navigating by now.
 	// Do we have any contract good in our hold?
+
 	contract_good_in_hold := CountTradeGoodCargo(ship, contract_delivery_trade_good_symbol)
-	if contract_good_in_hold > 0 {
+	if IsShipCargoFull(ship) && contract_good_in_hold > 0 {
 		fmt.Println("[INFO] We have contract goods in our hold")
 		if IsShipAlreadyAtWaypoint(ship, contract_delivery_waypoint_symbol) {
 			fmt.Println("[INFO] Already at contract delivery waypoint")
@@ -203,6 +204,13 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 			}
 			// This wastes a turn, it could Navigate immidiately after Delivering
 		} else {
+			if !IsShipLocatedInGraph(ship, MarketplaceGraph) {
+				current_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, ship.Nav.WaypointSymbol)
+				closest_market := ClosestMarketToWaypoint(current_waypoint, all_waypoints_in_system, all_markets_in_system)
+				closest_market_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, closest_market.Symbol)
+				_, arrival_time := NavigateShip(ship.Symbol, closest_market_waypoint.Symbol)
+				return arrival_time
+			}
 			// have contract goods in hold
 			// not already at delivery waypoint
 			fmt.Println("[INFO] Heading to contract destination.")
@@ -211,7 +219,6 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 			arrival_time := FollowPath(ship, path)
 			return arrival_time
 		}
-
 	// contract_good_in_hold == 0
 	} else {
 		// does not have any contract goods in hold
@@ -219,7 +226,7 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 		// find closest out of a []Market
 		markets_with_contract_trade_good := MarketplacesWhichSellTradeGood(all_markets_in_system, contract_delivery_trade_good_symbol)
 		if len(markets_with_contract_trade_good) == 0 {
-			fmt.Println("[ERROR] no marketplace sells " + contract_delivery_trade_good_symbol)
+			fmt.Println("[INFO] no marketplace sells " + contract_delivery_trade_good_symbol)
 			if contract_delivery_trade_good_symbol == "LIQUID_HYDROGEN" || contract_delivery_trade_good_symbol == "LIQUID_NITROGEN" {
 				expiration := ApplyRoleSiphoner(ship, all_waypoints_in_system, all_markets_in_system, contract)
 				return expiration

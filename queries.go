@@ -238,7 +238,7 @@ func ClosestMarketToWaypoint(target_waypoint Waypoint, all_waypoints []Waypoint,
 	fmt.Print("[DEBUG] Closest market to " + target_waypoint.Symbol + " is ")
 	fmt.Print(closest_market.Symbol + "  which is ")
 	fmt.Print(shortest_distance)
-	fmt.Print(" away from it.")
+	fmt.Println(" away from it.")
 	return closest_market
 }
 

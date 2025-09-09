@@ -1,21 +1,29 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
-func ApplyRoleSatellite(ship Ship, markets_to_cover map[string]string, trade_routes []TradeRoute) {
+func ApplyRoleSatellite(ship Ship, markets_to_cover map[string]string, trade_routes []TradeRoute) time.Time {
 
 	fmt.Println("[INFO] ApplyRoleSatellite " + ship.Symbol)
 
+
+	//
+	return time.Now().Add(3 * time.Hour)
+	//
+
 	if !SatelliteToMarketAssignmentComplete(markets_to_cover) {
 		fmt.Println("[INFO] Satellites have not yet been assigned to markets. Waiting...")
-		return
+		return time.Now().Add(5 * time.Minute)
 	}
 
 	if ship.Nav.Status == "IN_TRANSIT" {
 		fmt.Println("[INFO] IN_TRANSIT TO " + ship.Nav.Route.Destination.Symbol)
 		fmt.Println("[INFO] Arrival " + ship.Nav.Route.Arrival)
-		fmt.Println()
-		return
+		fmt.Println("[ERROR] ApplyRoleSatellite SHIP IN TRANSIT THIS SHOULD NOT HAPPEN")
+		return time.Now().Add(1 * time.Minute)
 	}
 
 	// find my assignment waypoint
@@ -63,5 +71,7 @@ func ApplyRoleSatellite(ship Ship, markets_to_cover map[string]string, trade_rou
 		fmt.Println("[DEBUG] assigned_market_waypoint: " + assigned_market_waypoint)
 		NavigateShip(ship.Symbol, assigned_market_waypoint)
 	}
-
+	fmt.Print("[ERROR] " + ship.Symbol)
+	fmt.Println(" uncaught branch, returning default 5 minute delay")
+	return time.Now().Add(5 * time.Minute)
 }

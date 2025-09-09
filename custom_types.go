@@ -180,6 +180,10 @@ type ListWaypointsInSystemResponseData struct {
 	Meta Meta       `json:"meta"`
 }
 
+type GetShipResponseData struct {
+	Data Ship `json:"data"`
+}
+
 type System struct {
 	Symbol        string     `json:"symbol"`
 	SectorSymbol  string     `json:"sectorSymbol"`

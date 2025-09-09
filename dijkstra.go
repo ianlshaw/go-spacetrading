@@ -60,3 +60,21 @@ func FollowPath(ship Ship, path []string) time.Time {
 	_, arrival_time := NavigateShip(ship.Symbol, target_waypoint)
 	return arrival_time
 }
+
+func IsShipLocatedInGraph(ship Ship, graph dijkstra.Graph) bool {
+	for waypoint_symbol := range graph {
+		if ship.Nav.WaypointSymbol == waypoint_symbol {
+			return true
+		}
+	}
+	return false
+}
+
+func IsWaypointInGraph(waypoint Waypoint, graph dijkstra.Graph) bool {
+	for waypoint_symbol := range graph {
+		if waypoint.Symbol == waypoint_symbol {
+			return true
+		}
+	}
+	return false
+}

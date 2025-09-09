@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 var desired_number_of_ship_mining_drone = 1
 var desired_number_of_ship_siphon_drone = 1
@@ -14,14 +17,19 @@ func ApplyRoleBuyer(
 	mining_ship_shipyard_waypoints []Waypoint,
 	siphon_ship_shipyard_waypoints []Waypoint,
 	survey_ship_shipyard_waypoints []Waypoint,
-	agent Agent) {
+	agent Agent) time.Time {
 
 	fmt.Println("[DEBUG] ApplyRoleBuyer")
-	return
+
+	//
+	return time.Now().Add(3 * time.Hour)
+	//
+
 	if ship.Nav.Status == "IN_TRANSIT" {
 		fmt.Println("[DEBUG] IN_TRANSIT TO " + ship.Nav.Route.Destination.Symbol)
 		fmt.Println("[DEBUG] Arrival " + ship.Nav.Route.Arrival)
-		return
+		fmt.Println("[ERROR] ApplyRoleBuyer Nav status IN_TRANSIT - THIS SHOULD NOT HAPPEN")
+		return time.Now().Add(5 * time.Minute)
 	}
 
 	current_waypoint := GetWaypoint(base_system_symbol, ship.Nav.WaypointSymbol)
@@ -50,9 +58,9 @@ func ApplyRoleBuyer(
 			if IsShipDocked(ship) {
 				OrbitShip(ship.Symbol)
 			}
-			NavigateShip(ship.Symbol, closest_shipyard_waypoint.Symbol)
+			_, arrival_time := NavigateShip(ship.Symbol, closest_shipyard_waypoint.Symbol)
+			return arrival_time
 		}
-		return
 	}
 
 	number_of_ship_surveyor := CountShipsByMount(ship_list, "MOUNT_SURVEYOR_I")
@@ -72,9 +80,9 @@ func ApplyRoleBuyer(
 			if IsShipDocked(ship) {
 				OrbitShip(ship.Symbol)
 			}
-			NavigateShip(ship.Symbol, closest_shipyard_waypoint.Symbol)
+			_, arrival_time := NavigateShip(ship.Symbol, closest_shipyard_waypoint.Symbol)
+			return arrival_time
 		}
-		return
 	}
 
 	number_of_ship_siphon_drone := CountShipsByMount(ship_list, "MOUNT_GAS_SIPHON_I")
@@ -94,9 +102,9 @@ func ApplyRoleBuyer(
 			if IsShipDocked(ship) {
 				OrbitShip(ship.Symbol)
 			}
-			NavigateShip(ship.Symbol, closest_shipyard_waypoint.Symbol)
+			_, arrival_time := NavigateShip(ship.Symbol, closest_shipyard_waypoint.Symbol)
+			return arrival_time
 		}
-		return
 	}
 
 	// We dont nessesarily want a limit on this unlike the others
@@ -104,7 +112,7 @@ func ApplyRoleBuyer(
 	credits := agent.Credits
 	if credits < 100000 {
 		fmt.Println("[INFO] Not enough money to buy more satellites")
-		return
+		return time.Now().Add(1 * time.Hour)
 	}
 
 	if number_of_ship_probe < len(markets_to_cover) {
@@ -148,4 +156,7 @@ func ApplyRoleBuyer(
 			NavigateShip(ship.Symbol, probe_ship_shipyard_waypoint_symbol)
 		}
 	}
+	fmt.Print("[ERROR] ApplyRoleBuyer" + ship.Symbol)
+	fmt.Print(" uncaught branch, returning default 5 minute delay")
+	return time.Now().Add(5 * time.Minute)
 }

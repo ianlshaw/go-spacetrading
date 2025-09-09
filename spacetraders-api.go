@@ -103,6 +103,16 @@ func ListShips() (ships []Ship) {
 	return data_container.Data
 }
 
+func GetShip(ship_symbol string) Ship {
+	endpoint := "my/ships/" + ship_symbol
+	response_string := BasicGet(endpoint)
+	data_container := GetShipResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("[ERROR] GetShip failed to unmarshal")
+	}
+	return data_container.Data
+}
+
 func NavigateShip(ship_symbol string, waypoint_symbol string) (NavigateShipResponse, time.Time) {
 	fmt.Println("[DEBUG] NavigateShip " + ship_symbol + " " + waypoint_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/navigate"
@@ -356,6 +366,7 @@ func GetConstructionSite(system_symbol string, waypoint_symbol string) Construct
 }
 
 func SiphonResources(ship_symbol string) SiphonResourcesResponse {
+	fmt.Println("[DEBUG] SiphonResources " + ship_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/siphon"
 	payload := &EmptyPayload{}
 	payloadJSON, err := json.Marshal(payload)
@@ -368,7 +379,9 @@ func SiphonResources(ship_symbol string) SiphonResourcesResponse {
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
-
+	fmt.Print("[INFO] " + ship_symbol + " siphoned ")
+	fmt.Print(data_container.Data.Siphon.Yield.Units)
+	fmt.Println(" " + data_container.Data.Siphon.Yield.Symbol)	
 	return data_container.Data
 }
 
@@ -411,19 +424,29 @@ func FulfillContract(contract_id string) FulfillContractResponse {
 }
 
 func JettisonCargo(ship Ship, trade_good_symbol string, units int64) Cargo {
-	fmt.Println("[DEBUG] JettisonCargo")
-	endpoint := "my/ships/jettison"
+	fmt.Print("[DEBUG] JettisonCargo " + trade_good_symbol + " ")
+	fmt.Println(units)
+	endpoint := "my/ships/" + ship.Symbol + "/jettison"
 	payload := &JettisonCargoPayload{}
+	payload.TradeSymbol = trade_good_symbol
+	payload.Units = units
 	payloadJSON, err := json.Marshal(payload)
 	PanicOnError(err)
 	response_string := BasicPost(endpoint, payloadJSON)
 	data_container := JettisonCargoResponseData{}
+
+	fmt.Println(response_string)
 
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] JettisonCargo failed to unmarshal")
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
+
+	fmt.Print("[INFO] " + ship.Symbol)
+	fmt.Print(" Jettisoned ")
+	fmt.Print(units)
+	fmt.Println(" " + trade_good_symbol)
 
 	return data_container.Data.Cargo
 }
