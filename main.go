@@ -49,7 +49,15 @@ func populate_base_system_symbol() {
 	base_system_symbol = response_typed.Data[0].Nav.SystemSymbol
 }
 
+func runShip(ship Ship) {
 
+	// do something
+
+	// populate expiration
+
+	expiration := time.Now()
+	time.Sleep(time.Until(expiration))
+}
 
 func ShipRoleDecider(
 	ship Ship,

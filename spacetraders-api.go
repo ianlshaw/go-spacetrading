@@ -41,8 +41,8 @@ func GetAgent() Agent {
 }
 
 // Contracts
-func ListContracts() (contracts []Contract) {
-	endpoint := "my/contracts"
+func ListContracts(page string, limit string) (contracts []Contract, meta Meta) {
+	endpoint := "my/contracts?page=" + page + "&limit=" + limit
 	response_string := BasicGet(endpoint)
 	data_container := ListContractsResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
@@ -50,7 +50,7 @@ func ListContracts() (contracts []Contract) {
 		//fmt.Println(response_string)
 		fmt.Println(err)
 	}
-	return data_container.Data
+	return data_container.Data, data_container.Meta
 }
 
 func NegotiateContract(ship_symbol string) Contract {
@@ -71,7 +71,7 @@ func NegotiateContract(ship_symbol string) Contract {
 	return data_container.Data
 }
 
-func AcceptContract(contract_id string) Contract{
+func AcceptContract(contract_id string) Contract {
 	fmt.Println("[DEBUG] AcceptContract")
 	endpoint := "my/contracts/" + contract_id + "/accept"
 	payload := &EmptyPayload{}
@@ -408,4 +408,22 @@ func FulfillContract(contract_id string) FulfillContractResponse {
 	}
 
 	return data_container.Data
+}
+
+func JettisonCargo(ship Ship, trade_good_symbol string, units int64) Cargo {
+	fmt.Println("[DEBUG] JettisonCargo")
+	endpoint := "my/ships/jettison"
+	payload := &JettisonCargoPayload{}
+	payloadJSON, err := json.Marshal(payload)
+	PanicOnError(err)
+	response_string := BasicPost(endpoint, payloadJSON)
+	data_container := JettisonCargoResponseData{}
+
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("[ERROR] JettisonCargo failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
+	}
+
+	return data_container.Data.Cargo
 }

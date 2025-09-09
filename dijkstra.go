@@ -49,15 +49,11 @@ func FollowPath(ship Ship, path []string) time.Time {
 		fmt.Println("[ERROR] Already at path final destination. FollowPath shouldnt have been called")
 		return time.Now()
 	}
-
 	if !IsShipDocked(ship){
 		DockShip(ship.Symbol)
 	}
-
 	RefuelShip(ship.Symbol)
-
 	OrbitShip(ship.Symbol)
-
 	current_waypoint_path_index := slices.Index(path, ship_waypoint_symbol)
 	target_waypoint_path_index := current_waypoint_path_index + 1
 	target_waypoint := path[target_waypoint_path_index]

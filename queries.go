@@ -293,10 +293,8 @@ func ActiveContract(contracts []Contract) Contract {
 
 func StringToTimestamp(input_string string) time.Time {
 	t, err := time.Parse(time.RFC3339, input_string)
-
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(t)
 	return(t)
 }

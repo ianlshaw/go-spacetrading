@@ -53,6 +53,7 @@ type Cooldown struct {
 	ShipSymbol       string `json:"shipSymbol"`
 	TotalSeconds     int64  `json:"totalSeconds"`
 	RemainingSeconds int64  `json:"remainingSeconds"`
+	Expiration		 string `json:"expiration"`
 }
 
 type Crew struct {
@@ -544,4 +545,17 @@ type RefuelShipResponse struct {
 	Agent       Agent       `json:"agent"`
 	Fuel        Fuel        `json:"fuel"`
 	Transaction Transaction `json:"transaction"`
+}
+
+type JettisonCargoPayload struct {
+	TradeSymbol string `json:"symbol"`
+	Units int64 `json:"units"`
+}
+
+type JettisonCargoResponseData struct {
+	Data JettisonCargoResponse `json:"data"`
+}
+
+type JettisonCargoResponse struct {
+	Cargo Cargo `json:"cargo"`
 }
