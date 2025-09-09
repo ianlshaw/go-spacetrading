@@ -3,6 +3,8 @@ package main
 import (
 	"strconv"
 	"math"
+	"time"
+	"fmt"
 )
 
 func ListAllContracts() []Contract {
@@ -25,4 +27,13 @@ func ListAllContracts() []Contract {
 		}
 	}
 	return all_contracts
+}
+
+func Log(log_level string, message string) {
+	fmt.Print("[")
+	fmt.Print(log_level)
+	fmt.Print("] ")
+	fmt.Print(time.Now().Format(time.RFC3339))
+	fmt.Print(" ")
+	fmt.Println(message)
 }

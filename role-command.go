@@ -66,6 +66,8 @@ func BuyAsManyTradeGoodAsPossible(ship Ship, trade_good TradeGood, market Market
 func BuyX(ship Ship, trade_good TradeGood, market Market, x int64) {
 	// TODO
 	// This will not buy in excess of TradeVolume. It should
+	fmt.Print("[DEBUG] BuyX " + ship.Symbol + ", " + trade_good.Symbol + ", ")
+	fmt.Println(x)
 	maximum_affordable_units := HowManyTradeGoodCanIAfford(GetAgent(), trade_good)
 	fmt.Print("[DEBUG] maximum_affordable_units = ")
 	fmt.Println(maximum_affordable_units)
@@ -80,12 +82,17 @@ func BuyX(ship Ship, trade_good TradeGood, market Market, x int64) {
 		units_to_purchase = space_in_cargo_hold
 	}
 
+	// TO DO - This does not work. It behaves eratically, leaving early or buying too much.
+
 	number_of_purchases_required := float64(units_to_purchase) / float64(trade_good.TradeVolume)
 	rounded_number_of_purchases_required := math.Ceil(number_of_purchases_required)
 
 	for i := 0; float64(i) < rounded_number_of_purchases_required; i++ {
 		if space_in_cargo_hold == 0 {
 			return
+		}
+		if trade_good.TradeVolume < units_to_purchase {
+			units_to_purchase = trade_good.TradeVolume
 		}
 		buy_cargo_result := PurchaseCargo(ship.Symbol, trade_good.Symbol, units_to_purchase)
 		space_in_cargo_hold = buy_cargo_result.Cargo.Capacity - buy_cargo_result.Cargo.Units
@@ -98,8 +105,12 @@ func BuyX(ship Ship, trade_good TradeGood, market Market, x int64) {
 
 func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets_in_system []Market, markets_to_cover map[string]string, trade_routes []TradeRoute, callsign string) time.Time {
 
-	fmt.Println("[INFO] " + ship.Symbol + " " + ship.Registration.Role)
+	fmt.Println("[INFO] " + ship.Symbol + " ApplyRoleCommand")
 	//fmt.Println("[DEBUG] ApplyRoleCommand")
+
+	ship = GetShip(ship.Symbol)
+
+	fmt.Println(ship.Cargo.Inventory)
 
 	if ship.Nav.Status == "IN_TRANSIT" {
 		fmt.Println("[DEBUG] IN_TRANSIT TO " + ship.Nav.Route.Destination.Symbol)
@@ -108,19 +119,11 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 		return next_execution_at
 	}
 
+	// TODO move this elsewhere
 	ship_list := ListShips()
 
 	contracts := ListAllContracts()
-
-	//for _, contract := range contracts {
-	//	fmt.Println(contract)
-	//}
-
 	ship_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, ship.Nav.WaypointSymbol)
-
-	// do we need to negotiate a contract?
-	// do we have 0 contracts
-	// is our current contract fulfilled
 
 	if IsNewContractRequired(contracts) {
 		if IsShipAtFactionWaypoint(ship, all_waypoints_in_system, ship.Registration.FactionSymbol) {
@@ -186,17 +189,10 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 			contract = deliver_contract_result.Contract
 			if CanContractBeCompleted(contract) {
 				FulfillContract(contract_id)
-				contract = NegotiateContract(ship.Symbol)
-				fmt.Println(contract)
-				contract_delivery_waypoint_symbol = contract.Terms.Deliver[0].DestinationSymbol
-				contract_delivery_trade_good_symbol = contract.Terms.Deliver[0].TradeSymbol
-				contract_delivery_waypoint = WaypointFromWaypointSymbol(all_waypoints_in_system, contract_delivery_waypoint_symbol)
-				markets_with_contract_trade_good := MarketplacesWhichSellTradeGood(all_markets_in_system, contract_delivery_trade_good_symbol)
-				closest_market := ClosestMarketSellingTradeGood(ship, contract_delivery_trade_good_symbol, markets_with_contract_trade_good)
-				closest_market_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, closest_market.Symbol)
-				path, _ := CalculateShortestPathBetweenTwoWaypoints(MarketplaceGraph, ship_waypoint, closest_market_waypoint)
-				arrival_time := FollowPath(ship, path)
-				return arrival_time
+				NegotiateContract(ship.Symbol)
+				
+				// This should accept the contract and begin to navigate to a new destination
+				return time.Now()
 			} else {
 				path, _ := CalculateShortestPathBetweenTwoWaypoints(MarketplaceGraph, ship_waypoint, contract_delivery_waypoint)
 				arrival_time := FollowPath(ship, path)
@@ -240,11 +236,11 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 		closest_market := ClosestMarketSellingTradeGood(ship, contract_delivery_trade_good_symbol, markets_with_contract_trade_good)
 		closest_market_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, closest_market.Symbol)
 		if IsShipAlreadyAtWaypoint(ship, closest_market.Symbol) {
-			if IsShipCargoEmpty(ship) {
+			fmt.Println("[INFO] At market selling contract cargo")
+			if !IsShipCargoFull(ship) {
 				if !IsShipDocked(ship) {
 					DockShip(ship.Symbol)
 				}
-				fmt.Println("[INFO] At market selling cargo contract")
 				fmt.Println("[INFO] Purchase contract cargo.")
 				market := GetMarket(base_system_symbol, closest_market.Symbol)
 				trade_good := TradeGoodFromMarket(contract_delivery_trade_good_symbol, market)

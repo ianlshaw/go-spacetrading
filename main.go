@@ -69,7 +69,6 @@ func runShip(
 
 		if ship.Registration.Role == "COMMAND" {
 			expiration = ApplyRoleCommand(ship, all_waypoints_in_system, all_markets_in_system, markets_to_cover, trade_routes, callsign)
-			fmt.Println(expiration)
 		}
 
 		all_probes := []Ship{}
@@ -113,11 +112,11 @@ func runShip(
 		//	ApplyRoleSurveyor()
 		//	return
 		//}
-		fmt.Print("[DEBUG] " + ship.Symbol)
-		fmt.Print(" Sleeping until ")
-		fmt.Println(expiration)
-		fmt.Print("[DEBUG] Time now       ")
-		fmt.Println(time.Now())
+		expiration_formatted := expiration.Format(time.RFC3339)
+		message := "Sleeping until " + expiration_formatted
+
+		Log("INFO", message)
+
 		time.Sleep(time.Until(expiration))
 
 		// Anti-Spam
@@ -302,20 +301,9 @@ func main() {
 			ships_list,
 			agent,
 			CALLSIGN)
-		// turns are always turn_length (default 2 minutes) but as we add ships they fill the time between turns
-		//time.Sleep(time.Duration(wait_between_ships) * time.Second)
+			fmt.Print("[INFO] http calls:")
+			fmt.Println(http_calls)
 		}
 
-		select {}
-		// outro
-
-		// inform user of http calls/turn to ease rate limit issues
-		//fmt.Print("[INFO] http calls: ")
-		//fmt.Print(http_calls / 2)
-		//fmt.Println("/m")
-
-
-		//// reset call counter
-		//http_calls = 0
-		//turn_number++
+	select {}
 }

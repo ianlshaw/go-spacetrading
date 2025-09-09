@@ -14,6 +14,7 @@ func ApplyRoleSiphoner(ship Ship,
 						contract Contract) time.Time {
 	fmt.Println("[DEBUG] ApplyRoleSiphoner " + ship.Symbol)
 
+	ship = GetShip(ship.Symbol)
 	//
 	fmt.Println(ship.Cargo.Inventory)
 	//
@@ -62,6 +63,7 @@ func ApplyRoleSiphoner(ship Ship,
 
 	// cargo not full
 	if IsShipAlreadyAtWaypoint(ship, closest_gas_giant_waypoint.Symbol) {
+		fmt.Println("[DEBUG] ship is already at closest_gas_giant_waypoint")
 		// TODO
 		siphon_result := SiphonResources(ship.Symbol)
 		siphon := siphon_result.Siphon
@@ -70,12 +72,10 @@ func ApplyRoleSiphoner(ship Ship,
 		expiration := cooldown.Expiration
 		cargo := siphon_result.Cargo
 
-		if target_trade_good != "" {
-			if yield.Symbol != target_trade_good {
-				cargo = JettisonCargo(ship, yield.Symbol, yield.Units)
-				fmt.Println("[DEBUG] Post Jettison cargo:")
-				fmt.Println(cargo)
-			}
+		if target_trade_good != "" && yield.Symbol != target_trade_good && yield.Units != 0 {
+			cargo = JettisonCargo(ship, yield.Symbol, yield.Units)
+			fmt.Println("[DEBUG] Post Jettison cargo:")
+			fmt.Println(cargo)
 		}
 
 		if cargo.Units == cargo.Capacity {

@@ -60,6 +60,12 @@ func NegotiateContract(ship_symbol string) Contract {
 	payloadJSON, err := json.Marshal(payload)
 	PanicOnError(err)
 	response_string := BasicPost(endpoint, payloadJSON)
+
+	//
+	fmt.Println("[DEBUG] NegotiateContract")
+	fmt.Println(response_string)
+	//
+
 	data_container := NegotiateContractResponseData{}
 
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
@@ -114,7 +120,7 @@ func GetShip(ship_symbol string) Ship {
 }
 
 func NavigateShip(ship_symbol string, waypoint_symbol string) (NavigateShipResponse, time.Time) {
-	fmt.Println("[DEBUG] NavigateShip " + ship_symbol + " " + waypoint_symbol)
+	Log("INFO", "NavigateShip " + ship_symbol + " " + waypoint_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/navigate"
 	payload := &NavigateShipPayload{}
 
