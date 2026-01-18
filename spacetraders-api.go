@@ -138,7 +138,7 @@ func NavigateShip(ship_symbol string, waypoint_symbol string) (NavigateShipRespo
 }
 
 func OrbitShip(ship_symbol string) OrbitShipResponse {
-	fmt.Println("[DEBUG] OrbitShip " + ship_symbol)
+	Log("DEBUG", "OrbitShip " + ship_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/orbit"
 	payload := &EmptyPayload{}
 	payloadJSON, err := json.Marshal(payload)
@@ -152,7 +152,7 @@ func OrbitShip(ship_symbol string) OrbitShipResponse {
 }
 
 func DockShip(ship_symbol string) DockShipResponse {
-	fmt.Println("[INFO] DockShip")
+	Log("INFO", "DockShip " + ship_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/dock"
 	payload := &EmptyPayload{}
 	payloadJSON, err := json.Marshal(payload)
@@ -185,7 +185,7 @@ func PurchaseShip(ship_type string, waypoint_symbol string) PurchaseShipResponse
 
 func PurchaseCargo(ship_symbol string, trade_good_symbol string, units int64) PurchaseCargoResponse {
 	units_as_string := strconv.FormatInt(units, 10)
-	fmt.Println("[DEBUG] PurchaseCargo " + units_as_string + " " + trade_good_symbol)
+	Log("DEBUG", ship_symbol + " PurchaseCargo " + units_as_string + " " + trade_good_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/purchase"
 	payload := &PurchaseCargoPayload{}
 	payload.Symbol = trade_good_symbol
@@ -246,7 +246,7 @@ func SellCargo(ship_symbol string, trade_good_symbol string, units int64) SellCa
 }
 
 func RefuelShip(ship_symbol string) RefuelShipResponse {
-	fmt.Println("[DEBUG] RefuelShip " + ship_symbol)
+	Log("DEBUG", "RefuelShip " + ship_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/refuel"
 	payload := &RefuelShipPayload{}
 	payload.Units = 1000
