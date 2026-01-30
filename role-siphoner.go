@@ -15,10 +15,18 @@ func ApplyRoleSiphoner(ship Ship,
 	fmt.Println("[DEBUG] ApplyRoleSiphoner " + ship.Symbol)
 
 	ship = GetShip(ship.Symbol)
+
 	//
-	fmt.Println(ship.Cargo.Inventory)
+	for _, item := range ship.Cargo.Inventory {
+		fmt.Print("[DEBUG] Inventory: ")
+		fmt.Print(item.Name)
+		fmt.Print(" ")
+		fmt.Print(item.Units)
+		fmt.Println()
+	}
 	//
 
+	// ad-hoc dump inventory because buy flow is incorrect
 	//for _, cargo_trade_good := range ship.Cargo.Inventory {
 	//	units := CountTradeGoodCargo(ship, cargo_trade_good.Symbol)
 	//	JettisonCargo(ship, cargo_trade_good.Symbol, units)
@@ -74,8 +82,6 @@ func ApplyRoleSiphoner(ship Ship,
 
 		if target_trade_good != "" && yield.Symbol != target_trade_good && yield.Units != 0 {
 			cargo = JettisonCargo(ship, yield.Symbol, yield.Units)
-			fmt.Println("[DEBUG] Post Jettison cargo:")
-			fmt.Println(cargo)
 		}
 
 		if cargo.Units == cargo.Capacity {
@@ -84,17 +90,25 @@ func ApplyRoleSiphoner(ship Ship,
 			return arrival_time
 		}
 		expiration_timestamp := StringToTimestamp(expiration)
+		fmt.Print("[DEBUG] On cooldown after siphoning until ")
+		fmt.Println(expiration)
 		return expiration_timestamp
 	}
+
 	if IsShipAlreadyAtWaypoint(ship, closest_market_to_closest_gas_giant_waypoint.Symbol) {
 		_, arrival_time := NavigateShip(ship.Symbol, closest_gas_giant_waypoint.Symbol)
 		return arrival_time
 	}
+
 	if IsShipAlreadyAtWaypoint(ship, contract_delivery_destination_symbol) {
 		path, _ := CalculateShortestPathBetweenTwoWaypoints(MarketplaceGraph, current_waypoint, closest_market_to_closest_gas_giant_waypoint)
 		arrival_time := FollowPath(ship, path)
 		return arrival_time
 	}
+
+	path, _ := CalculateShortestPathBetweenTwoWaypoints(SystemGraph, current_waypoint, closest_market_to_closest_gas_giant_waypoint)
+	arrival_time := FollowPath(ship, path)
+	return arrival_time
 
 	fmt.Println("[ERROR] ApplyRoleSiphoner returning time.Now() because uncaught branch")
 	return time.Now()

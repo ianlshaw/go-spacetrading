@@ -13,14 +13,28 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 
 	ship = GetShip(ship.Symbol)
 
-	fmt.Println(ship.Cargo.Inventory)
-
 	if ship.Nav.Status == "IN_TRANSIT" {
 		fmt.Println("[DEBUG] IN_TRANSIT TO " + ship.Nav.Route.Destination.Symbol)
 		fmt.Println("[DEBUG] Arrival " + ship.Nav.Route.Arrival)
 		next_execution_at := StringToTimestamp(ship.Nav.Route.Arrival)
 		return next_execution_at
 	}
+
+	// DEBUG
+	for _, item := range ship.Cargo.Inventory {
+		fmt.Print("[DEBUG] Inventory: ")
+		fmt.Print(item.Name)
+		fmt.Print(" ")
+		fmt.Print(item.Units)
+		fmt.Println()
+	}
+
+	// ad-hoc dump inventory because buy flow is incorrect
+	//for _, cargo_trade_good := range ship.Cargo.Inventory {
+	//	units := CountTradeGoodCargo(ship, cargo_trade_good.Symbol)
+	//	JettisonCargo(ship, cargo_trade_good.Symbol, units)
+	//}
+	//
 
 	// TODO move this elsewhere
 	ship_list := ListShips()
@@ -81,7 +95,10 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 	// Do we have any contract good in our hold?
 
 	contract_good_in_hold := CountTradeGoodCargo(ship, contract_delivery_trade_good_symbol)
-	if IsShipCargoFull(ship) && contract_good_in_hold > 0 {
+
+
+
+	if !IsShipCargoEmpty(ship) && contract_good_in_hold > 0 { // This does not account for a non-full cargo which contains contract goods.
 		fmt.Println("[INFO] We have contract goods in our hold")
 		if IsShipAlreadyAtWaypoint(ship, contract_delivery_waypoint_symbol) {
 			fmt.Println("[INFO] Already at contract delivery waypoint")
@@ -147,6 +164,10 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 				fmt.Println("[INFO] Purchase contract cargo.")
 				market := GetMarket(base_system_symbol, closest_market.Symbol)
 				trade_good := TradeGoodFromMarket(contract_delivery_trade_good_symbol, market)
+
+				// DEBUG
+				fmt.Println(trade_good.Symbol)
+				fmt.Println(trade_good.TradeVolume)
 
 				required_units := ContractRemainingRequired(contract)
 				BuyX(ship, trade_good, closest_market, required_units)

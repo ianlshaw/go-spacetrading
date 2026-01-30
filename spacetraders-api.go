@@ -425,7 +425,6 @@ func FulfillContract(contract_id string) FulfillContractResponse {
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
-
 	return data_container.Data
 }
 
@@ -441,8 +440,6 @@ func JettisonCargo(ship Ship, trade_good_symbol string, units int64) Cargo {
 	response_string := BasicPost(endpoint, payloadJSON)
 	data_container := JettisonCargoResponseData{}
 
-	fmt.Println(response_string)
-
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] JettisonCargo failed to unmarshal")
 		fmt.Println(response_string)
@@ -453,6 +450,5 @@ func JettisonCargo(ship Ship, trade_good_symbol string, units int64) Cargo {
 	fmt.Print(" Jettisoned ")
 	fmt.Print(units)
 	fmt.Println(" " + trade_good_symbol)
-
 	return data_container.Data.Cargo
 }
