@@ -240,12 +240,16 @@ func SellCargo(ship_symbol string, trade_good_symbol string, units int64) SellCa
 	return data_container.Data
 }
 
-func RefuelShip(ship_symbol string) RefuelShipResponse {
-	//Log("DEBUG", "RefuelShip " + ship_symbol)
+func RefuelShip(ship_symbol string, units int64, from_cargo bool) RefuelShipResponse {
+	fmt.Print("[DEBUG] RefuelShip ")
+	fmt.Print(ship_symbol + " ")
+	fmt.Print(units)
+	fmt.Print(" ")
+	fmt.Println(from_cargo)
 	endpoint := "my/ships/" + ship_symbol + "/refuel"
 	payload := &RefuelShipPayload{}
-	payload.Units = 1000
-	payload.FromCargo = false
+	//payload.Units = units
+	payload.FromCargo = from_cargo
 	payloadJSON, err := json.Marshal(payload)
 	PanicOnError(err)
 	response_string := BasicPost(endpoint, payloadJSON)
@@ -255,6 +259,28 @@ func RefuelShip(ship_symbol string) RefuelShipResponse {
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
+	return data_container.Data
+}
+
+func TransferCargo(source_ship_symbol string, target_ship_symbol string, cargo_symbol string, units int64) TransferCargoResponse {
+	Log("DEBUG", "TransferCargo " + source_ship_symbol + " " + target_ship_symbol + " " + cargo_symbol + string(units) )
+	endpoint := "my/ships/" + source_ship_symbol + "/transfer"
+	payload := &TransferCargoPayload{}
+	payload.TradeSymbol = cargo_symbol
+	payload.Units = units
+	payload.ShipSymbol = target_ship_symbol
+	payloadJSON, err := json.Marshal(payload)
+	PanicOnError(err)
+	response_string := BasicPost(endpoint, payloadJSON)
+	data_container := TransferCargoResponseData{}
+	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
+		fmt.Println("[ERROR] TransferCargo failed to unmarshal")
+		fmt.Println(response_string)
+		fmt.Println(err)
+	}
+	fmt.Print("[INFO] Transfered ")
+	fmt.Print(units)
+	fmt.Println(" " + cargo_symbol + " from " + source_ship_symbol + " to " + target_ship_symbol)
 	return data_container.Data
 }
 
@@ -420,6 +446,9 @@ func FulfillContract(contract_id string) FulfillContractResponse {
 		fmt.Println(response_string)
 		fmt.Println(err)
 	}
+
+	fmt.Print("[INFO] New balance: ")
+	fmt.Println(data_container.Data.Agent.Credits)
 	return data_container.Data
 }
 

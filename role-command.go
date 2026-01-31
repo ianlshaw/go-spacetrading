@@ -12,7 +12,17 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 	//fmt.Println("[DEBUG] ApplyRoleCommand")
 
 	ship = GetShip(ship.Symbol)
-
+	fmt.Print("Command ship fuel: [")
+	fmt.Print(ship.Fuel.Current) 
+	fmt.Print("/")
+	fmt.Print(ship.Fuel.Capacity)
+	fmt.Println("]")
+	fmt.Println("Command ship is at:")
+	fmt.Println(ship.Nav.WaypointSymbol)
+	closest_market := ClosestMarketToWaypoint(WaypointFromWaypointSymbol(all_waypoints_in_system, ship.Nav.WaypointSymbol), all_waypoints_in_system, all_markets_in_system)
+	fmt.Println("Closest market to command ship is:")
+	fmt.Println(closest_market.Symbol)
+	
 	if ship.Nav.Status == "IN_TRANSIT" {
 		fmt.Println("[DEBUG] IN_TRANSIT TO " + ship.Nav.Route.Destination.Symbol)
 		fmt.Println("[DEBUG] Arrival " + ship.Nav.Route.Arrival)
@@ -29,6 +39,14 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 		fmt.Print(item.Units)
 		fmt.Println()
 	}
+
+	if CountTradeGoodCargo(ship, "FUEL") > 2 {
+		//OrbitShip(ship.Symbol)
+		//DockShip(ship.Symbol)
+		RefuelShip(ship.Symbol, 1, true)
+	}
+
+	return time.Now().Add(3 * time.Hour)
 
 	// ad-hoc dump inventory because buy flow is incorrect
 	//for _, cargo_trade_good := range ship.Cargo.Inventory {
@@ -111,7 +129,6 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 			if CanContractBeCompleted(contract) {
 				FulfillContract(contract_id)
 				NegotiateContract(ship.Symbol)
-				
 				// This should accept the contract and begin to navigate to a new destination
 				return time.Now()
 			} else {
@@ -315,7 +332,7 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 			fmt.Print("[DEBUG] units_to_purchase = ")
 			fmt.Print(units_to_purchase)
 			fmt.Println()
-			RefuelShip(ship.Symbol)
+			RefuelShip(ship.Symbol, 4, false)
 			OrbitShip(ship.Symbol)
 			fmt.Println("[INFO] " + ship.Symbol + " Heading to SellMarketplaceWaypointSymbol")
 			_, next_execution_at := NavigateShip(ship.Symbol, most_profitable_trade_route.SellMarketplaceWaypointSymbol)
@@ -325,7 +342,7 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 		if MarketScanComplete(trade_routes) {
 			fmt.Println("[INFO] Heading to buy marketplace")
 			if IsShipDocked(ship) {
-				RefuelShip(ship.Symbol)
+				RefuelShip(ship.Symbol, 4, false)
 				OrbitShip(ship.Symbol)
 			}
 			_, next_execution_at := NavigateShip(ship.Symbol, most_profitable_trade_route.BuyMarketplaceWaypointSymbol)
@@ -381,7 +398,7 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 			} else {
 				SellCargo(ship.Symbol, most_profitable_trade_route_with_inventory_good.TradeGoodSymbol, units_in_cargo_hold)
 			}
-			RefuelShip(ship.Symbol)
+			RefuelShip(ship.Symbol, 4, false)
 			OrbitShip(ship.Symbol)
 			NavigateShip(ship.Symbol, most_profitable_trade_route.BuyMarketplaceWaypointSymbol)
 		} else {
@@ -392,7 +409,7 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 				return time.Now()
 			}
 			if IsShipDocked(ship) {
-				RefuelShip(ship.Symbol)
+				RefuelShip(ship.Symbol, 4, false)
 				OrbitShip(ship.Symbol)
 			}
 			println("most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol")

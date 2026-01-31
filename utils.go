@@ -108,6 +108,10 @@ func BuyX(ship Ship, trade_good TradeGood, market Market, x int64) {
 	fmt.Println(rounded_number_of_purchases_required)
 
 	for i := 0; float64(i) < rounded_number_of_purchases_required; i++ {
+		fmt.Print("i ")
+		fmt.Println(i)
+		fmt.Print("rounded_number_of_purchases_required ")
+		fmt.Println(rounded_number_of_purchases_required)
     	if remaining_units_to_purchase <= space_in_cargo_hold && remaining_units_to_purchase <= buy_market_trade_volume {
     	    units_to_purchase = remaining_units_to_purchase
     	} else if space_in_cargo_hold <= remaining_units_to_purchase && space_in_cargo_hold <= buy_market_trade_volume {

@@ -52,7 +52,8 @@ func FollowPath(ship Ship, path []string) time.Time {
 	if !IsShipDocked(ship){
 		DockShip(ship.Symbol)
 	}
-	RefuelShip(ship.Symbol)
+	// TODO this should calculate the correct amount of units.
+	RefuelShip(ship.Symbol, 4, false)
 	OrbitShip(ship.Symbol)
 	current_waypoint_path_index := slices.Index(path, ship_waypoint_symbol)
 	target_waypoint_path_index := current_waypoint_path_index + 1

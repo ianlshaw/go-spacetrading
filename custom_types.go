@@ -537,8 +537,23 @@ type GetAgentResponseData struct {
 }
 
 type RefuelShipPayload struct {
-	Units     int64
-	FromCargo bool
+	//Units     int64 `json:"units"` // Not providing this means it will always fill to max
+	FromCargo bool `json:"fromCargo"`
+}
+
+type TransferCargoPayload struct {
+	TradeSymbol string `json:"tradeSymbol"`
+	Units	int64 `json:"units"`
+	ShipSymbol string `json:"shipSymbol"`
+}
+
+type TransferCargoResponseData struct {
+	Data TransferCargoResponse `json:"data"`
+}
+
+type TransferCargoResponse struct {
+	Cargo Cargo `json:"cargo"`
+	TargetCargo Cargo `json:"targetCargo"`
 }
 
 type RefuelShipResponseData struct {

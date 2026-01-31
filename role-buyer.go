@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+var desired_number_of_ship_shuttle = 1
 var desired_number_of_ship_mining_drone = 1
 var desired_number_of_ship_siphon_drone = 1
 var desired_number_of_ship_surveyor = 1
@@ -14,6 +15,7 @@ func ApplyRoleBuyer(
 	ship_list []Ship,
 	markets_to_cover map[string]string,
 	probe_shipard_waypoints []Waypoint,
+	shuttle_shipyard_waypoints []Waypoint,
 	mining_ship_shipyard_waypoints []Waypoint,
 	siphon_ship_shipyard_waypoints []Waypoint,
 	survey_ship_shipyard_waypoints []Waypoint,
@@ -21,9 +23,7 @@ func ApplyRoleBuyer(
 
 	fmt.Println("[DEBUG] ApplyRoleBuyer")
 
-	//
-	return time.Now().Add(3 * time.Hour)
-	//
+
 
 	if ship.Nav.Status == "IN_TRANSIT" {
 		fmt.Println("[DEBUG] IN_TRANSIT TO " + ship.Nav.Route.Destination.Symbol)
@@ -32,8 +32,43 @@ func ApplyRoleBuyer(
 		return time.Now().Add(5 * time.Minute)
 	}
 
+	if agent.Credits < 500000 {
+		fmt.Println("[INFO] Buyer not enough credits. Sleeping...")
+		return time.Now().Add(3 * time.Hour)
+	}
+
 	current_waypoint := GetWaypoint(base_system_symbol, ship.Nav.WaypointSymbol)
 	var closest_shipyard_waypoint Waypoint
+	number_of_ship_shuttle := CountShipsByFrame(ship_list, "SHIP_SHUTTLE")
+	if number_of_ship_shuttle < desired_number_of_ship_shuttle {
+
+		fmt.Println("number_of_ship_shuttle")
+		fmt.Println(number_of_ship_shuttle)
+		fmt.Println("desired_number_of_ship_shuttle")
+		fmt.Println(desired_number_of_ship_shuttle)
+
+		// Buy shuttle
+		fmt.Println("BUY SHUTTLE")
+
+		closest_shipyard_waypoint = ClosestWaypointFromSliceToWaypoint(shuttle_shipyard_waypoints, current_waypoint)
+
+		if IsShipAlreadyAtWaypoint(ship, closest_shipyard_waypoint.Symbol) {
+			if !IsShipDocked(ship) {
+				DockShip(ship.Symbol)
+			}
+			PurchaseShip("SHIP_LIGHT_SHUTTLE", closest_shipyard_waypoint.Symbol)
+		} else {
+			if IsShipDocked(ship) {
+				OrbitShip(ship.Symbol)
+			}
+			_, arrival_time := NavigateShip(ship.Symbol, closest_shipyard_waypoint.Symbol)
+			return arrival_time
+		}
+	}
+
+	//
+	return time.Now().Add(1 * time.Minute)
+	//
 
 	number_of_ship_mining_drone := CountShipsByMount(ship_list, "MOUNT_MINING_LASER_I")
 

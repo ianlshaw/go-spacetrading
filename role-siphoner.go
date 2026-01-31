@@ -101,12 +101,13 @@ func ApplyRoleSiphoner(ship Ship,
 	}
 
 	if IsShipAlreadyAtWaypoint(ship, contract_delivery_destination_symbol) {
+		// TODO Dump excess cargo here
 		path, _ := CalculateShortestPathBetweenTwoWaypoints(MarketplaceGraph, current_waypoint, closest_market_to_closest_gas_giant_waypoint)
 		arrival_time := FollowPath(ship, path)
 		return arrival_time
 	}
 
-	path, _ := CalculateShortestPathBetweenTwoWaypoints(SystemGraph, current_waypoint, closest_market_to_closest_gas_giant_waypoint)
+	path, _ := CalculateShortestPathBetweenTwoWaypoints(MarketplaceGraph, current_waypoint, closest_market_to_closest_gas_giant_waypoint)
 	arrival_time := FollowPath(ship, path)
 	return arrival_time
 

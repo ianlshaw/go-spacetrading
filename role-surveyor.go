@@ -7,5 +7,7 @@ func ApplyRoleSurveyor() {
 
 	// go-to closest non-stripped mineral deposit
 
+	//closest_asteroid :=  
+
 	// survey
 }

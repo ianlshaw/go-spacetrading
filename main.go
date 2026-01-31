@@ -55,6 +55,7 @@ func runShip(
 	all_markets_in_system []Market,
 	markets_to_cover map[string]string,
 	probe_shipyard_waypoints []Waypoint,
+	shuttle_shipyard_waypoints []Waypoint,
 	mining_drone_shipyard_waypoints []Waypoint,
 	siphon_drone_shipyard_waypoints []Waypoint,
 	surveyor_shipyard_waypoints []Waypoint,
@@ -88,6 +89,7 @@ func runShip(
 					ship_list,
 					markets_to_cover,
 					probe_shipyard_waypoints,
+					shuttle_shipyard_waypoints,
 					mining_drone_shipyard_waypoints,
 					siphon_drone_shipyard_waypoints,
 					surveyor_shipyard_waypoints,
@@ -112,6 +114,12 @@ func runShip(
 		//	ApplyRoleSurveyor()
 		//	return
 		//}
+
+		if ship.Registration.Role == "TRANSPORT" {
+			command_ship_waypoint_symbol := "X1-HZ13-C34"
+			expiration = ApplyRoleTrader(ship, all_waypoints_in_system, all_markets_in_system, command_ship_waypoint_symbol)
+		}
+
 		expiration_formatted := expiration.Format(time.RFC3339)
 		message := "Sleeping until " + expiration_formatted
 
@@ -250,6 +258,11 @@ func main() {
 	fmt.Println(len(probe_shipyards))
 	fmt.Println(len(probe_shipyard_waypoints))
 
+	shuttle_shipyards, shuttle_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_LIGHT_SHUTTLE")
+	fmt.Println("shuttle shipyards:")
+	fmt.Println(len(shuttle_shipyards))
+	fmt.Println(len(shuttle_shipyard_waypoints))
+
 	mining_drone_shipyards, mining_drone_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_MINING_DRONE")
 	fmt.Println("mining_drone shipyards:")
 	fmt.Println(len(mining_drone_shipyards))
@@ -295,6 +308,7 @@ func main() {
 			all_markets_in_system,
 			markets_to_cover,
 			probe_shipyard_waypoints,
+			shuttle_shipyard_waypoints,
 			mining_drone_shipyard_waypoints,
 			siphon_drone_shipyard_waypoints,
 			surveyor_shipyard_waypoints,
