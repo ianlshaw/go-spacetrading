@@ -141,10 +141,7 @@ func runShip(
 		}
 
 		expiration_formatted := expiration.Format(time.RFC3339)
-		message := "Sleeping until " + expiration_formatted
-
-		Log("INFO", message)
-
+		fmt.Println("[INFO] " + ship.Symbol + " Sleeping until " + expiration_formatted)
 		time.Sleep(time.Until(expiration))
 
 		// Anti-Spam
