@@ -21,6 +21,7 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 	}
 
 	// DEBUG
+	Log("DEBUG", "Inventory")
 	for _, item := range ship.Cargo.Inventory {
 		fmt.Print("[DEBUG] Inventory: ")
 		fmt.Print(item.Name)
@@ -66,7 +67,7 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 	contract_delivery_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, contract_delivery_waypoint_symbol)
 
 	if !IsContractAccepted(contract) {
-		fmt.Println("[INFO] Contract is negotiated but not accepted")
+		fmt.Println("[DEBUG] Contract is negotiated but not accepted")
 		fmt.Println("[INFO] Terms:")
 		fmt.Println(contract)
 		AcceptContract(contract.ID)
@@ -147,6 +148,11 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 				expiration := ApplyRoleSiphoner(ship, all_waypoints_in_system, all_markets_in_system, contract)
 				return expiration
 			}
+			if contract_delivery_trade_good_symbol == "SILICON_CRYSTALS" {
+				expiration := ApplyRoleMiner
+				
+				(ship, all_waypoints_in_system, all_markets_in_system, contract)
+			}
 			return time.Now()
 		}
 		fmt.Println("[INFO] The following markets sell " + contract_delivery_trade_good_symbol + ":")
@@ -156,7 +162,7 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 		closest_market := ClosestMarketSellingTradeGood(ship, contract_delivery_trade_good_symbol, markets_with_contract_trade_good)
 		closest_market_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, closest_market.Symbol)
 		if IsShipAlreadyAtWaypoint(ship, closest_market.Symbol) {
-			fmt.Println("[INFO] At market selling contract cargo")
+			Log("DEBUG", "At market selling contract cargo")
 			if !IsShipCargoFull(ship) {
 				if !IsShipDocked(ship) {
 					DockShip(ship.Symbol)
@@ -166,8 +172,11 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 				trade_good := TradeGoodFromMarket(contract_delivery_trade_good_symbol, market)
 
 				// DEBUG
-				fmt.Println(trade_good.Symbol)
-				fmt.Println(trade_good.TradeVolume)
+				fmt.Print("[DEBUG] ")
+				fmt.Print(trade_good.Symbol)
+				fmt.Print(" Trade volume ")
+				fmt.Print(trade_good.TradeVolume)
+				fmt.Println()
 
 				required_units := ContractRemainingRequired(contract)
 				BuyX(ship, trade_good, closest_market, required_units)

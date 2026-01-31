@@ -185,7 +185,7 @@ func IsNewContractRequired(contracts []Contract) bool {
 	number_of_unfulfilled_contracts := 0
 	for _, contract := range contracts {
 		if !IsContractFulfilled(contract) {
-			fmt.Println("[DEBUG] unfulfilled contract found")
+			//fmt.Println("[DEBUG] unfulfilled contract found")
 			number_of_unfulfilled_contracts++
 		}
 	}
@@ -194,7 +194,7 @@ func IsNewContractRequired(contracts []Contract) bool {
 		return true
 	}
 
-	fmt.Println("[DEBUG] new contract is not required")
+	//fmt.Println("[DEBUG] new contract is not required")
 	return false
 }
 
@@ -246,7 +246,7 @@ func TradeGoodFromMarket(trade_good_symbol string, market Market) TradeGood {
 	default_trade_good := TradeGood{}
 	for _, trade_good := range market.TradeGoods {
 		if trade_good.Symbol == trade_good_symbol {
-			fmt.Println("[DEBUG] TradeGoodFromMarket: Trade good found")
+			//fmt.Println("[DEBUG] TradeGoodFromMarket: Trade good found")
 			return trade_good
 		}
 	}

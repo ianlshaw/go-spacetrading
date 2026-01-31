@@ -13,7 +13,7 @@ func BasicGet(endpoint string) (response_body string) {
 	url := url_base + endpoint
 
 	// DEBUG
-	fmt.Println("[DEBUG] " + url)
+	//fmt.Println("[DEBUG] " + url)
 	// DEBUG
 
 	payload := EmptyPayload{}

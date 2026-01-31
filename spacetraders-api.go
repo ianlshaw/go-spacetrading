@@ -61,11 +61,6 @@ func NegotiateContract(ship_symbol string) Contract {
 	PanicOnError(err)
 	response_string := BasicPost(endpoint, payloadJSON)
 
-	//
-	fmt.Println("[DEBUG] NegotiateContract")
-	fmt.Println(response_string)
-	//
-
 	data_container := NegotiateContractResponseData{}
 
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
@@ -78,7 +73,7 @@ func NegotiateContract(ship_symbol string) Contract {
 }
 
 func AcceptContract(contract_id string) Contract {
-	fmt.Println("[DEBUG] AcceptContract")
+	fmt.Println("[INFO] AcceptContract")
 	endpoint := "my/contracts/" + contract_id + "/accept"
 	payload := &EmptyPayload{}
 	payloadJSON, err := json.Marshal(payload)
@@ -138,7 +133,7 @@ func NavigateShip(ship_symbol string, waypoint_symbol string) (NavigateShipRespo
 }
 
 func OrbitShip(ship_symbol string) OrbitShipResponse {
-	Log("DEBUG", "OrbitShip " + ship_symbol)
+	//Log("DEBUG", "OrbitShip " + ship_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/orbit"
 	payload := &EmptyPayload{}
 	payloadJSON, err := json.Marshal(payload)
@@ -152,7 +147,7 @@ func OrbitShip(ship_symbol string) OrbitShipResponse {
 }
 
 func DockShip(ship_symbol string) DockShipResponse {
-	Log("INFO", "DockShip " + ship_symbol)
+	//Log("DEBUG", "DockShip " + ship_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/dock"
 	payload := &EmptyPayload{}
 	payloadJSON, err := json.Marshal(payload)
@@ -246,7 +241,7 @@ func SellCargo(ship_symbol string, trade_good_symbol string, units int64) SellCa
 }
 
 func RefuelShip(ship_symbol string) RefuelShipResponse {
-	Log("DEBUG", "RefuelShip " + ship_symbol)
+	//Log("DEBUG", "RefuelShip " + ship_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/refuel"
 	payload := &RefuelShipPayload{}
 	payload.Units = 1000
