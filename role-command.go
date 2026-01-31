@@ -149,9 +149,9 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 				return expiration
 			}
 			if contract_delivery_trade_good_symbol == "SILICON_CRYSTALS" {
-				expiration := ApplyRoleMiner
-				
-				(ship, all_waypoints_in_system, all_markets_in_system, contract)
+				//expiration := ApplyRoleMiner()
+				//expiration := ApplyRoleMiner(ship, all_waypoints_in_system, all_markets_in_system, contract)
+				//return expiration
 			}
 			return time.Now()
 		}
