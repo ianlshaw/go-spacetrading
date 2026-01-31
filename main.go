@@ -120,8 +120,8 @@ func runShip(
 		time.Sleep(time.Until(expiration))
 
 		// Anti-Spam
-		fmt.Println("[DEBUG] ANTI SPAM ENGAGED")
-		time.Sleep(5 * time.Second)
+		Log("DEBUG", ship.Symbol + " ANTI SPAM ENGAGED")
+		time.Sleep(60 * time.Second)
 	}
 }
 
@@ -171,6 +171,7 @@ func main() {
 	for _, waypoint := range all_waypoints_in_system {
 		//AddWaypointToSystemGraph(waypoint)
 		PopulateGraphDistancesForWaypoint(SystemGraph, all_waypoints_in_system, waypoint)
+		PopulateGraphDistancesForWaypointWithMaximum(SystemGraph, all_waypoints_in_system, waypoint, 400)
 	}
 
 	if !DoesShipyardsFileExist(CALLSIGN) {
