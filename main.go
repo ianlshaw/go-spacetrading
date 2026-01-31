@@ -148,8 +148,8 @@ func runShip(
 		time.Sleep(time.Until(expiration))
 
 		// Anti-Spam
-		Log("DEBUG", ship.Symbol + " ANTI SPAM ENGAGED")
-		time.Sleep(60 * time.Second)
+		//Log("DEBUG", ship.Symbol + " ANTI SPAM ENGAGED")
+		//time.Sleep(60 * time.Second)
 	}
 }
 

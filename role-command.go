@@ -142,7 +142,7 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 		markets_with_contract_trade_good := MarketplacesWhichSellTradeGood(all_markets_in_system, contract_delivery_trade_good_symbol)
 		if len(markets_with_contract_trade_good) == 0 {
 			fmt.Println("[INFO] no marketplace sells " + contract_delivery_trade_good_symbol)
-			if contract_delivery_trade_good_symbol == "LIQUID_HYDROGEN" || contract_delivery_trade_good_symbol == "LIQUID_NITROGEN" {
+			if contract_delivery_trade_good_symbol == "LIQUID_HYDROGEN" || contract_delivery_trade_good_symbol == "LIQUID_NITROGEN" || contract_delivery_trade_good_symbol == "HYDROCARBON" {
 				expiration := ApplyRoleSiphoner(ship, all_waypoints_in_system, all_markets_in_system, contract)
 				return expiration
 			}
