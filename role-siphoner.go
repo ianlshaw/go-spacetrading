@@ -52,6 +52,7 @@ func ApplyRoleSiphoner(ship Ship,
 			DeliverCargoToContract(contract.ID, ship.Symbol, target_trade_good, units)
 			if CanContractBeCompleted(contract) {
 				FulfillContract(contract.ID)
+				// TODO Jettison cargo
 				NegotiateContract(ship.Symbol)
 			}
 			path, _ := CalculateShortestPathBetweenTwoWaypoints(MarketplaceGraph, current_waypoint, closest_market_to_closest_gas_giant_waypoint)

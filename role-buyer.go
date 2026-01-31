@@ -39,7 +39,7 @@ func ApplyRoleBuyer(
 
 	current_waypoint := GetWaypoint(base_system_symbol, ship.Nav.WaypointSymbol)
 	var closest_shipyard_waypoint Waypoint
-	number_of_ship_shuttle := CountShipsByFrame(ship_list, "SHIP_SHUTTLE")
+	number_of_ship_shuttle := CountShipsByFrame(ship_list, "FRAME_SHUTTLE")
 	if number_of_ship_shuttle < desired_number_of_ship_shuttle {
 
 		fmt.Println("number_of_ship_shuttle")

@@ -136,3 +136,8 @@ func BuyX(ship Ship, trade_good TradeGood, market Market, x int64) {
 	}
 	fmt.Println("BuyX escaped its buy loop")
 }
+
+func ThreeHoursFromNow() time.Time {
+	fmt.Println("Nothing to do. Sleeping for 3 hours.")
+	return time.Now().Add(3 * time.Hour)
+}

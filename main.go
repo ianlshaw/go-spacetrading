@@ -73,10 +73,14 @@ func runShip(
 		}
 
 		all_probes := []Ship{}
+		all_shuttles := []Ship{}
 
 		for _, ship := range ship_list {
 			if ship.Registration.Role == "SATELLITE" {
 				all_probes = append(all_probes, ship)
+			}
+			if ship.Registration.Role == "TRANSPORT" {
+				all_shuttles = append(all_shuttles, ship)
 			}
 		}
 
@@ -115,9 +119,25 @@ func runShip(
 		//	return
 		//}
 
-		if ship.Registration.Role == "TRANSPORT" {
-			command_ship_waypoint_symbol := "X1-HZ13-C34"
-			expiration = ApplyRoleTrader(ship, all_waypoints_in_system, all_markets_in_system, command_ship_waypoint_symbol)
+
+		fmt.Println(len(all_shuttles))
+
+		if len(all_shuttles) >= 1 {
+			if ship.Symbol == all_shuttles[0].Symbol {
+				expiration = ApplyRoleTrader(ship)
+			}
+		}
+
+		if len(all_shuttles) >= 2 {
+			if ship.Symbol == all_shuttles[1].Symbol {
+				expiration = ApplyRoleTransportOre(ship)
+			}
+		}
+
+		if len(all_shuttles) >= 3 {
+			if ship.Symbol == all_shuttles[2].Symbol {
+				expiration = ApplyRoleTransportGas(ship)
+			}
 		}
 
 		expiration_formatted := expiration.Format(time.RFC3339)

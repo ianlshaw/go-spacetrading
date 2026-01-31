@@ -9,19 +9,8 @@ import (
 func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets_in_system []Market, markets_to_cover map[string]string, trade_routes []TradeRoute, callsign string) time.Time {
 
 	fmt.Println("[INFO] " + ship.Symbol + " ApplyRoleCommand")
-	//fmt.Println("[DEBUG] ApplyRoleCommand")
 
 	ship = GetShip(ship.Symbol)
-	fmt.Print("Command ship fuel: [")
-	fmt.Print(ship.Fuel.Current) 
-	fmt.Print("/")
-	fmt.Print(ship.Fuel.Capacity)
-	fmt.Println("]")
-	fmt.Println("Command ship is at:")
-	fmt.Println(ship.Nav.WaypointSymbol)
-	closest_market := ClosestMarketToWaypoint(WaypointFromWaypointSymbol(all_waypoints_in_system, ship.Nav.WaypointSymbol), all_waypoints_in_system, all_markets_in_system)
-	fmt.Println("Closest market to command ship is:")
-	fmt.Println(closest_market.Symbol)
 	
 	if ship.Nav.Status == "IN_TRANSIT" {
 		fmt.Println("[DEBUG] IN_TRANSIT TO " + ship.Nav.Route.Destination.Symbol)
@@ -39,14 +28,6 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 		fmt.Print(item.Units)
 		fmt.Println()
 	}
-
-	if CountTradeGoodCargo(ship, "FUEL") > 2 {
-		//OrbitShip(ship.Symbol)
-		//DockShip(ship.Symbol)
-		RefuelShip(ship.Symbol, 1, true)
-	}
-
-	return time.Now().Add(3 * time.Hour)
 
 	// ad-hoc dump inventory because buy flow is incorrect
 	//for _, cargo_trade_good := range ship.Cargo.Inventory {
