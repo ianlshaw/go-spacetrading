@@ -115,8 +115,7 @@ func GetShip(ship_symbol string) Ship {
 }
 
 func NavigateShip(ship_symbol string, waypoint_symbol string) (NavigateShipResponse, time.Time) {
-	Log("INFO", "NavigateShip " + ship_symbol + " " + waypoint_symbol)
-	fmt.Println("[INFO] NavigateShip " + ship_symbol + " " + waypoint_symbol)
+	fmt.Println("[INFO] " + ship_symbol + " NavigateShip " + waypoint_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/navigate"
 	payload := &NavigateShipPayload{}
 	payload.WaypointSymbol = waypoint_symbol

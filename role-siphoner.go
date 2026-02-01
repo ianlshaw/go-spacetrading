@@ -43,7 +43,7 @@ func ApplyRoleSiphoner(ship Ship,
 	
 	// is cargo full? -> go to closest market, followed by delivery waypoint
 
-	if IsShipCargoFull(ship) {
+	if IsShipCargoFull(ship) { // TODO This wont be true when we only siphon whats needed for the contract
 		if IsShipAlreadyAtWaypoint(ship, contract_delivery_destination_symbol) {
 			if !IsShipDocked(ship) {
 				DockShip(ship.Symbol)
@@ -52,8 +52,10 @@ func ApplyRoleSiphoner(ship Ship,
 			DeliverCargoToContract(contract.ID, ship.Symbol, target_trade_good, units)
 			if CanContractBeCompleted(contract) {
 				FulfillContract(contract.ID)
-				// TODO Jettison cargo
+				JettisonAllCargo(ship)
 				NegotiateContract(ship.Symbol)
+				// Accept new contract
+				// Navigate towards it?
 			}
 			path, _ := CalculateShortestPathBetweenTwoWaypoints(MarketplaceGraph, current_waypoint, closest_market_to_closest_gas_giant_waypoint)
 			arrival_time := FollowPath(ship, path)

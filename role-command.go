@@ -23,7 +23,7 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 	Log("DEBUG", "Inventory")
 	for _, item := range ship.Cargo.Inventory {
 		fmt.Print("[DEBUG] Inventory: ")
-		fmt.Print(item.Name)
+		fmt.Print(item.Symbol)
 		fmt.Print(" ")
 		fmt.Print(item.Units)
 		fmt.Println()

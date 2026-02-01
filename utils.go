@@ -140,3 +140,9 @@ func BuyX(ship Ship, trade_good TradeGood, market Market, x int64) {
 func ThreeHoursFromNow() time.Time {
 	return time.Now().Add(3 * time.Hour)
 }
+
+func JettisonAllCargo(ship Ship) {
+	for _, item := range ship.Cargo.Inventory {
+		JettisonCargo(ship, item.Symbol, item.Units )
+	}
+}
