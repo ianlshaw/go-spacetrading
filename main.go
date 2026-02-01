@@ -270,29 +270,24 @@ func main() {
 	markets_to_cover = PopulateMarketsToCover(trade_routes)
 
 	probe_shipyards, probe_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_PROBE")
-	fmt.Println("probe shipyards:")
+	fmt.Print("[DEBUG] probe shipyards:")
 	fmt.Println(len(probe_shipyards))
-	fmt.Println(len(probe_shipyard_waypoints))
 
 	shuttle_shipyards, shuttle_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_LIGHT_SHUTTLE")
-	fmt.Println("shuttle shipyards:")
+	fmt.Print("[DEBUG] shuttle shipyards:")
 	fmt.Println(len(shuttle_shipyards))
-	fmt.Println(len(shuttle_shipyard_waypoints))
 
 	mining_drone_shipyards, mining_drone_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_MINING_DRONE")
-	fmt.Println("mining_drone shipyards:")
+	fmt.Print("[DEBUG] mining_drone shipyards:")
 	fmt.Println(len(mining_drone_shipyards))
-	fmt.Println(len(mining_drone_shipyard_waypoints))
 
 	siphon_drone_shipyards, siphon_drone_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_SIPHON_DRONE")
-	fmt.Println("siphon_drone shipyards:")
+	fmt.Print("[DEBUG] siphon_drone shipyards:")
 	fmt.Println(len(siphon_drone_shipyards))
-	fmt.Println(len(siphon_drone_shipyard_waypoints))
 
 	surveyor_shipyards, surveyor_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_SURVEYOR")
-	fmt.Println("surveyor shipyards:")
+	fmt.Print("[DEBUG] surveyor shipyards:")
 	fmt.Println(len(surveyor_shipyards))
-	fmt.Println(len(surveyor_shipyard_waypoints))
 
 	//turn_number := 1
 

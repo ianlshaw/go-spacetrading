@@ -40,6 +40,7 @@ func ApplyRoleSiphoner(ship Ship,
 	target_trade_good := contract.Terms.Deliver[0].TradeSymbol	
 	contract_delivery_destination_symbol := contract.Terms.Deliver[0].DestinationSymbol
 	contract_delivery_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, contract_delivery_destination_symbol)
+	remaining_contract_units := ContractRemainingRequired(contract)
 	
 	// is cargo full? -> go to closest market, followed by delivery waypoint
 
@@ -52,10 +53,8 @@ func ApplyRoleSiphoner(ship Ship,
 			DeliverCargoToContract(contract.ID, ship.Symbol, target_trade_good, units)
 			if CanContractBeCompleted(contract) {
 				FulfillContract(contract.ID)
-				JettisonAllCargo(ship)
-				NegotiateContract(ship.Symbol)
-				// Accept new contract
-				// Navigate towards it?
+				JettisonAllCargo(ship) // TODO remove this once we verify the on-site jettison works
+				return time.Now()
 			}
 			path, _ := CalculateShortestPathBetweenTwoWaypoints(MarketplaceGraph, current_waypoint, closest_market_to_closest_gas_giant_waypoint)
 			arrival_time := FollowPath(ship, path)
@@ -84,6 +83,15 @@ func ApplyRoleSiphoner(ship Ship,
 
 		if target_trade_good != "" && yield.Symbol != target_trade_good && yield.Units != 0 {
 			cargo = JettisonCargo(ship, yield.Symbol, yield.Units)
+		}
+
+		total_contract_units_in_cargo := CountTradeGoodCargo(ship, target_trade_good)
+
+		// Jettison contract trade good in excess of requirement
+		if total_contract_units_in_cargo > remaining_contract_units {
+			JettisonCargo(ship, yield.Symbol, total_contract_units_in_cargo - remaining_contract_units)
+			_, arrival_time := NavigateShip(ship.Symbol, closest_market_to_closest_gas_giant_waypoint.Symbol)
+			return arrival_time
 		}
 
 		if cargo.Units == cargo.Capacity {

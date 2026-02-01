@@ -5,6 +5,7 @@ import (
 	"math"
 	"time"
 	"fmt"
+	"slices"
 )
 
 func ListAllContracts() []Contract {
@@ -145,4 +146,19 @@ func JettisonAllCargo(ship Ship) {
 	for _, item := range ship.Cargo.Inventory {
 		JettisonCargo(ship, item.Symbol, item.Units )
 	}
+}
+
+func IsContractDeliverble(contract Contract, all_markets_in_system []Market, mineable_goods []string, siphonable_goods []string) bool {
+	contract_delivery_trade_good_symbol := contract.Terms.Deliver[0].TradeSymbol
+	markets_with_contract_trade_good := MarketplacesWhichSellTradeGood(all_markets_in_system, contract_delivery_trade_good_symbol)
+	if len(markets_with_contract_trade_good) > 0 {
+		return true
+	}
+	if slices.Contains(mineable_goods, contract_delivery_trade_good_symbol) {
+		return true
+	}
+	if slices.Contains(siphonable_goods, contract_delivery_trade_good_symbol) {
+		return true
+	}
+	return false
 }

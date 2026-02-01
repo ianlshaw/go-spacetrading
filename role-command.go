@@ -4,11 +4,15 @@ import (
 	"fmt"
 	"math"
 	"time"
+	"slices"
 )
 
 func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets_in_system []Market, markets_to_cover map[string]string, trade_routes []TradeRoute, callsign string) time.Time {
 
 	fmt.Println("[INFO] " + ship.Symbol + " ApplyRoleCommand")
+
+	siphonable_goods := []string{"LIQUID_HYDROGEN", "LIQUID_NITROGEN", "HYDROCARBON"}
+	mineable_goods := []string{""} // add SILICON_CRYSTALS when ApplyRoleContractMiner is done.
 
 	ship = GetShip(ship.Symbol)
 	
@@ -21,12 +25,14 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 
 	// DEBUG
 	fmt.Print("[DEBUG] Inventory ")
+	fmt.Print("{ ")
 	for _, item := range ship.Cargo.Inventory {
 		fmt.Print(item.Symbol)
 		fmt.Print(" ")
 		fmt.Print(item.Units)
-		fmt.Println()
+		fmt.Print(", ")
 	}
+	fmt.Println("}")
 
 	// ad-hoc dump inventory because buy flow is incorrect
 	//JettisonAllCargo(ship)
@@ -62,7 +68,12 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 
 	if !IsContractAccepted(contract) {
 		fmt.Println("[DEBUG] Contract is negotiated but not accepted")
-		AcceptContract(contract.ID)
+		if IsContractDeliverble(contract, all_markets_in_system, mineable_goods, siphonable_goods) {
+			AcceptContract(contract.ID)
+		} else {
+			fmt.Println("[WARNING] Undeliverable contract, not accepting. Waiting until deadlineToAccept expires at " + contract.DeadlineToAccept)
+			return StringToTimestamp(contract.DeadlineToAccept)
+		}
 	}
 
 	if len(contract.Terms.Deliver) > 1 {
@@ -86,8 +97,6 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 	// Do we have any contract good in our hold?
 
 	contract_good_in_hold := CountTradeGoodCargo(ship, contract_delivery_trade_good_symbol)
-
-
 
 	if !IsShipCargoEmpty(ship) && contract_good_in_hold > 0 { // This does not account for a non-full cargo which contains contract goods.
 		fmt.Println("[INFO] We have contract goods in our hold")
@@ -133,16 +142,20 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 		markets_with_contract_trade_good := MarketplacesWhichSellTradeGood(all_markets_in_system, contract_delivery_trade_good_symbol)
 		if len(markets_with_contract_trade_good) == 0 {
 			//fmt.Println("[DEBUG] no marketplace sells " + contract_delivery_trade_good_symbol)
-			if contract_delivery_trade_good_symbol == "LIQUID_HYDROGEN" || contract_delivery_trade_good_symbol == "LIQUID_NITROGEN" || contract_delivery_trade_good_symbol == "HYDROCARBON" {
+			if slices.Contains(siphonable_goods, contract_delivery_trade_good_symbol) {
 				expiration := ApplyRoleSiphoner(ship, all_waypoints_in_system, all_markets_in_system, contract)
 				return expiration
+			} else {
+				// Sleep Until Contract Expiration
+				// Or maybe just don't accept said contract.
 			}
-			if contract_delivery_trade_good_symbol == "SILICON_CRYSTALS" {
-				//expiration := ApplyRoleMiner()
-				//expiration := ApplyRoleMiner(ship, all_waypoints_in_system, all_markets_in_system, contract)
+			if slices.Contains(mineable_goods, contract_delivery_trade_good_symbol) {
+				//expiration := ApplyRoleContractMiner()
+				//expiration := ApplyRoleContractMiner(ship, all_waypoints_in_system, all_markets_in_system, contract)
 				//return expiration
 			}
-			return time.Now()
+			fmt.Println("[ERROR] Undeliverable contract")
+			return ThreeHoursFromNow()
 		}
 		fmt.Println("[INFO] The following markets sell " + contract_delivery_trade_good_symbol + ": ")
 		for _, market_symbol := range markets_with_contract_trade_good {
@@ -190,8 +203,8 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 
 
 	// TESTING
-
-	return time.Now()
+	fmt.Println("[ERROR] " + ship.Symbol + "Unhandled branch. Forcing long wait.")
+	return ThreeHoursFromNow()
 	// TESTING
 
 	number_of_satellites := CountShipsByFrame(ship_list, "SATELLITE")
