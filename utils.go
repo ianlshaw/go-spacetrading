@@ -184,7 +184,7 @@ func EraseState(callsign string) {
 		callsign + ".waypoints.json"}
 	ctx := context.Background()
 
-	cfg, err := config.LoadDefaultConfig(ctx)
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-west-2"))
 	if err != nil {
 		log.Fatal(err)
 	}
