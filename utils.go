@@ -6,6 +6,13 @@ import (
 	"time"
 	"fmt"
 	"slices"
+	"context"
+	"log"
+	"os"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 func ListAllContracts() []Contract {
@@ -142,6 +149,10 @@ func ThreeHoursFromNow() time.Time {
 	return time.Now().Add(3 * time.Hour)
 }
 
+func FifteenMinutesFromNow() time.Time {
+	return time.Now().Add(15 * time.Minute)
+}
+
 func JettisonAllCargo(ship Ship) {
 	for _, item := range ship.Cargo.Inventory {
 		JettisonCargo(ship, item.Symbol, item.Units )
@@ -161,4 +172,52 @@ func IsContractDeliverble(contract Contract, all_markets_in_system []Market, min
 		return true
 	}
 	return false
+}
+
+func EraseState(callsign string) {
+	fmt.Println("[WARN] EraseState " + callsign)
+	state_filenames := []string{
+		callsign + ".markets.json",
+		callsign + ".shipyards.json",
+		callsign + ".token",
+		callsign + ".trade_routes",
+		callsign + ".waypoints.json"}
+	ctx := context.Background()
+
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	client := s3.NewFromConfig(cfg)
+
+	for _, filename := range state_filenames {
+		err = deleteObject(ctx, client, "go-spacetraders-state", filename)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		DeleteLocalFile(filename)
+	}
+
+	log.Println("Objects deleted")
+}
+
+func deleteObject(ctx context.Context, client *s3.Client, bucket, key string) error {
+	_, err := client.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+	return err
+}
+
+func DeleteLocalFile(filename string) {
+	// Attempt to remove the file
+    err := os.Remove(filename)
+    if err != nil {
+        fmt.Println("Error deleting file:", err)
+        return
+    }
+
+    fmt.Println("File " + filename + " successfully deleted")
 }

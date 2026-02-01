@@ -17,7 +17,7 @@ func RegisterAgent(callsign string) (result RegisterAgentResponse) {
 	payloadJSON, err := json.Marshal(payload)
 	PanicOnError(err)
 	response_string := BasicPost("register", payloadJSON)
-	pretty_print_json(response_string)
+	//pretty_print_json(response_string)
 	data_container := RegisterAgentResponseData{}
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] RegisterAgent failed to unmarshal")

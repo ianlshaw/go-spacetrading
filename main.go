@@ -15,6 +15,7 @@ var agent_token = "Bearer "
 var base_system_symbol = ""
 var http_calls = 0
 var turn_length = 120
+var callsign = os.Args[1]
 
 func PanicOnError(e error) {
 	if e != nil {
@@ -120,10 +121,15 @@ func runShip(
 		//	return
 		//}
 
-
 		if len(all_shuttles) >= 1 {
 			if ship.Symbol == all_shuttles[0].Symbol {
-				expiration = ApplyRoleTrader(ship)
+				expiration = ApplyRoleTrader(ApplyRoleTraderParams{
+					ship: ship,
+					ship_list: ship_list,
+					markets_to_cover: markets_to_cover,
+					trade_routes: trade_routes,
+					callsign: callsign,
+				})
 			}
 		}
 

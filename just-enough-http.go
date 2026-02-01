@@ -41,13 +41,19 @@ func BasicGet(endpoint string) (response_body string) {
 		fmt.Println("[ERROR] BasicGet failed to unmarshal")
 	}
 
+	// 4113 is returned when the server restarts
+	if error_container.Error.Code == 4113 {
+		fmt.Println("[ERROR] Server has restarted.")
+		EraseState(callsign)
+		os.Exit(42)
+	}
+
 	// If the error["message"] field exists, the game returned an error.
 	if error_container.Error.Message != "" {
 		fmt.Println("[ERROR] response contains error key")
 		fmt.Println("Error Code:")
 		fmt.Println(error_container.Error.Code)
 		fmt.Println(error_container.Error.Message)
-
 		fmt.Println(error_container)
 		os.Exit(1)
 	}
@@ -87,6 +93,13 @@ func BasicPost(endpoint string, payload []byte) (response_body string) {
 		fmt.Println("[ERROR] BasicPost failed to unmarshal")
 	}
 
+	// 4113 is returned when the server restarts
+	if error_container.Error.Code == 4113 {
+		fmt.Println("[ERROR] Server has restarted.")
+		EraseState(callsign)
+		os.Exit(4113)
+	}
+
 	// If the error["message"] field exists, the game returned an error.
 	if error_container.Error.Message != "" {
 		fmt.Println("[ERROR] response contains error key")
@@ -94,6 +107,7 @@ func BasicPost(endpoint string, payload []byte) (response_body string) {
 		fmt.Println(error_container.Error.Code)
 		fmt.Println(error_container.Error.Message)
 		fmt.Println(error_container.Error.Data)
+		os.Exit(1)
 	}
 
 	//Convert the body to type string
