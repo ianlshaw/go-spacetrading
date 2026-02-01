@@ -72,8 +72,7 @@ func ApplyRoleSiphoner(ship Ship,
 
 	// cargo not full
 	if IsShipAlreadyAtWaypoint(ship, closest_gas_giant_waypoint.Symbol) {
-		fmt.Println("[DEBUG] ship is already at closest_gas_giant_waypoint")
-		// TODO
+		//fmt.Println("[DEBUG] ship is already at closest_gas_giant_waypoint")
 		siphon_result := SiphonResources(ship.Symbol)
 		siphon := siphon_result.Siphon
 		yield := siphon.Yield
@@ -91,7 +90,7 @@ func ApplyRoleSiphoner(ship Ship,
 			return arrival_time
 		}
 		expiration_timestamp := StringToTimestamp(expiration)
-		fmt.Print("[DEBUG] On cooldown after siphoning until ")
+		fmt.Print("[DEBUG] " + ship.Symbol + " On cooldown after siphoning until ")
 		fmt.Println(expiration)
 		return expiration_timestamp
 	}
@@ -103,6 +102,7 @@ func ApplyRoleSiphoner(ship Ship,
 
 	if IsShipAlreadyAtWaypoint(ship, contract_delivery_destination_symbol) {
 		// TODO Dump excess cargo here
+		// TODO i think this is superfluous
 		path, _ := CalculateShortestPathBetweenTwoWaypoints(MarketplaceGraph, current_waypoint, closest_market_to_closest_gas_giant_waypoint)
 		arrival_time := FollowPath(ship, path)
 		return arrival_time

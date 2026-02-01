@@ -66,7 +66,8 @@ func runShip(
 
 	for {
 
-		var expiration time.Time
+		//var expiration time.Time
+		expiration := ThreeHoursFromNow()
 
 		if ship.Registration.Role == "COMMAND" {
 			expiration = ApplyRoleCommand(ship, all_waypoints_in_system, all_markets_in_system, markets_to_cover, trade_routes, callsign)
@@ -120,8 +121,6 @@ func runShip(
 		//}
 
 
-		fmt.Println(len(all_shuttles))
-
 		if len(all_shuttles) >= 1 {
 			if ship.Symbol == all_shuttles[0].Symbol {
 				expiration = ApplyRoleTrader(ship)
@@ -141,7 +140,7 @@ func runShip(
 		}
 
 		expiration_formatted := expiration.Format(time.RFC3339)
-		fmt.Println("[INFO] " + ship.Symbol + " Sleeping until " + expiration_formatted)
+		fmt.Println("[INFO] " + ship.Symbol + " " + ship.Registration.Role + " Sleeping until " + expiration_formatted)
 		time.Sleep(time.Until(expiration))
 
 		// Anti-Spam

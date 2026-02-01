@@ -67,18 +67,14 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 
 	if !IsContractAccepted(contract) {
 		fmt.Println("[DEBUG] Contract is negotiated but not accepted")
-		fmt.Println("[INFO] Terms:")
-		fmt.Println(contract)
 		AcceptContract(contract.ID)
 	}
-
-	fmt.Println("[INFO] Contract is accepted")
 
 	if len(contract.Terms.Deliver) > 1 {
 		fmt.Println("[ERROR] CONTRACT DELIVER OBJECT HAS MORE THAN ONE ELEMENT")
 	}
 
-	fmt.Print("[CONTRACT] " + contract.Type + " [")
+	fmt.Print("[INFO] Contract " + contract.Type + " [")
 	fmt.Print(contract.Terms.Deliver[0].UnitsFulfilled)
 	fmt.Print("/")
 	fmt.Print(contract.Terms.Deliver[0].UnitsRequired)
@@ -141,7 +137,7 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 		// find closest out of a []Market
 		markets_with_contract_trade_good := MarketplacesWhichSellTradeGood(all_markets_in_system, contract_delivery_trade_good_symbol)
 		if len(markets_with_contract_trade_good) == 0 {
-			fmt.Println("[INFO] no marketplace sells " + contract_delivery_trade_good_symbol)
+			//fmt.Println("[DEBUG] no marketplace sells " + contract_delivery_trade_good_symbol)
 			if contract_delivery_trade_good_symbol == "LIQUID_HYDROGEN" || contract_delivery_trade_good_symbol == "LIQUID_NITROGEN" || contract_delivery_trade_good_symbol == "HYDROCARBON" {
 				expiration := ApplyRoleSiphoner(ship, all_waypoints_in_system, all_markets_in_system, contract)
 				return expiration

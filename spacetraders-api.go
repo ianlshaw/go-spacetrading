@@ -116,9 +116,9 @@ func GetShip(ship_symbol string) Ship {
 
 func NavigateShip(ship_symbol string, waypoint_symbol string) (NavigateShipResponse, time.Time) {
 	Log("INFO", "NavigateShip " + ship_symbol + " " + waypoint_symbol)
+	fmt.Println("[INFO] NavigateShip " + ship_symbol + " " + waypoint_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/navigate"
 	payload := &NavigateShipPayload{}
-
 	payload.WaypointSymbol = waypoint_symbol
 	payloadJSON, err := json.Marshal(payload)
 	PanicOnError(err)
@@ -129,7 +129,6 @@ func NavigateShip(ship_symbol string, waypoint_symbol string) (NavigateShipRespo
 	}
 	arrival_time := StringToTimestamp(data_container.Data.Nav.Route.Arrival)
 	return data_container.Data, arrival_time
-
 }
 
 func OrbitShip(ship_symbol string) OrbitShipResponse {
@@ -241,14 +240,14 @@ func SellCargo(ship_symbol string, trade_good_symbol string, units int64) SellCa
 }
 
 func RefuelShip(ship_symbol string, units int64, from_cargo bool) RefuelShipResponse {
-	fmt.Print("[DEBUG] RefuelShip ")
-	fmt.Print(ship_symbol + " ")
-	fmt.Print(units)
-	fmt.Print(" ")
-	fmt.Println(from_cargo)
+	//fmt.Print("[DEBUG] RefuelShip ")
+	//fmt.Print(ship_symbol + " ")
+	//fmt.Print(units)
+	//fmt.Print(" ")
+	//fmt.Println(from_cargo)
 	endpoint := "my/ships/" + ship_symbol + "/refuel"
 	payload := &RefuelShipPayload{}
-	//payload.Units = units
+	//payload.Units = units // this is nulled in the model to force "fill completely" behaviour
 	payload.FromCargo = from_cargo
 	payloadJSON, err := json.Marshal(payload)
 	PanicOnError(err)
