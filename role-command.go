@@ -20,9 +20,8 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 	}
 
 	// DEBUG
-	Log("DEBUG", "Inventory")
+	fmt.Print("[DEBUG] Inventory ")
 	for _, item := range ship.Cargo.Inventory {
-		fmt.Print("[DEBUG] Inventory: ")
 		fmt.Print(item.Symbol)
 		fmt.Print(" ")
 		fmt.Print(item.Units)
@@ -30,11 +29,7 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 	}
 
 	// ad-hoc dump inventory because buy flow is incorrect
-	//for _, cargo_trade_good := range ship.Cargo.Inventory {
-	//	units := CountTradeGoodCargo(ship, cargo_trade_good.Symbol)
-	//	JettisonCargo(ship, cargo_trade_good.Symbol, units)
-	//}
-	//
+	//JettisonAllCargo(ship)
 
 	// TODO move this elsewhere
 	ship_list := ListShips()
@@ -149,9 +144,9 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 			}
 			return time.Now()
 		}
-		fmt.Println("[INFO] The following markets sell " + contract_delivery_trade_good_symbol + ":")
+		fmt.Println("[INFO] The following markets sell " + contract_delivery_trade_good_symbol + ": ")
 		for _, market_symbol := range markets_with_contract_trade_good {
-			fmt.Println("[INFO] " + market_symbol.Symbol)
+			fmt.Print(market_symbol.Symbol + " ")
 		}
 		closest_market := ClosestMarketSellingTradeGood(ship, contract_delivery_trade_good_symbol, markets_with_contract_trade_good)
 		closest_market_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, closest_market.Symbol)
