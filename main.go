@@ -66,7 +66,6 @@ func runShip(
 	callsign string) {
 
 	for {
-
 		//var expiration time.Time
 		expiration := ThreeHoursFromNow()
 
@@ -100,26 +99,11 @@ func runShip(
 					siphon_drone_shipyard_waypoints,
 					surveyor_shipyard_waypoints,
 					agent)
+			} else {
+				//expiration = ApplyRoleSatellite(ship, markets_to_cover, trade_routes)
+				expiration = ApplyRoleSatellite(ship, trade_routes)
 			}
-			expiration = ApplyRoleSatellite(ship, markets_to_cover, trade_routes)
 		}
-		//}
-		//if ship.Registration.Role == "EXCAVATOR" {
-		//	for _, mount := range ship.Mounts {
-		//		if mount.Symbol == "MOUNT_MINING_LASER_I" {
-		//			ApplyRoleMiner()
-		//			return
-		//		}
-		//		if mount.Symbol == "MOUNT_GAS_SIPHON_I" {
-		//			ApplyRoleSiphoner(ship, all_waypoints_in_system, all_markets_in_system)
-		//			return
-		//		}
-		//	}
-		//}
-		//if ship.Registration.Role == "SURVEYOR" {
-		//	ApplyRoleSurveyor()
-		//	return
-		//}
 
 		if len(all_shuttles) >= 1 {
 			if ship.Symbol == all_shuttles[0].Symbol {
@@ -144,6 +128,24 @@ func runShip(
 				expiration = ApplyRoleTransportGas(ship)
 			}
 		}
+
+		//}
+		//if ship.Registration.Role == "EXCAVATOR" {
+		//	for _, mount := range ship.Mounts {
+		//		if mount.Symbol == "MOUNT_MINING_LASER_I" {
+		//			ApplyRoleMiner()
+		//			return
+		//		}
+		//		if mount.Symbol == "MOUNT_GAS_SIPHON_I" {
+		//			ApplyRoleSiphoner(ship, all_waypoints_in_system, all_markets_in_system)
+		//			return
+		//		}
+		//	}
+		//}
+		//if ship.Registration.Role == "SURVEYOR" {
+		//	ApplyRoleSurveyor()
+		//	return
+		//}
 
 		expiration_formatted := expiration.Format(time.RFC3339)
 		fmt.Println("[INFO] " + ship.Symbol + " " + ship.Registration.Role + " Sleeping until " + expiration_formatted)

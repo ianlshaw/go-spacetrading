@@ -17,6 +17,9 @@ type ApplyRoleTraderParams struct {
 func ApplyRoleTrader(p ApplyRoleTraderParams) time.Time {
 
 	fmt.Println("[INFO] " + p.ship.Symbol + " ApplyRoleTrader")
+
+	PrintTradeRoutes(p.trade_routes)
+
 	number_of_satellites := CountShipsByFrame(p.ship_list, "SATELLITE")
 	number_of_markets_to_cover := len(p.markets_to_cover)
 	if number_of_satellites >= number_of_markets_to_cover {
@@ -41,7 +44,7 @@ func ApplyRoleTrader(p ApplyRoleTraderParams) time.Time {
 		WriteTradeRoutesToFile(p.trade_routes, p.callsign)
 	}
 
-	PrintTradeRoutes(p.ship_list, p.trade_routes)
+	PrintTradeRoutes(p.trade_routes)
 
 	most_profitable_trade_route := MostProfitableTradeRoute(p.trade_routes)
 

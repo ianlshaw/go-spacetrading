@@ -9,6 +9,7 @@ var desired_number_of_ship_shuttle = 1
 var desired_number_of_ship_mining_drone = 1
 var desired_number_of_ship_siphon_drone = 1
 var desired_number_of_ship_surveyor = 1
+var desired_number_of_ship_probe = 2
 
 func ApplyRoleBuyer(
 	ship Ship,
@@ -21,22 +22,82 @@ func ApplyRoleBuyer(
 	survey_ship_shipyard_waypoints []Waypoint,
 	agent Agent) time.Time {
 
-	fmt.Println("[DEBUG] ApplyRoleBuyer")
+	fmt.Println("[DEBUG] " + ship.Symbol + " " + ship.Registration.Role + " ApplyRoleBuyer")
 
 	if ship.Nav.Status == "IN_TRANSIT" {
 		fmt.Println("[DEBUG] IN_TRANSIT TO " + ship.Nav.Route.Destination.Symbol)
 		fmt.Println("[DEBUG] Arrival " + ship.Nav.Route.Arrival)
 		fmt.Println("[ERROR] ApplyRoleBuyer Nav status IN_TRANSIT - THIS SHOULD NOT HAPPEN")
-		return time.Now().Add(5 * time.Minute)
+		return StringToTimestamp(ship.Nav.Route.Arrival)
 	}
 
-	if agent.Credits < 500000 {
-		fmt.Println("[INFO] Buyer not enough credits. Sleeping...")
-		return time.Now().Add(3 * time.Hour)
+	fmt.Print("[DEBUG] markets to cover: ")
+	fmt.Println(len(markets_to_cover))
+	
+	for k, _ := range markets_to_cover {
+		fmt.Println(k)
+	}
+
+	if agent.Credits < 400000 {
+		fmt.Println("[WARN] Buyer not enough credits. Sleeping for 15 miniutes.")
+		return FifteenMinutesFromNow()
 	}
 
 	current_waypoint := GetWaypoint(base_system_symbol, ship.Nav.WaypointSymbol)
 	var closest_shipyard_waypoint Waypoint
+
+	// Probes
+	number_of_ship_probe := CountShipsByFrame(ship_list, "FRAME_PROBE") // This would need to -1 since the buyer is now a probe
+	//if number_of_ship_probe < len(markets_to_cover) { // 22 probes is too many before we start trading
+	if number_of_ship_probe < desired_number_of_ship_probe {
+		fmt.Println("[INFO] We need more satellites, boss")
+		fmt.Print("[DEBUG] number_of_satellites = ")
+		fmt.Println(number_of_ship_probe)
+		fmt.Print("[DEBUG] markets_to_cover length = ")
+		fmt.Println(len(markets_to_cover))
+
+		best_distance := 99999999.9999999
+		var probe_ship_shipyard_waypoint_symbol string
+		for _, shipyard := range probe_shipard_waypoints {
+			distance := DistanceBetweenTwoCoordinates(shipyard.X, shipyard.Y, current_waypoint.X, current_waypoint.Y)
+			if distance < int(best_distance) {
+				probe_ship_shipyard_waypoint_symbol = shipyard.Symbol
+			}
+		}
+
+		fmt.Println("[DEBUG] buyer_ship_destination_symbol:")
+		fmt.Println(probe_ship_shipyard_waypoint_symbol)
+
+		fmt.Println("[DEBUG] command ship current location")
+		fmt.Println(ship.Nav.WaypointSymbol)
+
+		if IsShipAlreadyAtWaypoint(ship, probe_ship_shipyard_waypoint_symbol) {
+
+			if !IsShipDocked(ship) {
+				DockShip(ship.Symbol)
+			}
+
+			// This will only purchase one ship per turn. We can buy more per turn but we need to update the satellite count afterwards
+			PurchaseShip("SHIP_PROBE", ship.Nav.WaypointSymbol)
+
+			fmt.Println("[INFO] command ship is at probe_ship_shipyard_waypoint_symbol BUY SATELLITES")
+
+		} else {
+			if IsShipDocked(ship) {
+				OrbitShip(ship.Symbol)
+			}
+			fmt.Println("[INFO] " + ship.Symbol + " Heading to probe shipyard")
+			_, arrival_time := NavigateShip(ship.Symbol, probe_ship_shipyard_waypoint_symbol)
+			return arrival_time
+		}
+	}
+
+	if agent.Credits < 500000 {
+		fmt.Println("[WARN] Buyer not enough credits. Sleeping for 15 miniutes.")
+		return FifteenMinutesFromNow()
+	}
+
+	// Shuttles
 	number_of_ship_shuttle := CountShipsByFrame(ship_list, "FRAME_SHUTTLE")
 	if number_of_ship_shuttle < desired_number_of_ship_shuttle {
 		fmt.Println("number_of_ship_shuttle")
@@ -139,55 +200,6 @@ func ApplyRoleBuyer(
 		}
 	}
 
-	// We dont nessesarily want a limit on this unlike the others
-	number_of_ship_probe := CountShipsByFrame(ship_list, "SHIP_PROBE")
-	credits := agent.Credits
-	if credits < 100000 {
-		fmt.Println("[INFO] Not enough money to buy more satellites")
-		return time.Now().Add(1 * time.Hour)
-	}
-
-	if number_of_ship_probe < len(markets_to_cover) {
-		fmt.Println("[INFO] We need more satellites, boss")
-		fmt.Print("[DEBUG] number_of_satellites = ")
-		fmt.Println(number_of_ship_probe)
-		fmt.Print("[DEBUG] markets_to_cover length = ")
-		fmt.Println(len(markets_to_cover))
-
-		best_distance := 99999999.9999999
-		var probe_ship_shipyard_waypoint_symbol string
-		for _, shipyard := range probe_shipard_waypoints {
-			distance := DistanceBetweenTwoCoordinates(shipyard.X, shipyard.Y, current_waypoint.X, current_waypoint.Y)
-			if distance < int(best_distance) {
-				probe_ship_shipyard_waypoint_symbol = shipyard.Symbol
-			}
-		}
-
-		fmt.Println("[DEBUG] buyer_ship_destination_symbol:")
-		fmt.Println(probe_ship_shipyard_waypoint_symbol)
-
-		fmt.Println("[DEBUG] command ship current location")
-		fmt.Println(ship.Nav.WaypointSymbol)
-
-		if IsShipAlreadyAtWaypoint(ship, probe_ship_shipyard_waypoint_symbol) {
-
-			if !IsShipDocked(ship) {
-				DockShip(ship.Symbol)
-			}
-
-			// This will only purchase one ship per turn. We can buy more per turn but we need to update the satellite count afterwards
-			PurchaseShip("SHIP_PROBE", ship.Nav.WaypointSymbol)
-
-			fmt.Println("[INFO] command ship is at probe_ship_shipyard_waypoint_symbol BUY SATELLITES")
-
-		} else {
-			if IsShipDocked(ship) {
-				OrbitShip(ship.Symbol)
-			}
-			fmt.Println("[INFO] " + ship.Symbol + " Heading to probe shipyard")
-			NavigateShip(ship.Symbol, probe_ship_shipyard_waypoint_symbol)
-		}
-	}
 	fmt.Print("[ERROR] ApplyRoleBuyer" + ship.Symbol)
 	fmt.Print(" uncaught branch, returning default 5 minute delay")
 	return time.Now().Add(5 * time.Minute)

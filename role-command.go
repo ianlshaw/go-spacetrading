@@ -71,7 +71,7 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 		if IsContractDeliverble(contract, all_markets_in_system, mineable_goods, siphonable_goods) {
 			AcceptContract(contract.ID)
 		} else {
-			fmt.Println("[WARNING] Undeliverable contract, not accepting. Waiting until deadlineToAccept expires at " + contract.DeadlineToAccept)
+			fmt.Println("[WARN] Not accepting undeliverable contract for " + contract_delivery_trade_good_symbol + "  waiting until deadlineToAccept expires at " + contract.DeadlineToAccept)
 			return StringToTimestamp(contract.DeadlineToAccept)
 		}
 	}
@@ -231,7 +231,7 @@ func ApplyRoleCommand(ship Ship, all_waypoints_in_system []Waypoint, all_markets
 		WriteTradeRoutesToFile(trade_routes, callsign)
 	}
 
-	PrintTradeRoutes(ship_list, trade_routes)
+	PrintTradeRoutes(trade_routes)
 
 	most_profitable_trade_route := MostProfitableTradeRoute(trade_routes)
 
