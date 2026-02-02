@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+var apiLimiter = time.NewTicker(2000 * time.Millisecond)
+
 var url_base string = "https://api.spacetraders.io/v2/"
 var account_token = "Bearer "
 var account_token_filename = "ACCOUNTTOKENDONOTEXPOSE.txt"
@@ -16,6 +18,67 @@ var base_system_symbol = ""
 var http_calls = 0
 var turn_length = 120
 var callsign = os.Args[1]
+
+type ShipActionType string
+
+const (
+    ActionNavigate   ShipActionType = "NAVIGATE"
+    ActionBuy        ShipActionType = "BUY"
+    ActionSell       ShipActionType = "SELL"
+    ActionExtract    ShipActionType = "EXTRACT"
+    ActionWait       ShipActionType = "WAIT"
+	ActionDock		 ShipActionType = "DOCK"
+	ActionOrbit		 ShipActionType = "ORBIT"
+	ActionUpdateMarketData ShipActionType = "UPDATEMARKETDATA"
+)
+
+type ShipAction struct {
+    Type       ShipActionType
+    ShipSymbol string
+
+    // Optional fields depending on Type
+    TradeGood      string
+    Units     	   int
+	WaypointSymbol string
+
+	// Not sure about this one
+	TradeRoutes		[]TradeRoute
+
+    // When should this action be executed?
+    NotBefore time.Time
+}
+
+func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
+	<-apiLimiter.C
+
+    switch action.Type {
+
+    case ActionNavigate:
+        resp, _ := NavigateShip(action.ShipSymbol, action.WaypointSymbol)
+		ship.Nav = resp.Nav
+        return StringToTimestamp(resp.Nav.Route.Arrival)
+
+	case ActionDock:
+		resp := DockShip(action.ShipSymbol)
+		ship.Nav = resp.Nav
+		return time.Now()
+
+	case ActionOrbit:
+		resp := OrbitShip(action.ShipSymbol)
+		ship.Nav = resp.Nav
+		return time.Now()
+
+	case ActionUpdateMarketData:
+		UpdateTradeRoutesIncludingThisWaypoint(action.WaypointSymbol, action.TradeRoutes)
+		return time.Now()
+
+    case ActionWait:
+        return action.NotBefore
+
+	}
+
+    panic("unknown action")
+}
 
 func PanicOnError(e error) {
 	if e != nil {
@@ -100,8 +163,10 @@ func runShip(
 					surveyor_shipyard_waypoints,
 					agent)
 			} else {
-				//expiration = ApplyRoleSatellite(ship, markets_to_cover, trade_routes)
-				expiration = ApplyRoleSatellite(ship, trade_routes)
+				//expiration = ApplyRoleSatellite(ship, trade_routes)
+				action := DecideSatelliteAction(ship, trade_routes)
+				fmt.Println(action)
+				expiration = ExecuteAction(action, &ship)
 			}
 		}
 
