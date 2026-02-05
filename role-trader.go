@@ -40,6 +40,12 @@ func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipActio
 		}
 	}
 
+	if !IsShipCargoEmpty(ship){
+		trade_good_in_cargo := ship.Cargo.Inventory[0].Symbol
+		trade_routes_with_cargo := TradeRoutesWithTradeGood(trade_routes, trade_good_in_cargo)
+		most_profitable_trade_route = MostProfitableTradeRoute(trade_routes_with_cargo)
+	}
+
 	space_in_cargo_hold := ship.Cargo.Capacity - ship.Cargo.Units
 
 	if IsShipAlreadyAtWaypoint(ship, most_profitable_trade_route.SellMarketplaceWaypointSymbol) {

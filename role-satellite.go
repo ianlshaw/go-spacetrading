@@ -67,8 +67,6 @@ func DecideSatelliteAction(
 
 	// sell marketplace
 	if trade_route.SellMarketTradeGood.SellPrice == 0 {
-		fmt.Println(trade_route.SellMarketplaceWaypointSymbol)
-		fmt.Println(ship.Nav.WaypointSymbol)
 		if IsShipAlreadyAtWaypoint(ship, trade_route.SellMarketplaceWaypointSymbol){
 			if IsShipDocked(ship){
 				return ShipAction{
