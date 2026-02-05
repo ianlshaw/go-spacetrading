@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/albertorestifo/dijkstra"
 	"slices"
-	"time"
 )
 
 var SystemGraph dijkstra.Graph = make(dijkstra.Graph)
 var MarketplaceGraph dijkstra.Graph = make(dijkstra.Graph)
+
 
 func AddWaypointToGraph(graph dijkstra.Graph, waypoint Waypoint) {
 	fmt.Println("[DEBUG] AddWaypointToGraph")
@@ -42,24 +42,18 @@ func CalculateShortestPathBetweenTwoWaypoints(Graph dijkstra.Graph, SourceWaypoi
 	return path, cost
 }
 
-func FollowPath(ship Ship, path []string) time.Time {
+func FollowPath(ship *Ship, path []string) NavigateShipResponse {
 	ship_waypoint_symbol := ship.Nav.WaypointSymbol
 	last_waypoint_in_path := path[len(path)-1]
 	if ship_waypoint_symbol == last_waypoint_in_path {
 		fmt.Println("[ERROR] Already at path final destination. FollowPath shouldnt have been called")
-		return time.Now()
+		return NavigateShipResponse{}
 	}
-	if !IsShipDocked(ship){
-		DockShip(ship.Symbol)
-	}
-	// TODO this should calculate the correct amount of units.
-	RefuelShip(ship.Symbol, 4, false)
-	OrbitShip(ship.Symbol)
 	current_waypoint_path_index := slices.Index(path, ship_waypoint_symbol)
 	target_waypoint_path_index := current_waypoint_path_index + 1
 	target_waypoint := path[target_waypoint_path_index]
-	_, arrival_time := NavigateShip(ship.Symbol, target_waypoint)
-	return arrival_time
+	resp := NavigateShip(ship.Symbol, target_waypoint)
+	return resp
 }
 
 func IsShipLocatedInGraph(ship Ship, graph dijkstra.Graph) bool {

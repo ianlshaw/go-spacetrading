@@ -6,8 +6,13 @@ import (
 	"time"
 )
 
+func IsShipInTransit(ship Ship) bool {
+	return (ship.Nav.Status == "IN_TRANSIT")
+}
+
 func IsShipAlreadyAtWaypoint(ship_to_test Ship, waypoint_symbol string) bool {
-	return (ship_to_test.Nav.WaypointSymbol == waypoint_symbol && ship_to_test.Nav.Status != "IN_TRANSIT")
+	fmt.Println(ship_to_test.Nav.Status)
+	return (ship_to_test.Nav.WaypointSymbol == waypoint_symbol )
 }
 
 func IsShipDocked(ship Ship) bool {
@@ -95,6 +100,13 @@ func CountShipsByFrame(ship_list []Ship, frame string) int {
 		}
 	}
 	return count
+}
+
+func IsFuelFull(ship Ship) bool {
+	if ship.Fuel.Current == ship.Fuel.Capacity {
+		return true
+	}
+	return false
 }
 
 func FindPurcahseableShipByFrame(all_waypoints_in_system []Waypoint, all_shipyards_in_system []Shipyard, frame string) ([]Shipyard, []Waypoint) {

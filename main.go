@@ -19,17 +19,24 @@ var http_calls = 0
 var turn_length = 120
 var callsign = os.Args[1]
 
+var trade_routes []TradeRoute
+var all_waypoints_in_system []Waypoint
+
 type ShipActionType string
 
 const (
-    ActionNavigate   ShipActionType = "NAVIGATE"
-    ActionBuy        ShipActionType = "BUY"
-    ActionSell       ShipActionType = "SELL"
-    ActionExtract    ShipActionType = "EXTRACT"
-    ActionWait       ShipActionType = "WAIT"
-	ActionDock		 ShipActionType = "DOCK"
-	ActionOrbit		 ShipActionType = "ORBIT"
-	ActionUpdateMarketData ShipActionType = "UPDATEMARKETDATA"
+    ActionNavigate   		ShipActionType = "NAVIGATE"
+    ActionBuy        		ShipActionType = "BUY"
+    ActionSell       		ShipActionType = "SELL"
+    ActionExtract    		ShipActionType = "EXTRACT"
+    ActionWait       		ShipActionType = "WAIT"
+	ActionDock		 		ShipActionType = "DOCK"
+	ActionOrbit		 		ShipActionType = "ORBIT"
+	ActionUpdateMarketData  ShipActionType = "UPDATE MARKET DATA"
+	ActionPurchaseCargo 	ShipActionType = "PURCHASE CARGO"
+	ActionRefuel			ShipActionType = "REFUEL"
+	ActionFollowPath 		ShipActionType = "FOLLOW PATH"
+	ActionSellCargo 		ShipActionType = "SELL CARGO"
 )
 
 type ShipAction struct {
@@ -37,24 +44,53 @@ type ShipAction struct {
     ShipSymbol string
 
     // Optional fields depending on Type
-    TradeGood      string
-    Units     	   int
+    TradeGoodSymbol      string
+    Units     	   int64
 	WaypointSymbol string
-
-	// Not sure about this one
-	TradeRoutes		[]TradeRoute
+	Path			[]string
 
     // When should this action be executed?
     NotBefore time.Time
 }
 
-func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
-	<-apiLimiter.C
+type WorldState struct {
+    Markets map[string]*MarketState
+}
 
+type MarketState struct {
+    WaypointSymbol string
+    LastSeen time.Time
+
+    // Raw API response
+    Market Market
+}
+
+var World WorldState
+
+func (w *WorldState) UpdateFromMarket(m Market) {
+    w.Markets[m.Symbol] = &MarketState{
+        WaypointSymbol: m.Symbol,
+        LastSeen: time.Now(),
+        Market:   m,
+    }
+}
+
+func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
     switch action.Type {
 
+    case ActionWait:
+        return action.NotBefore
+
+	<-apiLimiter.C
+
+	case ActionFollowPath:
+		resp := FollowPath(ship, action.Path)
+		ship.Nav = resp.Nav
+		ship.Fuel = resp.Fuel
+		return StringToTimestamp(resp.Nav.Route.Arrival)
+
     case ActionNavigate:
-        resp, _ := NavigateShip(action.ShipSymbol, action.WaypointSymbol)
+        resp := NavigateShip(action.ShipSymbol, action.WaypointSymbol)
 		ship.Nav = resp.Nav
         return StringToTimestamp(resp.Nav.Route.Arrival)
 
@@ -63,17 +99,33 @@ func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
 		ship.Nav = resp.Nav
 		return time.Now()
 
+	case ActionRefuel:
+		resp := RefuelShip(action.ShipSymbol, 1, false)
+		ship.Fuel = resp.Fuel
+		return time.Now()
+
 	case ActionOrbit:
 		resp := OrbitShip(action.ShipSymbol)
 		ship.Nav = resp.Nav
 		return time.Now()
 
 	case ActionUpdateMarketData:
-		UpdateTradeRoutesIncludingThisWaypoint(action.WaypointSymbol, action.TradeRoutes)
+		UpdateTradeRoutesIncludingThisWaypoint(action.WaypointSymbol)
+		resp := GetMarket(base_system_symbol, action.WaypointSymbol)
+		World.UpdateFromMarket(resp)
+		return time.Now()
+	
+	case ActionPurchaseCargo:
+		resp := PurchaseCargo(action.ShipSymbol, action.TradeGoodSymbol, action.Units)
+		ship.Cargo = resp.Cargo
+		// Update agent here
 		return time.Now()
 
-    case ActionWait:
-        return action.NotBefore
+	case ActionSellCargo:
+		resp := SellCargo(action.ShipSymbol, action.TradeGoodSymbol, action.Units)
+		ship.Cargo = resp.Cargo
+		// Update agent here
+		return time.Now()
 
 	}
 
@@ -132,9 +184,13 @@ func runShip(
 		//var expiration time.Time
 		expiration := ThreeHoursFromNow()
 
-		if ship.Registration.Role == "COMMAND" {
-			expiration = ApplyRoleCommand(ship, all_waypoints_in_system, all_markets_in_system, markets_to_cover, trade_routes, callsign)
-		}
+		// DEBUG
+
+		fmt.Println("[DEBUG] " + ship.Symbol + " " + ship.Registration.Role + " "  + ship.Frame.Symbol)
+
+		//if ship.Registration.Role == "COMMAND" {
+		//	expiration = ApplyRoleCommand(ship, all_waypoints_in_system, all_markets_in_system, markets_to_cover, trade_routes, callsign)
+		//}
 
 		all_probes := []Ship{}
 		all_shuttles := []Ship{}
@@ -149,36 +205,39 @@ func runShip(
 		}
 
 		buyer_ship := all_probes[0]
+		market_bootstrap_probe := all_probes[1]
 
 		if ship.Registration.Role == "SATELLITE" {
 			if ship.Symbol == buyer_ship.Symbol {
-				expiration = ApplyRoleBuyer(
-					ship,
-					ship_list,
-					markets_to_cover,
-					probe_shipyard_waypoints,
-					shuttle_shipyard_waypoints,
-					mining_drone_shipyard_waypoints,
-					siphon_drone_shipyard_waypoints,
-					surveyor_shipyard_waypoints,
-					agent)
-			} else {
-				//expiration = ApplyRoleSatellite(ship, trade_routes)
-				action := DecideSatelliteAction(ship, trade_routes)
+				//expiration = ApplyRoleBuyer(
+				//	ship,
+				//	ship_list,
+				//	markets_to_cover,
+				//	probe_shipyard_waypoints,
+				//	shuttle_shipyard_waypoints,
+				//	mining_drone_shipyard_waypoints,
+				//	siphon_drone_shipyard_waypoints,
+				//	surveyor_shipyard_waypoints,
+				//	agent)
+			} else if ship.Symbol == market_bootstrap_probe.Symbol {
+				action := DecideSatelliteAction(ship)
 				fmt.Println(action)
 				expiration = ExecuteAction(action, &ship)
+			} else {
+				//expiration = ApplyRoleSatellite(ship, trade_routes)
+				//action := DecideSatelliteAction(ship, trade_routes)
+				//fmt.Println(action)
+				//expiration = ExecuteAction(action, &ship)
 			}
 		}
 
 		if len(all_shuttles) >= 1 {
 			if ship.Symbol == all_shuttles[0].Symbol {
-				expiration = ApplyRoleTrader(ApplyRoleTraderParams{
-					ship: ship,
-					ship_list: ship_list,
-					markets_to_cover: markets_to_cover,
-					trade_routes: trade_routes,
-					callsign: callsign,
-				})
+				// DEBUG
+				action := DecideTraderAction(ship, all_waypoints_in_system)
+				fmt.Println(action)
+				expiration = ExecuteAction(action, &ship)
+				// DEBUG
 			}
 		}
 
@@ -231,6 +290,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	World = WorldState{
+        Markets: make(map[string]*MarketState),
+    }
+	
 	CALLSIGN := os.Args[1]
 
 	// Check if an auth token file is present for the CALLSIGN provided
@@ -251,7 +314,7 @@ func main() {
 
 	if !DoesWaypointsFileExist(CALLSIGN) {
 		fmt.Println("[INFO] Gathering waypoint data...")
-		all_waypoints_in_system := []Waypoint{}
+		//all_waypoints_in_system := []Waypoint{}
 		list_waypoints_result := ListWaypointsInSystem(base_system_symbol, "1")
 		total_waypoints := list_waypoints_result.Meta.Total
 		limit := list_waypoints_result.Meta.Limit
@@ -321,15 +384,18 @@ func main() {
 
 	for _, waypoint := range marketplace_waypoints {
 		//AddWaypointToSystemGraph(waypoint)
+		
 		PopulateGraphDistancesForWaypointWithMaximum(MarketplaceGraph, marketplace_waypoints, waypoint, 400)
-		PopulateGraphDistancesForWaypointWithMaximum(SiphonerMarketplaceGraph, marketplace_waypoints, waypoint, 80)
+		PopulateGraphDistancesForWaypointWithMaximum(ShuttleMarketplaceGraph, marketplace_waypoints, waypoint, 300)
+
+		//PopulateGraphDistancesForWaypointWithMaximum(SiphonerMarketplaceGraph, marketplace_waypoints, waypoint, 80)
 	}
 
 	// each unique market waypoint symbol (unordered)
 	markets_to_cover := make(map[string]string)
 
 	// association for places to BUY and SELL TradeGoods
-	trade_routes := []TradeRoute{}
+	//trade_routes := []TradeRoute{}
 
 	if !DoesTradeRouteFileExist(CALLSIGN) {
 		fmt.Println("[INFO] Trade route file does not exist. Initializing...")

@@ -2,228 +2,138 @@ package main
 
 import (
 	"fmt"
-	"time"
-	"math"
+	"github.com/albertorestifo/dijkstra"
 )
 
-type ApplyRoleTraderParams struct {
-	ship Ship
-	ship_list []Ship
-	markets_to_cover map[string]string
-	trade_routes []TradeRoute
-	callsign string
-}
+// TODO
+// Account for most_profitable_trade_route changing while we have cargo on board.
+// Add an UpdateMarketData action when trader is at a market
 
-func ApplyRoleTrader(p ApplyRoleTraderParams) time.Time {
+var ShuttleMarketplaceGraph dijkstra.Graph = make(dijkstra.Graph)
 
-	fmt.Println("[INFO] " + p.ship.Symbol + " ApplyRoleTrader")
+func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipAction {
 
-	PrintTradeRoutes(p.trade_routes)
+	fmt.Println("[INFO] " + ship.Symbol + " ApplyRoleTrader")
 
-	number_of_satellites := CountShipsByFrame(p.ship_list, "SATELLITE")
-	number_of_markets_to_cover := len(p.markets_to_cover)
-	if number_of_satellites >= number_of_markets_to_cover {
-		fmt.Println("[INFO] Enough satellites")
-		if !SatelliteToMarketAssignmentComplete(p.markets_to_cover) {
-			AssignSatellitesToMarkets(p.markets_to_cover)
-		}
-	} else {
-		fmt.Println("[INFO] Not enough satellites, postponing market assignments...")
-		return FifteenMinutesFromNow()
-	}
-
-	// we have enough satellites
-	//fmt.Println("[INFO] We have enough satellites, boss. It's time to start trading!")
-
-	if !SatelliteToMarketAssignmentComplete(p.markets_to_cover) {
-		AssignSatellitesToMarkets(p.markets_to_cover)
-	}
-
-	if MarketScanComplete(p.trade_routes) {
-		PopulateTradeRoutesProfitPerUnit(p.trade_routes)
-		WriteTradeRoutesToFile(p.trade_routes, p.callsign)
-	}
-
-	PrintTradeRoutes(p.trade_routes)
-
-	most_profitable_trade_route := MostProfitableTradeRoute(p.trade_routes)
-
-	if IsWaypointWithinDistanceOfWaypoint(most_profitable_trade_route.BuyWaypoint, most_profitable_trade_route.SellWaypoint, int(p.ship.Frame.FuelCapacity)) {
-		//fmt.Println("[DEBUG] IsWaypointWithinDistanceOfWaypoint true")
-	} else {
-		//fmt.Println("[DEBUG] IsWaypointWithinDistanceOfWaypoint false")
-	}
+	most_profitable_trade_route := MostProfitableTradeRoute(trade_routes)
+	current_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, ship.Nav.WaypointSymbol)
 
 	if most_profitable_trade_route.ProfitabilityRating < 0 {
 		fmt.Println("[INFO] Most profitable trade route is not profitable enough. Doing nothing...")
-		return time.Now()
+		return ShipAction{
+			Type: ActionWait,
+			NotBefore: FifteenMinutesFromNow(),
+		}
 	}
 
-	if IsShipCargoEmpty(p.ship) {
-		fmt.Println("[INFO] Cargo hold empty")
-		if IsShipAlreadyAtWaypoint(p.ship, most_profitable_trade_route.BuyMarketplaceWaypointSymbol) {
-			fmt.Println("[DEBUG] Already at waypoint")
-			if !IsShipDocked(p.ship) {
-				DockShip(p.ship.Symbol)
+	if !IsFuelFull(ship) {
+		if IsShipDocked(ship){
+			return ShipAction{
+				Type: ActionRefuel,
+				ShipSymbol: ship.Symbol,
 			}
-
-			// BUY STUFF
-
-			//TODO
-			// Replace this with BuyAsManyTradeGoodAsPossible
-			// GetAgent maybe wastes a call?
-			maximum_affordable_units := HowManyTradeGoodCanIAfford(GetAgent(), most_profitable_trade_route.BuyMarketTradeGood)
-			fmt.Print("[DEBUG] maximum_affordable_units = ")
-			fmt.Println(maximum_affordable_units)
-
-			units_to_purchase := maximum_affordable_units
-			fmt.Println("[DEBUG] units_to_purchase = ")
-			fmt.Println(units_to_purchase)
-
-			space_in_cargo_hold := p.ship.Cargo.Capacity - p.ship.Cargo.Units
-			fmt.Print("[DEBUG] space_in_cargo_hold = ")
-			fmt.Println(space_in_cargo_hold)
-
-			// This should be one of the buy functions
-			if space_in_cargo_hold < units_to_purchase {
-				units_to_purchase = space_in_cargo_hold
-				fmt.Print("[DEBUG] units_to_purchase = ")
-				fmt.Println(space_in_cargo_hold)
-			}
-
-			buy_market_trade_volume := most_profitable_trade_route.BuyMarketTradeGood.TradeVolume
-
-			fmt.Print("[DEBUG] buy_market_trade_volume = ")
-			fmt.Println(buy_market_trade_volume)
-
-			if space_in_cargo_hold > buy_market_trade_volume {
-				fmt.Println("[DEBUG] space_in_cargo_hold > buy_market_trade_volume")
-
-				number_of_purchases_required := float64(space_in_cargo_hold) / float64(buy_market_trade_volume)
-				rounded_number_of_purchases_required := math.Ceil(number_of_purchases_required)
-				fmt.Println("[DEBUG] rounded_number_of_purchases_required = ")
-				fmt.Println(rounded_number_of_purchases_required)
-
-				units_to_purchase = buy_market_trade_volume
-				fmt.Println("[DEBUG] units_to_purchase = ")
-				fmt.Println(units_to_purchase)
-
-				for i := 0; float64(i) < rounded_number_of_purchases_required; i++ {
-					fmt.Println("[DEBUG] units_to_purchase = ")
-					fmt.Println(units_to_purchase)
-
-					buy_cargo_result := PurchaseCargo(p.ship.Symbol, most_profitable_trade_route.TradeGoodSymbol, units_to_purchase)
-
-					space_in_cargo_hold = buy_cargo_result.Cargo.Capacity - buy_cargo_result.Cargo.Units
-
-					fmt.Println("[DEBUG] space_in_cargo_hold = ")
-					fmt.Println(space_in_cargo_hold)
-
-					if space_in_cargo_hold < units_to_purchase {
-						units_to_purchase = space_in_cargo_hold
-					}
-
-				}
-			} else {
-				PurchaseCargo(p.ship.Symbol, most_profitable_trade_route.TradeGoodSymbol, units_to_purchase)
-			}
-
-			fmt.Print("[DEBUG] units_to_purchase = ")
-			fmt.Print(units_to_purchase)
-			fmt.Println()
-			RefuelShip(p.ship.Symbol, 4, false)
-			OrbitShip(p.ship.Symbol)
-			fmt.Println("[INFO] " + p.ship.Symbol + " Heading to SellMarketplaceWaypointSymbol")
-			_, next_execution_at := NavigateShip(p.ship.Symbol, most_profitable_trade_route.SellMarketplaceWaypointSymbol)
-			return next_execution_at
-		}
-
-		if MarketScanComplete(p.trade_routes) {
-			fmt.Println("[INFO] Heading to buy marketplace")
-			if IsShipDocked(p.ship) {
-				RefuelShip(p.ship.Symbol, 4, false)
-				OrbitShip(p.ship.Symbol)
-			}
-			_, next_execution_at := NavigateShip(p.ship.Symbol, most_profitable_trade_route.BuyMarketplaceWaypointSymbol)
-			return next_execution_at
-		}
-	} else {
-		fmt.Println("[INFO] Cargo not empty, we have " + p.ship.Cargo.Inventory[0].Symbol)
-
-		if !MarketScanComplete(p.trade_routes) {
-			fmt.Println("[DEBUG] wait for market data")
-			return time.Now()
-		}
-
-		first_item_in_inventory := p.ship.Cargo.Inventory[0]
-
-		trade_routes_with_inventory_good := TradeRoutesWithTradeGood(p.trade_routes, first_item_in_inventory.Symbol)
-
-		fmt.Print("[DEBUG] first_item_in_inventory.Symbol ")
-		fmt.Println(first_item_in_inventory.Symbol)
-
-		fmt.Print("[DEBUG] trade_routes_with_inventory_good length ")
-		fmt.Println(len(trade_routes_with_inventory_good))
-
-		if !MarketScanComplete(p.trade_routes) {
-			println("[DEBUG] market data incomplete, returning to avoid running MostProfitableTradeRoute")
-			return time.Now()
-		}
-
-		most_profitable_trade_route_with_inventory_good := MostProfitableTradeRoute(trade_routes_with_inventory_good)
-
-		fmt.Println("[DEBUG] most_profitable_trade_route_with_inventory_good")
-		//fmt.Println(most_profitable_trade_route_with_inventory_good)
-
-		if IsShipAlreadyAtWaypoint(p.ship, most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol) {
-			fmt.Println("[DEBUG] Already at sell marketplace")
-			if !IsShipDocked(p.ship) {
-				DockShip(p.ship.Symbol)
-			}
-
-			// this doesnt account for TradeVolume < Cargo.Capacity
-			units_in_cargo_hold := CountTradeGoodCargo(p.ship, most_profitable_trade_route_with_inventory_good.TradeGoodSymbol)
-			sell_market_trade_volume := most_profitable_trade_route_with_inventory_good.SellMarketTradeGood.TradeVolume
-			if units_in_cargo_hold > sell_market_trade_volume {
-				number_of_sales_required := units_in_cargo_hold / sell_market_trade_volume
-
-				units_to_sell := sell_market_trade_volume
-				for i := 0; i < int(number_of_sales_required); i++ {
-					sell_cargo_result := SellCargo(p.ship.Symbol, most_profitable_trade_route_with_inventory_good.TradeGoodSymbol, units_to_sell)
-					if sell_cargo_result.Transaction.Units < sell_market_trade_volume {
-						units_to_sell = sell_market_trade_volume
-					}
-				}
-			} else {
-				SellCargo(p.ship.Symbol, most_profitable_trade_route_with_inventory_good.TradeGoodSymbol, units_in_cargo_hold)
-			}
-			RefuelShip(p.ship.Symbol, 4, false)
-			OrbitShip(p.ship.Symbol)
-			NavigateShip(p.ship.Symbol, most_profitable_trade_route.BuyMarketplaceWaypointSymbol)
 		} else {
-			fmt.Println("[DEBUG] Not yet at SellMarketplaceWaypointSymbol")
-			// this is nasty, this whole function is now nasty. it needs to be chopped up into bitesize chunks
-			if !MarketScanComplete(p.trade_routes) {
-				fmt.Println("[DEBUG] Market scan not yet complete. Waiting for data")
-				return time.Now()
+			return ShipAction{
+				Type: ActionDock,
+				ShipSymbol: ship.Symbol,
 			}
-			if IsShipDocked(p.ship) {
-				RefuelShip(p.ship.Symbol, 4, false)
-				OrbitShip(p.ship.Symbol)
-			}
-			println("most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol")
-			println(most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol)
-
-			// dirty
-			if most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol == "" {
-				println("[ERROR] most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol null. Would have navigated!")
-				return time.Now()
-			}
-
-			_, next_execution_at := NavigateShip(p.ship.Symbol, most_profitable_trade_route_with_inventory_good.SellMarketplaceWaypointSymbol)
-			return next_execution_at
 		}
 	}
-	fmt.Println("[ERROR] ApplyRoleTrader unhandled branch. Forcing long wait.")
-	return ThreeHoursFromNow()
+
+	space_in_cargo_hold := ship.Cargo.Capacity - ship.Cargo.Units
+
+	if IsShipAlreadyAtWaypoint(ship, most_profitable_trade_route.SellMarketplaceWaypointSymbol) {
+		if !IsShipCargoEmpty(ship) {
+			if !IsShipDocked(ship) {
+				// maybe this never triggers since the refuel logic above would always dock
+				return ShipAction{
+					Type: ActionDock,
+					ShipSymbol: ship.Symbol,
+				}
+			} else {
+				// at sell wp, not empty, docked.
+
+				// calculate units
+				trade_good_cargo_count := CountTradeGoodCargo(ship, most_profitable_trade_route.TradeGoodSymbol)
+				units := trade_good_cargo_count
+				trade_volume := most_profitable_trade_route.SellMarketTradeGood.TradeVolume
+				if trade_volume < trade_good_cargo_count {
+					units = trade_volume
+				}
+				// keep low trade volume in mind
+				return ShipAction{
+					Type: ActionSellCargo,
+					ShipSymbol: ship.Symbol,
+					TradeGoodSymbol: most_profitable_trade_route.TradeGoodSymbol,
+					Units: units,
+				}
+			}
+		}
+	}
+	
+	
+	if IsShipCargoEmpty(ship) {
+		fmt.Println("[INFO] Cargo hold empty")
+		if IsShipAlreadyAtWaypoint(ship, most_profitable_trade_route.BuyMarketplaceWaypointSymbol) {
+			fmt.Println("[DEBUG] Already at waypoint")
+			if !IsShipDocked(ship) {
+				DockShip(ship.Symbol)
+				return ShipAction{
+					Type: ActionDock,
+					ShipSymbol: ship.Symbol,
+				}
+			} else {
+				units := space_in_cargo_hold
+				if most_profitable_trade_route.BuyMarketTradeGood.TradeVolume < space_in_cargo_hold {
+					units = most_profitable_trade_route.BuyMarketTradeGood.TradeVolume
+				}
+				return ShipAction{
+					Type: ActionPurchaseCargo,
+					ShipSymbol: ship.Symbol,
+					TradeGoodSymbol: most_profitable_trade_route.BuyMarketTradeGood.Symbol,
+					Units: units,
+				}
+			}
+		}
+		if IsShipDocked(ship){
+			return ShipAction{
+				Type: ActionOrbit,
+				ShipSymbol: ship.Symbol,
+			}
+		}
+
+		
+		most_profitable_trade_route_buy_marketplace_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, most_profitable_trade_route.BuyMarketplaceWaypointSymbol)
+		path, _ := CalculateShortestPathBetweenTwoWaypoints(ShuttleMarketplaceGraph, current_waypoint, most_profitable_trade_route_buy_marketplace_waypoint)
+		// DEBUG
+		fmt.Println(path)
+		return ShipAction{
+			Type: ActionFollowPath,
+			ShipSymbol: ship.Symbol,
+			Path: path,
+		}
+		
+	}
+	if IsShipDocked(ship) {
+		return ShipAction{
+			Type: ActionOrbit,
+			ShipSymbol: ship.Symbol,
+		}
+	}
+
+	most_profitable_trade_route_sell_marketplace_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, most_profitable_trade_route.SellMarketplaceWaypointSymbol)
+	path, _ := CalculateShortestPathBetweenTwoWaypoints(ShuttleMarketplaceGraph, current_waypoint, most_profitable_trade_route_sell_marketplace_waypoint)
+	// DEBUG
+	fmt.Println(path)
+	return ShipAction{
+		Type: ActionFollowPath,
+		ShipSymbol: ship.Symbol,
+		Path: path,
+	}
+
+	fmt.Println("[ERROR] DecideTraderAction unhandled branch")
+	return ShipAction{
+		Type: ActionWait,
+		NotBefore: FifteenMinutesFromNow(),
+	}
 }
