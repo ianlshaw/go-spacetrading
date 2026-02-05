@@ -75,6 +75,15 @@ func (w *WorldState) UpdateFromMarket(m Market) {
     }
 }
 
+func (w *WorldState) IsMarketStale(waypoint string) bool {
+    m, ok := w.Markets[waypoint]
+    if !ok {
+        return true // unknown == stale
+    }
+
+    return time.Since(m.LastSeen) > 1*time.Minute
+}
+
 func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
     switch action.Type {
 

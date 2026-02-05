@@ -11,7 +11,6 @@ func IsShipInTransit(ship Ship) bool {
 }
 
 func IsShipAlreadyAtWaypoint(ship_to_test Ship, waypoint_symbol string) bool {
-	fmt.Println(ship_to_test.Nav.Status)
 	return (ship_to_test.Nav.WaypointSymbol == waypoint_symbol )
 }
 

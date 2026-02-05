@@ -93,6 +93,14 @@ func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipActio
 				if most_profitable_trade_route.BuyMarketTradeGood.TradeVolume < space_in_cargo_hold {
 					units = most_profitable_trade_route.BuyMarketTradeGood.TradeVolume
 				}
+
+				if World.IsMarketStale(ship.Nav.WaypointSymbol) {
+					return ShipAction{
+						Type: ActionUpdateMarketData,
+						ShipSymbol: ship.Symbol,
+						WaypointSymbol: ship.Nav.WaypointSymbol,
+					}
+				}
 				return ShipAction{
 					Type: ActionPurchaseCargo,
 					ShipSymbol: ship.Symbol,
