@@ -205,7 +205,7 @@ func PurchaseCargo(ship_symbol string, trade_good_symbol string, units int64) Pu
 }
 
 func SellCargo(ship_symbol string, trade_good_symbol string, units int64) SellCargoResponse {
-	fmt.Println("[DEBUG] SellCargo")
+	//fmt.Println("[DEBUG] SellCargo")
 	endpoint := "my/ships/" + ship_symbol + "/sell"
 	payload := &SellCargoPayload{}
 	payload.Symbol = trade_good_symbol

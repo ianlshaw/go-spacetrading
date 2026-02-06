@@ -112,7 +112,41 @@ func WriteTradeRoutesToFile(trade_routes []TradeRoute, callsign string) {
 
 	write_result, err := f.WriteString(file_content)
 	PanicOnError(err)
-	fmt.Printf("[DEBUG] WriteTradeRoutesToFile wrote %d bytes\n", write_result)
+	//fmt.Printf("[DEBUG] WriteTradeRoutesToFile wrote %d bytes\n", write_result)
+}
+
+func WorldStateFilename(callsign string) string {
+    return callsign + ".world.json"
+}
+
+func LoadWorldState(callsign string) *WorldState {
+    filename := WorldStateFilename(callsign)
+
+    if _, err := os.Stat(filename); os.IsNotExist(err) {
+        return &WorldState{
+            Markets: make(map[string]*MarketState),
+        }
+    }
+
+    data, err := os.ReadFile(filename)
+    PanicOnError(err)
+
+    var ws WorldState
+    PanicOnError(json.Unmarshal(data, &ws))
+
+    if ws.Markets == nil {
+        ws.Markets = make(map[string]*MarketState)
+    }
+
+    return &ws
+}
+
+func SaveWorldState(callsign string, ws *WorldState) {
+    data, err := json.MarshalIndent(ws, "", "  ")
+    PanicOnError(err)
+
+    err = os.WriteFile(WorldStateFilename(callsign), data, 0644)
+    PanicOnError(err)
 }
 
 func WriteWorldStateToFile(callsign string) {

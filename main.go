@@ -67,7 +67,7 @@ type MarketState struct {
     Market Market
 }
 
-var World WorldState
+var World *WorldState
 
 func (w *WorldState) UpdateFromMarket(m Market) {
     w.Markets[m.Symbol] = &MarketState{
@@ -91,8 +91,6 @@ func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
 
     case ActionWait:
         return action.NotBefore
-
-	<-apiLimiter.C
 
 	case ActionFollowPath:
 		resp := FollowPath(ship, action.Path)
@@ -121,10 +119,13 @@ func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
 		ship.Nav = resp.Nav
 		return time.Now()
 
+	// TODO
+	// This calls GetMarket twice. One can be removed once we're fully using World MarketState
 	case ActionUpdateMarketData:
 		UpdateTradeRoutesIncludingThisWaypoint(action.WaypointSymbol)
 		resp := GetMarket(base_system_symbol, action.WaypointSymbol)
 		World.UpdateFromMarket(resp)
+		SaveWorldState(callsign, World)
 		return time.Now()
 	
 	case ActionPurchaseCargo:
@@ -197,11 +198,21 @@ func runShip(
 
 		// DEBUG
 
-		fmt.Println("[DEBUG] " + ship.Symbol + " " + ship.Registration.Role + " "  + ship.Frame.Symbol)
+		fmt.Print("[DEBUG] " + ship.Symbol + " " + ship.Registration.Role + " "  + ship.Frame.Symbol + " Fuel [")
+		fmt.Print(ship.Fuel.Current)
+		fmt.Print("/")
+		fmt.Print(ship.Fuel.Capacity)
+		fmt.Print("] Cargo [")
+		fmt.Print(ship.Cargo.Units)
+		fmt.Print("/")
+		fmt.Print(ship.Cargo.Capacity)
+		fmt.Println("]")
 
-		//if ship.Registration.Role == "COMMAND" {
-		//	expiration = ApplyRoleCommand(ship, all_waypoints_in_system, all_markets_in_system, markets_to_cover, trade_routes, callsign)
-		//}
+		if ship.Registration.Role == "COMMAND" {
+			action := DecideTraderAction(ship, all_waypoints_in_system)
+			fmt.Println(action)
+			expiration = ExecuteAction(action, &ship)
+		}
 
 		all_probes := []Ship{}
 		all_shuttles := []Ship{}
@@ -301,9 +312,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	World = WorldState{
-        Markets: make(map[string]*MarketState),
-    }
+	//World = WorldState{
+    //    Markets: make(map[string]*MarketState),
+    //}
 	
 	CALLSIGN := os.Args[1]
 
@@ -338,6 +349,8 @@ func main() {
 	}
 
 	all_waypoints_in_system := ReadWaypointsFromFile(CALLSIGN)
+
+	World = LoadWorldState(CALLSIGN)
 
 	for _, waypoint := range all_waypoints_in_system {
 		//AddWaypointToSystemGraph(waypoint)

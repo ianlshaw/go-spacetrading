@@ -5,16 +5,15 @@ import (
 	"sort"
 )
 
-// TODO
 // This should be a query which accepts a market, it's incovation in the context of trade_routes should pass the relavent market
 func HowManyTradeGoodCanIAfford(agent Agent, trade_good TradeGood) int64 {
-	fmt.Println("[DEBUG] HowManyTradeGoodCanIAfford")
-	fmt.Print("[DEBUG] agent.Credits = ")
-	fmt.Print(agent.Credits)
-	fmt.Println()
-	fmt.Print("[DEBUG] trade_good.PurchasePrice = ")
-	fmt.Print(trade_good.PurchasePrice)
-	fmt.Println()
+	//fmt.Println("[DEBUG] HowManyTradeGoodCanIAfford")
+	//fmt.Print("[DEBUG] agent.Credits = ")
+	//fmt.Print(agent.Credits)
+	//fmt.Println()
+	//fmt.Print("[DEBUG] trade_good.PurchasePrice = ")
+	//fmt.Print(trade_good.PurchasePrice)
+	//fmt.Println()
 	max_buy_count := agent.Credits / trade_good.PurchasePrice
 	return max_buy_count
 }
@@ -61,7 +60,7 @@ func CalculateProfitPerUnit(trade_route TradeRoute) float64 {
 }
 
 func PopulateTradeRoutesProfitPerUnit() {
-	fmt.Println("[DEBUG] PopulateTradeRoutesProfitPerUnit")
+	//fmt.Println("[DEBUG] PopulateTradeRoutesProfitPerUnit")
 	for i, trade_route := range trade_routes {
 		if trade_route.BuyMarketTradeGood.PurchasePrice == 0 || trade_route.SellMarketTradeGood.SellPrice == 0 {
 			fmt.Println("[WARN] Trade route lacks price data, skipping.")
@@ -73,7 +72,7 @@ func PopulateTradeRoutesProfitPerUnit() {
 			trade_route.Distance = 1
 		}
 		profit_per_unit_divide_by_distance_times_two := profit_per_unit / float64(trade_route.Distance*2)
-		fmt.Println(profit_per_unit_divide_by_distance_times_two)
+		// fmt.Println(profit_per_unit_divide_by_distance_times_two)
 		trade_routes[i].ProfitabilityRating = profit_per_unit_divide_by_distance_times_two
 	}
 }

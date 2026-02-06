@@ -10,6 +10,8 @@ import (
 )
 
 func BasicGet(endpoint string) (response_body string) {
+	<-apiLimiter.C
+
 	url := url_base + endpoint
 
 	// DEBUG
@@ -64,6 +66,9 @@ func BasicGet(endpoint string) (response_body string) {
 }
 
 func BasicPost(endpoint string, payload []byte) (response_body string) {
+
+	<-apiLimiter.C
+
 	posturl := url_base + endpoint
 
 	// DEBUG

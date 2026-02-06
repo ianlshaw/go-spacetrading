@@ -11,4 +11,5 @@ else
   aws s3 cp TVRJ.token s3://go-spacetraders-state/TVRJ.token
   aws s3 cp TVRJ.trade_routes s3://go-spacetraders-state/TVRJ.trade_routes
   aws s3 cp TVRJ.waypoints.json s3://go-spacetraders-state/TVRJ.waypoints.json
+  aws s3 cp TVRJ.world.json s3://go-spacetraders-state/TVRJ.world.json
 fi
