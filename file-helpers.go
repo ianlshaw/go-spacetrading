@@ -110,9 +110,9 @@ func WriteTradeRoutesToFile(trade_routes []TradeRoute, callsign string) {
 		file_content = file_content + string(marshalled_trade_route) + "\n"
 	}
 
-	_, err := f.WriteString(file_content)
+	write_result, err := f.WriteString(file_content)
 	PanicOnError(err)
-	//fmt.Printf("[DEBUG] WriteTradeRoutesToFile wrote %d bytes\n", write_result)
+	fmt.Printf("[DEBUG] WriteTradeRoutesToFile wrote %d bytes\n", write_result)
 }
 
 func WorldStateFilename(callsign string) string {
