@@ -14,6 +14,11 @@ func HowManyTradeGoodCanIAfford(agent Agent, trade_good TradeGood) int64 {
 	//fmt.Print("[DEBUG] trade_good.PurchasePrice = ")
 	//fmt.Print(trade_good.PurchasePrice)
 	//fmt.Println()
+
+	// explicitly avoid /0 errors
+	if trade_good.PurchasePrice == 0 {
+		return 0
+	}
 	max_buy_count := agent.Credits / trade_good.PurchasePrice
 	return max_buy_count
 }
