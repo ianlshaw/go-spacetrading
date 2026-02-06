@@ -115,6 +115,22 @@ func WriteTradeRoutesToFile(trade_routes []TradeRoute, callsign string) {
 	fmt.Printf("[DEBUG] WriteTradeRoutesToFile wrote %d bytes\n", write_result)
 }
 
+func WriteWorldStateToFile(callsign string) {
+	file_content := ""
+	f, err := os.Create(callsign + ".worldstate")
+	PanicOnError(err)
+	defer f.Close()
+
+	write_result, err := f.WriteString(file_content)
+	PanicOnError(err)
+	fmt.Printf("[DEBUG] WriteWorldStateToFile wrote %d bytes\n", write_result)
+}
+
+func ReadWorldStateFromFile(callsign string) {
+	fmt.Println("[DEBUG] ReadWorldStateFromFile")
+
+}
+
 func ReadTradeRoutesFromFile(callsign string) []TradeRoute {
 	fmt.Println("[DEBUG] ReadTradeRoutesFromFile")
 	trade_routes := []TradeRoute{}

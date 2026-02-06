@@ -22,6 +22,8 @@ var callsign = os.Args[1]
 var trade_routes []TradeRoute
 var all_waypoints_in_system []Waypoint
 
+var agent Agent // does this need to be global or should it be a pointer
+
 type ShipActionType string
 
 const (
@@ -111,6 +113,7 @@ func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
 	case ActionRefuel:
 		resp := RefuelShip(action.ShipSymbol, 1, false)
 		ship.Fuel = resp.Fuel
+		agent = resp.Agent
 		return time.Now()
 
 	case ActionOrbit:
@@ -127,13 +130,13 @@ func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
 	case ActionPurchaseCargo:
 		resp := PurchaseCargo(action.ShipSymbol, action.TradeGoodSymbol, action.Units)
 		ship.Cargo = resp.Cargo
-		// Update agent here
+		agent = resp.Agent
 		return time.Now()
 
 	case ActionSellCargo:
 		resp := SellCargo(action.ShipSymbol, action.TradeGoodSymbol, action.Units)
 		ship.Cargo = resp.Cargo
-		// Update agent here
+		agent = resp.Agent
 		return time.Now()
 
 	}
@@ -186,7 +189,6 @@ func runShip(
 	surveyor_shipyard_waypoints []Waypoint,
 	trade_routes []TradeRoute,
 	ship_list []Ship,
-	agent Agent,
 	callsign string) {
 
 	for {
@@ -446,7 +448,7 @@ func main() {
 
 
 
-	agent := GetAgent()
+	agent = GetAgent()
 	fmt.Print("[INFO] ShipCount: ")
 	fmt.Print(agent.ShipCount)
 	fmt.Println()
@@ -473,7 +475,6 @@ func main() {
 			surveyor_shipyard_waypoints,
 			trade_routes,
 			ships_list,
-			agent,
 			CALLSIGN)
 			fmt.Print("[INFO] http calls:")
 			fmt.Println(http_calls)

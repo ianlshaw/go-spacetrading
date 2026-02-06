@@ -6,8 +6,7 @@ import (
 )
 
 // TODO
-// Account for most_profitable_trade_route changing while we have cargo on board.
-// Add an UpdateMarketData action when trader is at a market
+// Allow for purchasing multiple times in the case the trade volume is low but we have sufficient credits.
 
 var ShuttleMarketplaceGraph dijkstra.Graph = make(dijkstra.Graph)
 
@@ -18,7 +17,16 @@ func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipActio
 	most_profitable_trade_route := MostProfitableTradeRoute(trade_routes)
 	current_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, ship.Nav.WaypointSymbol)
 
-	if most_profitable_trade_route.ProfitabilityRating < 0 {
+	fmt.Println(most_profitable_trade_route.TradeGoodSymbol)
+	fmt.Println(most_profitable_trade_route.BuyMarketplaceWaypointSymbol)
+	fmt.Println(most_profitable_trade_route.BuyMarketTradeGood.PurchasePrice)
+	fmt.Println(most_profitable_trade_route.SellMarketplaceWaypointSymbol)
+	fmt.Println(most_profitable_trade_route.SellMarketTradeGood.SellPrice)
+	fmt.Println(most_profitable_trade_route.ProfitPerUnit)
+	fmt.Println(most_profitable_trade_route.ProfitabilityRating)
+	fmt.Println(most_profitable_trade_route.Distance)
+
+	if most_profitable_trade_route.ProfitabilityRating < 1 {
 		fmt.Println("[INFO] Most profitable trade route is not profitable enough. Doing nothing...")
 		return ShipAction{
 			Type: ActionWait,
@@ -40,6 +48,7 @@ func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipActio
 		}
 	}
 
+	// This is to account for most_profitable_trade_route changing after a purchase. We still want to sell our current cargo.
 	if !IsShipCargoEmpty(ship){
 		trade_good_in_cargo := ship.Cargo.Inventory[0].Symbol
 		trade_routes_with_cargo := TradeRoutesWithTradeGood(trade_routes, trade_good_in_cargo)
@@ -57,16 +66,20 @@ func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipActio
 					ShipSymbol: ship.Symbol,
 				}
 			} else {
+				if World.IsMarketStale(ship.Nav.WaypointSymbol) {
+					return ShipAction{
+						Type: ActionUpdateMarketData,
+						ShipSymbol: ship.Symbol,
+						WaypointSymbol: ship.Nav.WaypointSymbol,
+					}
+				}
 				// at sell wp, not empty, docked.
-
-				// calculate units
 				trade_good_cargo_count := CountTradeGoodCargo(ship, most_profitable_trade_route.TradeGoodSymbol)
 				units := trade_good_cargo_count
 				trade_volume := most_profitable_trade_route.SellMarketTradeGood.TradeVolume
 				if trade_volume < trade_good_cargo_count {
 					units = trade_volume
 				}
-				// keep low trade volume in mind
 				return ShipAction{
 					Type: ActionSellCargo,
 					ShipSymbol: ship.Symbol,
@@ -89,17 +102,20 @@ func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipActio
 					ShipSymbol: ship.Symbol,
 				}
 			} else {
-				units := space_in_cargo_hold
-				if most_profitable_trade_route.BuyMarketTradeGood.TradeVolume < space_in_cargo_hold {
-					units = most_profitable_trade_route.BuyMarketTradeGood.TradeVolume
-				}
-
 				if World.IsMarketStale(ship.Nav.WaypointSymbol) {
 					return ShipAction{
 						Type: ActionUpdateMarketData,
 						ShipSymbol: ship.Symbol,
 						WaypointSymbol: ship.Nav.WaypointSymbol,
 					}
+				}
+				units := space_in_cargo_hold
+				if most_profitable_trade_route.BuyMarketTradeGood.TradeVolume < space_in_cargo_hold {
+					units = most_profitable_trade_route.BuyMarketTradeGood.TradeVolume
+				}
+				max_affordable_units := HowManyTradeGoodCanIAfford(agent, most_profitable_trade_route.BuyMarketTradeGood)
+				if max_affordable_units < units {
+					units = max_affordable_units
 				}
 				return ShipAction{
 					Type: ActionPurchaseCargo,
