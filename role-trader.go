@@ -45,6 +45,13 @@ func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipActio
 
 	if !IsFuelFull(ship) {
 		if IsShipDocked(ship){
+			if World.IsMarketStale(ship.Nav.WaypointSymbol) {
+				return ShipAction{
+					Type: ActionUpdateMarketData,
+					ShipSymbol: ship.Symbol,
+					WaypointSymbol: ship.Nav.WaypointSymbol,
+				}
+			}
 			return ShipAction{
 				Type: ActionRefuel,
 				ShipSymbol: ship.Symbol,

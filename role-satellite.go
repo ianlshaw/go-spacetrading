@@ -96,6 +96,11 @@ func DecideSatelliteAction(
 			}
 		}
 	}
+
+
+	// Go update marketdata for markets with no marketdata
+	
+	// Go update oldest marketdata
 	
 	fmt.Println(" uncaught branch, returning 15 minute delay")
 	return ShipAction{
