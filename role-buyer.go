@@ -1,16 +1,57 @@
 package main
 
-//import (
-//	"fmt"
-//	"time"
-//)
-//
-//var desired_number_of_ship_shuttle = 1
-//var desired_number_of_ship_mining_drone = 1
-//var desired_number_of_ship_siphon_drone = 1
-//var desired_number_of_ship_surveyor = 1
-//var desired_number_of_ship_probe = 2
-//
+import (
+	"fmt"
+)
+
+var desired_number_of_ship_shuttle = 1
+var desired_number_of_ship_mining_drone = 1
+var desired_number_of_ship_siphon_drone = 1
+var desired_number_of_ship_surveyor = 1
+var desired_number_of_ship_probe = 2
+
+// TODO
+// Newly purchased ships need to be added into ship_list cleanly 
+
+func DecideBuyerAction(ship Ship) ShipAction {
+	number_of_ship_probe := CountShipsByFrame(ship_list, "FRAME_PROBE") // This would need to -1 since the buyer is now a probe
+	if number_of_ship_probe < desired_number_of_ship_probe {
+		if !IsShipAlreadyAtWaypoint(ship, probe_shipyard_waypoints[0].Symbol) {
+			if IsShipDocked(ship) {
+				return ShipAction{
+					Type: ActionOrbit,
+					ShipSymbol: ship.Symbol,
+				}
+			} else {
+				return ShipAction{
+					Type: ActionNavigate,
+					ShipSymbol: ship.Symbol,
+					WaypointSymbol: probe_shipyard_waypoints[0].Symbol,
+				}
+			}
+		} else {
+			// already at probe shipyard waypoint
+			if !IsShipDocked(ship) {
+				return ShipAction{
+					Type: ActionDock,
+					ShipSymbol: ship.Symbol,
+				}
+			} else {
+				return ShipAction{
+					Type: ActionPurchaseShip,
+					WaypointSymbol: probe_shipyard_waypoints[0].Symbol,
+					ShipType: "SHIP_PROBE",
+				}
+			}
+		}
+	}
+	fmt.Println("[INFO] " + ship.Symbol + " " + ship.Registration.Role + " " + ship.Frame.Symbol + " DecideBuyerAction uncaught branch. Waiting.")
+	return ShipAction{
+		Type: ActionWait,
+		NotBefore: FifteenMinutesFromNow(),
+	}
+}
+
 //func ApplyRoleBuyer(
 //	ship Ship,
 //	ship_list []Ship,

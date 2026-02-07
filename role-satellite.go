@@ -4,6 +4,9 @@ import (
 	"fmt"
 )
 
+// TODO
+// Test if ship needs to be docked to perform GetMarket
+
 
 func DecideSatelliteAction(
 	ship Ship,
@@ -99,7 +102,7 @@ func DecideSatelliteAction(
 
 
 	// Go update marketdata for markets with no marketdata
-	
+
 	// Go update oldest marketdata
 	
 	fmt.Println(" uncaught branch, returning 15 minute delay")

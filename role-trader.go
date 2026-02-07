@@ -6,7 +6,6 @@ import (
 )
 
 // TODO
-// Allow for purchasing multiple times in the case the trade volume is low but we have sufficient credits.
 // UpdateMarketData after performing ActionPurchaseCargo since it may alter prices and therefore trade_routes
 
 var ShuttleMarketplaceGraph dijkstra.Graph = make(dijkstra.Graph)

@@ -21,8 +21,18 @@ var callsign = os.Args[1]
 
 var trade_routes []TradeRoute
 var all_waypoints_in_system []Waypoint
+var all_markets_in_system []Market
+var probe_shipyard_waypoints []Waypoint
 
 var agent Agent // does this need to be global or should it be a pointer
+var ship_list []Ship
+var runningShips = make(map[string]bool)
+var markets_to_cover = make(map[string]string)
+var probe_shipard_waypoints []Waypoint
+//var shuttle_shipyard_waypoints []Waypoint
+//var mining_drone_shipyard_waypoints []Waypoint
+//var siphon_drone_shipyard_waypoints []Waypoint
+//var surveyor_shipyard_waypoints []Waypoint
 
 type ShipActionType string
 
@@ -39,6 +49,7 @@ const (
 	ActionRefuel			ShipActionType = "REFUEL"
 	ActionFollowPath 		ShipActionType = "FOLLOW PATH"
 	ActionSellCargo 		ShipActionType = "SELL CARGO"
+	ActionPurchaseShip		ShipActionType = "PURCHASE SHIP"
 )
 
 type ShipAction struct {
@@ -46,10 +57,11 @@ type ShipAction struct {
     ShipSymbol string
 
     // Optional fields depending on Type
-    TradeGoodSymbol      string
-    Units     	   int64
-	WaypointSymbol string
-	Path			[]string
+    TradeGoodSymbol     string
+    Units     	   		int64
+	WaypointSymbol 		string
+	Path		   		[]string
+	ShipType	   		string
 
     // When should this action be executed?
     NotBefore time.Time
@@ -84,6 +96,22 @@ func (w *WorldState) IsMarketStale(waypoint string) bool {
     }
 
     return time.Since(m.LastSeen) > 1*time.Minute
+}
+
+func (w *WorldState) InvalidateMarket(waypoint string) {
+    if m, ok := w.Markets[waypoint]; ok {
+        m.LastSeen = time.Time{} // zero time = definitely stale
+    }
+}
+
+func ensureShipRunning(ship Ship) {
+    if runningShips[ship.Symbol] {
+        return
+    }
+
+    runningShips[ship.Symbol] = true
+
+    go runShip(ship)
 }
 
 func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
@@ -129,17 +157,29 @@ func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
 		return time.Now()
 	
 	case ActionPurchaseCargo:
-		resp := PurchaseCargo(action.ShipSymbol, action.TradeGoodSymbol, action.Units)
+		resp := PurchaseCargo(action.ShipSymbol,
+			action.TradeGoodSymbol, 
+			action.Units,
+		)
 		ship.Cargo = resp.Cargo
 		agent = resp.Agent
+		World.InvalidateMarket(action.ShipSymbol)
 		return time.Now()
 
 	case ActionSellCargo:
 		resp := SellCargo(action.ShipSymbol, action.TradeGoodSymbol, action.Units)
 		ship.Cargo = resp.Cargo
 		agent = resp.Agent
+		World.InvalidateMarket(action.ShipSymbol)
 		return time.Now()
-
+	
+	case ActionPurchaseShip:
+		resp := PurchaseShip(action.ShipType, action.WaypointSymbol)
+		agent = resp.Agent
+		ship_list = append(ship_list, resp.Ship)
+		ensureShipRunning(resp.Ship)
+		return time.Now()
+	
 	}
 
     panic("unknown action")
@@ -178,19 +218,7 @@ func populate_base_system_symbol() {
 	base_system_symbol = response_typed.Data[0].Nav.SystemSymbol
 }
 
-func runShip(
-	ship Ship,
-	all_waypoints_in_system []Waypoint,
-	all_markets_in_system []Market,
-	markets_to_cover map[string]string,
-	probe_shipyard_waypoints []Waypoint,
-	shuttle_shipyard_waypoints []Waypoint,
-	mining_drone_shipyard_waypoints []Waypoint,
-	siphon_drone_shipyard_waypoints []Waypoint,
-	surveyor_shipyard_waypoints []Waypoint,
-	trade_routes []TradeRoute,
-	ship_list []Ship,
-	callsign string) {
+func runShip(ship Ship){
 
 	for {
 		//var expiration time.Time
@@ -230,16 +258,9 @@ func runShip(
 
 		if ship.Registration.Role == "SATELLITE" {
 			if ship.Symbol == buyer_ship.Symbol {
-				//expiration = ApplyRoleBuyer(
-				//	ship,
-				//	ship_list,
-				//	markets_to_cover,
-				//	probe_shipyard_waypoints,
-				//	shuttle_shipyard_waypoints,
-				//	mining_drone_shipyard_waypoints,
-				//	siphon_drone_shipyard_waypoints,
-				//	surveyor_shipyard_waypoints,
-				//	agent)
+				action := DecideBuyerAction(ship)
+				fmt.Println(action)
+				expiration = ExecuteAction(action, &ship)
 			}
 		}
 		if len(all_probes) > 1 {
@@ -351,7 +372,7 @@ func main() {
 		WriteWaypointsToFile(all_waypoints_in_system, CALLSIGN)
 	}
 
-	all_waypoints_in_system := ReadWaypointsFromFile(CALLSIGN)
+	all_waypoints_in_system = ReadWaypointsFromFile(CALLSIGN)
 
 	World = LoadWorldState(CALLSIGN)
 
@@ -385,7 +406,6 @@ func main() {
 	all_shipyards_in_system := ReadShipyardsFromFile(CALLSIGN)
 
 	if !DoesMarketsFileExist(CALLSIGN) {
-		all_markets_in_system := []Market{}
 		for _, waypoint := range all_waypoints_in_system {
 			for _, trait := range waypoint.Traits {
 				if trait.Symbol == "MARKETPLACE" {
@@ -434,26 +454,23 @@ func main() {
 	}
 
 	markets_to_cover = PopulateMarketsToCover(trade_routes)
-
-	probe_shipyards, probe_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_PROBE")
+	_, probe_shipyard_waypoints = FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_PROBE")
 	fmt.Print("[DEBUG] probe shipyards:")
-	fmt.Println(len(probe_shipyards))
 
-	shuttle_shipyards, shuttle_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_LIGHT_SHUTTLE")
-	fmt.Print("[DEBUG] shuttle shipyards:")
-	fmt.Println(len(shuttle_shipyards))
-
-	mining_drone_shipyards, mining_drone_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_MINING_DRONE")
-	fmt.Print("[DEBUG] mining_drone shipyards:")
-	fmt.Println(len(mining_drone_shipyards))
-
-	siphon_drone_shipyards, siphon_drone_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_SIPHON_DRONE")
-	fmt.Print("[DEBUG] siphon_drone shipyards:")
-	fmt.Println(len(siphon_drone_shipyards))
-
-	surveyor_shipyards, surveyor_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_SURVEYOR")
-	fmt.Print("[DEBUG] surveyor shipyards:")
-	fmt.Println(len(surveyor_shipyards))
+	//_, shuttle_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_LIGHT_SHUTTLE")
+	//fmt.Print("[DEBUG] shuttle shipyards:")
+//
+	//mining_drone_shipyards, mining_drone_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_MINING_DRONE")
+	//fmt.Print("[DEBUG] mining_drone shipyards:")
+	//fmt.Println(len(mining_drone_shipyards))
+//
+	//siphon_drone_shipyards, siphon_drone_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_SIPHON_DRONE")
+	//fmt.Print("[DEBUG] siphon_drone shipyards:")
+	//fmt.Println(len(siphon_drone_shipyards))
+//
+	//surveyor_shipyards, surveyor_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_SURVEYOR")
+	//fmt.Print("[DEBUG] surveyor shipyards:")
+	//fmt.Println(len(surveyor_shipyards))
 
 	//turn_number := 1
 
@@ -474,27 +491,29 @@ func main() {
 
 
 
-	ships_list := ListShips()
+	ship_list = ListShips()
 
-	//wait_between_ships := turn_length / len(ships_list)
+	//wait_between_ships := turn_length / len(ship_list)
 
-	for _, ship := range ships_list {
-		go runShip(
-			ship,
-			all_waypoints_in_system,
-			all_markets_in_system,
-			markets_to_cover,
-			probe_shipyard_waypoints,
-			shuttle_shipyard_waypoints,
-			mining_drone_shipyard_waypoints,
-			siphon_drone_shipyard_waypoints,
-			surveyor_shipyard_waypoints,
-			trade_routes,
-			ships_list,
-			CALLSIGN)
-			fmt.Print("[INFO] http calls:")
-			fmt.Println(http_calls)
-		}
+	for _, ship := range ship_list {
+    	ensureShipRunning(ship)
+	}
+
+	//for _, ship := range ship_list {
+	//	go runShip(
+	//		ship,
+	//		all_waypoints_in_system,
+	//		all_markets_in_system,
+	//		markets_to_cover,
+	//		shuttle_shipyard_waypoints,
+	//		mining_drone_shipyard_waypoints,
+	//		siphon_drone_shipyard_waypoints,
+	//		surveyor_shipyard_waypoints,
+	//		trade_routes,
+	//		CALLSIGN)
+	//		fmt.Print("[INFO] http calls:")
+	//		fmt.Println(http_calls)
+	//}
 
 	select {}
 }
