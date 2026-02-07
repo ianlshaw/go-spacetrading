@@ -143,7 +143,10 @@ func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipActio
 		}
 		
 		most_profitable_trade_route_buy_marketplace_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, most_profitable_trade_route.BuyMarketplaceWaypointSymbol)
-		path, _ := CalculateShortestPathBetweenTwoWaypoints(ShuttleMarketplaceGraph, current_waypoint, most_profitable_trade_route_buy_marketplace_waypoint)
+		path, _, err := CalculateShortestPathBetweenTwoWaypoints(ShuttleMarketplaceGraph, current_waypoint, most_profitable_trade_route_buy_marketplace_waypoint)
+		if err != nil {
+			fmt.Println("[ERROR] cannot path")
+		}
 		return ShipAction{
 			Type: ActionFollowPath,
 			ShipSymbol: ship.Symbol,
@@ -158,7 +161,10 @@ func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipActio
 	}
 
 	most_profitable_trade_route_sell_marketplace_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, most_profitable_trade_route.SellMarketplaceWaypointSymbol)
-	path, _ := CalculateShortestPathBetweenTwoWaypoints(ShuttleMarketplaceGraph, current_waypoint, most_profitable_trade_route_sell_marketplace_waypoint)
+	path, _, err := CalculateShortestPathBetweenTwoWaypoints(ShuttleMarketplaceGraph, current_waypoint, most_profitable_trade_route_sell_marketplace_waypoint)
+	if err != nil {
+		fmt.Println("[ERROR] cannot path")
+	}
 	return ShipAction{
 		Type: ActionFollowPath,
 		ShipSymbol: ship.Symbol,

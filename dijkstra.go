@@ -36,10 +36,13 @@ func PopulateGraphDistancesForWaypointWithMaximum(graph dijkstra.Graph, all_wayp
 	graph[waypoint_to_populate.Symbol] = graph_row
 }
 
-func CalculateShortestPathBetweenTwoWaypoints(Graph dijkstra.Graph, SourceWaypoint Waypoint, DestinationWaypoint Waypoint) (resultant_path []string, resultant_cost int) {
-	path, cost, _ := Graph.Path(SourceWaypoint.Symbol, DestinationWaypoint.Symbol) // skipping error handling
+func CalculateShortestPathBetweenTwoWaypoints(
+	Graph dijkstra.Graph,
+	SourceWaypoint Waypoint,
+	DestinationWaypoint Waypoint) (resultant_path []string, resultant_cost int, err error) {
+	path, cost, err := Graph.Path(SourceWaypoint.Symbol, DestinationWaypoint.Symbol) // skipping error handling
 	//fmt.Printf("path: %v, cost: %v", path, cost)
-	return path, cost
+	return path, cost, err
 }
 
 func FollowPath(ship *Ship, path []string) NavigateShipResponse {
