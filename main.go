@@ -98,10 +98,12 @@ func (w *WorldState) IsMarketStale(waypoint string) bool {
     return time.Since(m.LastSeen) > 1*time.Minute
 }
 
-func (w *WorldState) InvalidateMarket(waypoint string) {
-    if m, ok := w.Markets[waypoint]; ok {
+func (w *WorldState) InvalidateMarket(waypoint_symbol string) {
+    if m, ok := w.Markets[waypoint_symbol]; ok {
         m.LastSeen = time.Time{} // zero time = definitely stale
-    }
+    } else {
+		fmt.Println("[ERROR] Failed to InvalidateMarket " + waypoint_symbol)
+	}
 }
 
 func ensureShipRunning(ship Ship) {
@@ -163,14 +165,14 @@ func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
 		)
 		ship.Cargo = resp.Cargo
 		agent = resp.Agent
-		World.InvalidateMarket(action.ShipSymbol)
+		World.InvalidateMarket(ship.Nav.WaypointSymbol)
 		return time.Now()
 
 	case ActionSellCargo:
 		resp := SellCargo(action.ShipSymbol, action.TradeGoodSymbol, action.Units)
 		ship.Cargo = resp.Cargo
 		agent = resp.Agent
-		World.InvalidateMarket(action.ShipSymbol)
+		World.InvalidateMarket(ship.Nav.WaypointSymbol)
 		return time.Now()
 	
 	case ActionPurchaseShip:

@@ -42,15 +42,19 @@ func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipActio
 		}
 	}
 
+	// Always update market data for a market we're at if it needs it.
+	if IsShipDocked(ship){
+		if World.IsMarketStale(ship.Nav.WaypointSymbol) {
+			return ShipAction{
+				Type: ActionUpdateMarketData,
+				ShipSymbol: ship.Symbol,
+				WaypointSymbol: ship.Nav.WaypointSymbol,
+			}
+		}
+	}
+
 	if !IsFuelFull(ship) {
 		if IsShipDocked(ship){
-			if World.IsMarketStale(ship.Nav.WaypointSymbol) {
-				return ShipAction{
-					Type: ActionUpdateMarketData,
-					ShipSymbol: ship.Symbol,
-					WaypointSymbol: ship.Nav.WaypointSymbol,
-				}
-			}
 			return ShipAction{
 				Type: ActionRefuel,
 				ShipSymbol: ship.Symbol,
@@ -80,13 +84,6 @@ func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipActio
 					ShipSymbol: ship.Symbol,
 				}
 			} else {
-				if World.IsMarketStale(ship.Nav.WaypointSymbol) {
-					return ShipAction{
-						Type: ActionUpdateMarketData,
-						ShipSymbol: ship.Symbol,
-						WaypointSymbol: ship.Nav.WaypointSymbol,
-					}
-				}
 				// at sell wp, not empty, docked.
 				trade_good_cargo_count := CountTradeGoodCargo(ship, most_profitable_trade_route.TradeGoodSymbol)
 				units := trade_good_cargo_count
@@ -116,13 +113,6 @@ func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipActio
 					ShipSymbol: ship.Symbol,
 				}
 			} else {
-				if World.IsMarketStale(ship.Nav.WaypointSymbol) {
-					return ShipAction{
-						Type: ActionUpdateMarketData,
-						ShipSymbol: ship.Symbol,
-						WaypointSymbol: ship.Nav.WaypointSymbol,
-					}
-				}
 				space_in_cargo_hold := ship.Cargo.Capacity - ship.Cargo.Units
 				units := space_in_cargo_hold
 				if most_profitable_trade_route.BuyMarketTradeGood.TradeVolume < space_in_cargo_hold {
