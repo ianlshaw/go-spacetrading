@@ -227,7 +227,6 @@ func runShip(
 		}
 
 		buyer_ship := all_probes[0]
-		market_bootstrap_probe := all_probes[1]
 
 		if ship.Registration.Role == "SATELLITE" {
 			if ship.Symbol == buyer_ship.Symbol {
@@ -241,7 +240,11 @@ func runShip(
 				//	siphon_drone_shipyard_waypoints,
 				//	surveyor_shipyard_waypoints,
 				//	agent)
-			} else if ship.Symbol == market_bootstrap_probe.Symbol {
+			}
+		}
+		if len(all_probes) > 1 {
+			market_bootstrap_probe := all_probes[1]
+			if ship.Symbol == market_bootstrap_probe.Symbol {
 				action := DecideSatelliteAction(ship)
 				fmt.Println(action)
 				expiration = ExecuteAction(action, &ship)
