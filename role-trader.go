@@ -150,7 +150,7 @@ func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipActio
 			fmt.Println("[ERROR] cannot path")
 			return ShipAction{
 				Type: ActionWait,
-				NotBefore: time.FifteenMinutesFromNow(),
+				NotBefore: FifteenMinutesFromNow(),
 			}
 		}
 		return ShipAction{
@@ -172,7 +172,7 @@ func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipActio
 		fmt.Println("[ERROR] cannot path")
 		return ShipAction{
 			Type: ActionWait,
-			NotBefore: time.FifteenMinutesFromNow(),
+			NotBefore: FifteenMinutesFromNow(),
 		}
 	}
 	return ShipAction{
