@@ -412,7 +412,7 @@ func main() {
 			for _, trait := range waypoint.Traits {
 				if trait.Symbol == "MARKETPLACE" {
 					get_market_result := GetMarket(base_system_symbol, waypoint.Symbol)
-					UpdateFromMarket(get_market_result)
+					World.UpdateFromMarket(get_market_result)
 					all_markets_in_system = append(all_markets_in_system, get_market_result)
 					time.Sleep(2 * time.Second)
 				}
