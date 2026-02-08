@@ -83,12 +83,8 @@ func PopulateTradeRoutesProfitPerUnit() {
 }
 
 func MostProfitableTradeRoute(trade_routes []TradeRoute) TradeRoute {
-	//println("[DEBUG] MostProfitableTradeRoute")
-	//println("[DEBUG] len(trade_routes)")
-	//println(len(trade_routes))
-
 	most_profitable_trade_route := TradeRoute{}
-	best_profitability_score := -9.00
+	best_profitability_score := -99.00
 	for _, trade_route := range trade_routes {
 		//fmt.Printf("%.2f", trade_route.ProfitabilityRating)
 		if trade_route.ProfitabilityRating > best_profitability_score {
@@ -302,4 +298,22 @@ func TradeRouteMissingData() (bool, TradeRoute) {
 		}
 	}
 	return false, empty_trade_route
+}
+
+func SameTradeRoute(a, b TradeRoute) bool {
+	//fmt.Print(a.BuyMarketplaceWaypointSymbol + " "  +b.BuyMarketplaceWaypointSymbol )
+    return a.BuyMarketplaceWaypointSymbol == b.BuyMarketplaceWaypointSymbol &&
+           a.SellMarketplaceWaypointSymbol   == b.SellMarketplaceWaypointSymbol &&
+           a.TradeGoodSymbol  == b.TradeGoodSymbol
+}
+
+// Hacky - death knel for trade_routes
+func RemoveTradeRoute(routes []TradeRoute, bad TradeRoute) []TradeRoute {
+    for i, r := range routes {
+        if SameTradeRoute(r, bad) {
+			fmt.Println("[ERROR] bad route identified")
+            return append(routes[:i], routes[i+1:]...)
+        }
+    }
+    return routes
 }

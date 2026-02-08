@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/albertorestifo/dijkstra"
+	"time"
 )
 
 // TODO
@@ -73,6 +74,7 @@ func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipActio
 		trade_routes_with_cargo := TradeRoutesWithTradeGood(trade_routes, trade_good_in_cargo)
 		most_profitable_trade_route = MostProfitableTradeRoute(trade_routes_with_cargo)
 	}
+
 
 
 	if IsShipAlreadyAtWaypoint(ship, most_profitable_trade_route.SellMarketplaceWaypointSymbol) {
@@ -146,6 +148,10 @@ func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipActio
 		path, _, err := CalculateShortestPathBetweenTwoWaypoints(ShuttleMarketplaceGraph, current_waypoint, most_profitable_trade_route_buy_marketplace_waypoint)
 		if err != nil {
 			fmt.Println("[ERROR] cannot path")
+			return ShipAction{
+				Type: ActionWait,
+				NotBefore: time.FifteenMinutesFromNow(),
+			}
 		}
 		return ShipAction{
 			Type: ActionFollowPath,
@@ -164,6 +170,10 @@ func DecideTraderAction(ship Ship, all_waypoints_in_system []Waypoint) ShipActio
 	path, _, err := CalculateShortestPathBetweenTwoWaypoints(ShuttleMarketplaceGraph, current_waypoint, most_profitable_trade_route_sell_marketplace_waypoint)
 	if err != nil {
 		fmt.Println("[ERROR] cannot path")
+		return ShipAction{
+			Type: ActionWait,
+			NotBefore: time.FifteenMinutesFromNow(),
+		}
 	}
 	return ShipAction{
 		Type: ActionFollowPath,
