@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/albertorestifo/dijkstra"
-	"time"
 )
 
 // TODO
