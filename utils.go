@@ -181,7 +181,10 @@ func EraseState(callsign string) {
 		callsign + ".shipyards.json",
 		callsign + ".token",
 		callsign + ".trade_routes",
-		callsign + ".waypoints.json"}
+		callsign + ".waypoints.json",
+		callsign + ".world.json",
+	}
+		
 	ctx := context.Background()
 
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("eu-west-2"))

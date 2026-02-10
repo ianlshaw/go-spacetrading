@@ -242,15 +242,24 @@ func runShip(ship Ship){
 
 		// DEBUG
 
-		fmt.Print("[DEBUG] " + ship.Symbol + " " + ship.Registration.Role + " "  + ship.Frame.Symbol + " Fuel [")
-		fmt.Print(ship.Fuel.Current)
-		fmt.Print("/")
-		fmt.Print(ship.Fuel.Capacity)
-		fmt.Print("] Cargo [")
-		fmt.Print(ship.Cargo.Units)
-		fmt.Print("/")
-		fmt.Print(ship.Cargo.Capacity)
-		fmt.Println("]")
+		fmt.Printf("[DEBUG] %s %s %s Fuel [%d/%d] Cargo [%d/%d]\n",
+		ship.Symbol,
+		ship.Registration.Role,
+		ship.Frame.Symbol,
+		ship.Fuel.Current,
+		ship.Fuel.Capacity,
+		ship.Cargo.Units,
+		ship.Cargo.Capacity)
+
+		//fmt.Print("[DEBUG] " + ship.Symbol + " " + ship.Registration.Role + " "  + ship.Frame.Symbol + " Fuel [")
+		//fmt.Print(ship.Fuel.Current)
+		//fmt.Print("/")
+		//fmt.Print(ship.Fuel.Capacity)
+		//fmt.Print("] Cargo [")
+		//fmt.Print(ship.Cargo.Units)
+		//fmt.Print("/")
+		//fmt.Print(ship.Cargo.Capacity)
+		//fmt.Println("]")
 
 		if ship.Registration.Role == "COMMAND" {
 			action := DecideTraderAction(ship, all_waypoints_in_system)
