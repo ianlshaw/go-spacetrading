@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var apiLimiter = time.NewTicker(2000 * time.Millisecond)
+var apiLimiter = time.NewTicker(550 * time.Millisecond)
 
 var url_base string = "https://api.spacetraders.io/v2/"
 var account_token = "Bearer "
@@ -104,6 +104,20 @@ func (w *WorldState) InvalidateMarket(waypoint_symbol string) {
     } else {
 		fmt.Println("[ERROR] Failed to InvalidateMarket " + waypoint_symbol)
 	}
+}
+
+func OldestMarket(world *WorldState) *MarketState {
+    var oldest *MarketState
+
+    for _, m := range world.Markets {
+        if oldest == nil ||
+           m.LastSeen.IsZero() ||
+           m.LastSeen.Before(oldest.LastSeen) {
+            oldest = m
+        }
+    }
+
+    return oldest
 }
 
 func ensureShipRunning(ship Ship) {
@@ -268,7 +282,7 @@ func runShip(ship Ship){
 		if len(all_probes) > 1 {
 			market_bootstrap_probe := all_probes[1]
 			if ship.Symbol == market_bootstrap_probe.Symbol {
-				action := DecideSatelliteAction(ship)
+				action := DecideSatelliteAction(ship, World)
 				fmt.Println(action)
 				expiration = ExecuteAction(action, &ship)
 			} else {
@@ -412,12 +426,14 @@ func main() {
 			for _, trait := range waypoint.Traits {
 				if trait.Symbol == "MARKETPLACE" {
 					get_market_result := GetMarket(base_system_symbol, waypoint.Symbol)
+					World.UpdateFromMarket(get_market_result)
 					all_markets_in_system = append(all_markets_in_system, get_market_result)
 					time.Sleep(2 * time.Second)
 				}
 			}
 		}
 		WriteMarketsToFile(all_markets_in_system, CALLSIGN)
+		SaveWorldState(callsign, World)
 	}
 
 	all_markets_in_system := ReadMarketsFromFile(CALLSIGN)

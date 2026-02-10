@@ -135,6 +135,7 @@ func LoadWorldState(callsign string) *WorldState {
     PanicOnError(json.Unmarshal(data, &ws))
 
     if ws.Markets == nil {
+		fmt.Println("ws.Markets is nil")
         ws.Markets = make(map[string]*MarketState)
     }
 
