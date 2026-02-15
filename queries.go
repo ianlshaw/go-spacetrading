@@ -254,6 +254,7 @@ func ClosestMarketToWaypoint(target_waypoint Waypoint, all_waypoints []Waypoint,
 }
 
 func TradeGoodFromMarket(trade_good_symbol string, market Market) (bool, TradeGood) {
+	//fmt.Println(trade_good_symbol + " " + market.Symbol)
 	default_trade_good := TradeGood{}
 	for _, trade_good := range market.TradeGoods {
 		if trade_good.Symbol == trade_good_symbol {

@@ -157,6 +157,10 @@ func ThreeMinutesFromNow() time.Time {
 	return time.Now().Add(3 * time.Minute)
 }
 
+func OneMinuteFromNow() time.Time {
+	return time.Now().Add(1 * time.Minute)
+}
+
 func JettisonAllCargo(ship Ship) {
 	for _, item := range ship.Cargo.Inventory {
 		JettisonCargo(ship, item.Symbol, item.Units )

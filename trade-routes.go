@@ -235,7 +235,6 @@ func BestMarketToSellGood(world *WorldState, tradeGoodSymbol string) (Market, in
                 bestPrice = good.SellPrice
                 bestMarket = market_state.Market
                 found = true
-				fmt.Println("found a sucker to offload garbage to")
             }
         }
     }

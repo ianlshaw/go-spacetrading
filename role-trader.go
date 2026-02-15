@@ -69,9 +69,12 @@ func DecideTraderAction(ship Ship, world *WorldState, all_waypoints_in_system []
 		}
 	}
 
+	var sell_market_symbol string
+	var trade_good_in_cargo string
+
 	// large trades with low trade volume can cause the derived route to cease to exist. eventually causing a nil pointer from here.
 	if !IsShipCargoEmpty(ship){
-		trade_good_in_cargo := ship.Cargo.Inventory[0].Symbol
+		trade_good_in_cargo = ship.Cargo.Inventory[0].Symbol
 		fmt.Printf("[INFO] trade good in cargo: %s\n", trade_good_in_cargo)
 		trade_routes_with_cargo := DerivedTradeRoutesWithTradeGood(derived_trade_routes, trade_good_in_cargo)
 		fmt.Printf("[INFO] %d trade routes with carried cargo %s\n", len(trade_routes_with_cargo), trade_good_in_cargo)
@@ -83,22 +86,25 @@ func DecideTraderAction(ship Ship, world *WorldState, all_waypoints_in_system []
 			// 2) Find a different market which will take the remaining trade goods (complex)
 			// 3) Wait until the current market will take the remaining trade goods (may get stuck)
 
-			//target_market := BestMarketToSellGood(world, trade_good_in_cargo)
-			//target_market_symbol = backup_sell_market.Symbol
-		
-			fmt.Printf("[WARN] Waiting for three minutes...\n")
-			return ShipAction{
-				Type: ActionWait,
-				NotBefore: ThreeMinutesFromNow(),
+			sell_market, _, success := BestMarketToSellGood(world, trade_good_in_cargo)
+			if !success {
+				fmt.Println("[ERROR] No markets will accept %s\n", trade_good_in_cargo)
+				return ShipAction{
+					Type: ActionWait,
+					NotBefore: ThreeMinutesFromNow(),
+				}
 			}
+			fmt.Printf("[WARN] Backup market found for %s\n", trade_good_in_cargo)
+			sell_market_symbol = sell_market.Symbol
+		
 		} else {
 			most_profitable_derived_trade_route = MostProfitableDerivedTradeRoute(trade_routes_with_cargo)
-			fmt.Println(most_profitable_derived_trade_route)
+			sell_market_symbol = most_profitable_derived_trade_route.To
 		}
 
 	}
 
-	if IsShipAlreadyAtWaypoint(ship, most_profitable_derived_trade_route.To) {
+	if IsShipAlreadyAtWaypoint(ship, sell_market_symbol) {
 		if !IsShipCargoEmpty(ship) {
 			if !IsShipDocked(ship) {
 				return ShipAction{
@@ -107,13 +113,12 @@ func DecideTraderAction(ship Ship, world *WorldState, all_waypoints_in_system []
 				}
 			} else {
 				// at sell wp, not empty, docked.
-				trade_good_cargo_count := CountTradeGoodCargo(ship, most_profitable_derived_trade_route.Good)
+				trade_good_cargo_count := CountTradeGoodCargo(ship, trade_good_in_cargo)
 				units := trade_good_cargo_count
-				// this needs to be pulled from market
+				
+				sell_market := world.Markets[sell_market_symbol].Market
 
-				sell_market := world.Markets[most_profitable_derived_trade_route.To].Market
-
-				success, sell_market_trade_good := TradeGoodFromMarket(most_profitable_derived_trade_route.Good, sell_market)
+				success, sell_market_trade_good := TradeGoodFromMarket(trade_good_in_cargo, sell_market)
 				if !success {
 					fmt.Println("[ERROR] DecideTraderAction TradeGoodFromMarket failed")
 				}
@@ -124,20 +129,20 @@ func DecideTraderAction(ship Ship, world *WorldState, all_waypoints_in_system []
 				return ShipAction{
 					Type: ActionSellCargo,
 					ShipSymbol: ship.Symbol,
-					TradeGoodSymbol: most_profitable_derived_trade_route.Good,
+					TradeGoodSymbol: trade_good_in_cargo,
 					Units: units,
 				}
 			}
 		}
 	}
 
-	fmt.Println(most_profitable_derived_trade_route)
+	//fmt.Println(most_profitable_derived_trade_route)
 	buy_market := world.Markets[most_profitable_derived_trade_route.From].Market
 	success, buy_market_trade_good := TradeGoodFromMarket(most_profitable_derived_trade_route.Good, buy_market)
 	if !success {
 		fmt.Println("[ERROR] DecideTraderAction TradeGoodFromMarket failed")
 	}
-	fmt.Println(buy_market_trade_good)
+	//fmt.Println(buy_market_trade_good)
 	max_affordable_units := HowManyTradeGoodCanIAfford(agent, buy_market_trade_good)
 
 	//if IsShipCargoEmpty(ship) {
@@ -201,7 +206,7 @@ func DecideTraderAction(ship Ship, world *WorldState, all_waypoints_in_system []
 		}
 	}
 
-	most_profitable_trade_route_sell_marketplace_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, most_profitable_derived_trade_route.To)
+	most_profitable_trade_route_sell_marketplace_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, sell_market_symbol)
 	path, _, err := CalculateShortestPathBetweenTwoWaypoints(ShuttleMarketplaceGraph, current_waypoint, most_profitable_trade_route_sell_marketplace_waypoint)
 	if err != nil {
 		fmt.Println("[ERROR] cannot path")
