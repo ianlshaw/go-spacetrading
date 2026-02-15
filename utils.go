@@ -153,6 +153,10 @@ func FifteenMinutesFromNow() time.Time {
 	return time.Now().Add(15 * time.Minute)
 }
 
+func ThreeMinutesFromNow() time.Time {
+	return time.Now().Add(3 * time.Minute)
+}
+
 func JettisonAllCargo(ship Ship) {
 	for _, item := range ship.Cargo.Inventory {
 		JettisonCargo(ship, item.Symbol, item.Units )
@@ -180,7 +184,6 @@ func EraseState(callsign string) {
 		callsign + ".markets.json",
 		callsign + ".shipyards.json",
 		callsign + ".token",
-		callsign + ".trade_routes",
 		callsign + ".waypoints.json",
 		callsign + ".world.json",
 	}

@@ -11,7 +11,6 @@ var desired_number_of_ship_surveyor = 1
 var desired_number_of_ship_probe = 2
 
 // TODO
-// Newly purchased ships need to be added into ship_list cleanly 
 
 func DecideBuyerAction(ship Ship) ShipAction {
 	number_of_ship_probe := CountShipsByFrame(ship_list, "FRAME_PROBE") // This would need to -1 since the buyer is now a probe

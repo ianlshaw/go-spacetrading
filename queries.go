@@ -253,19 +253,18 @@ func ClosestMarketToWaypoint(target_waypoint Waypoint, all_waypoints []Waypoint,
 	return closest_market
 }
 
-func TradeGoodFromMarket(trade_good_symbol string, market Market) TradeGood {
+func TradeGoodFromMarket(trade_good_symbol string, market Market) (bool, TradeGood) {
 	default_trade_good := TradeGood{}
 	for _, trade_good := range market.TradeGoods {
 		if trade_good.Symbol == trade_good_symbol {
-			//fmt.Println("[DEBUG] TradeGoodFromMarket: Trade good found")
-			return trade_good
+			return true, trade_good
 		}
 	}
-	fmt.Println("[ERROR] TradeGoodFromMarket market does not contain trade good")
-	fmt.Println(trade_good_symbol)
-	fmt.Println(market.TradeGoods)
-	fmt.Println(market)
-	return default_trade_good
+	//fmt.Println("[ERROR] TradeGoodFromMarket market does not contain trade good")
+	//fmt.Println(trade_good_symbol)
+	//fmt.Println(market.TradeGoods)
+	//fmt.Println(market)
+	return false, default_trade_good
 }
 
 func ContractRemainingRequired(contract Contract) int64 {

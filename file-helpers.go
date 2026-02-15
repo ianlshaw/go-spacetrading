@@ -11,6 +11,7 @@ import (
 var waypoints_filename = ".waypoints.json"
 var shipyards_filename = ".shipyards.json"
 var markets_filename = ".markets.json"
+var world_state_filename = ".world.json"
 
 func DoesAgentTokenFileExist(callsign string) (result bool) {
 	var filename = callsign + ".token"
@@ -20,17 +21,6 @@ func DoesAgentTokenFileExist(callsign string) (result bool) {
 		return false
 	}
 	fmt.Println("[INFO] Token file exists")
-	return true
-}
-
-func DoesTradeRouteFileExist(callsign string) (result bool) {
-	var filename = callsign + ".trade_routes"
-	if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
-		// path/to/whatever does not exist
-		fmt.Println("[INFO] Trade route file does not exist")
-		return false
-	}
-	fmt.Println("[INFO] Trade route file exists")
 	return true
 }
 
@@ -98,23 +88,6 @@ func ReadAgentTokenFromFile(callsign string) {
 	agent_token += (string(f))
 }
 
-func WriteTradeRoutesToFile(trade_routes []TradeRoute, callsign string) {
-	file_content := ""
-	f, err := os.Create(callsign + ".trade_routes")
-	PanicOnError(err)
-	defer f.Close()
-
-	for _, trade_route := range trade_routes {
-		marshalled_trade_route, err := json.Marshal(trade_route)
-		PanicOnError(err)
-		file_content = file_content + string(marshalled_trade_route) + "\n"
-	}
-
-	write_result, err := f.WriteString(file_content)
-	PanicOnError(err)
-	fmt.Printf("[DEBUG] WriteTradeRoutesToFile wrote %d bytes\n", write_result)
-}
-
 func WorldStateFilename(callsign string) string {
     return callsign + ".world.json"
 }
@@ -148,37 +121,6 @@ func SaveWorldState(callsign string, ws *WorldState) {
 
     err = os.WriteFile(WorldStateFilename(callsign), data, 0644)
     PanicOnError(err)
-}
-
-func WriteWorldStateToFile(callsign string) {
-	file_content := ""
-	f, err := os.Create(callsign + ".worldstate")
-	PanicOnError(err)
-	defer f.Close()
-
-	write_result, err := f.WriteString(file_content)
-	PanicOnError(err)
-	fmt.Printf("[DEBUG] WriteWorldStateToFile wrote %d bytes\n", write_result)
-}
-
-func ReadWorldStateFromFile(callsign string) {
-	fmt.Println("[DEBUG] ReadWorldStateFromFile")
-
-}
-
-func ReadTradeRoutesFromFile(callsign string) []TradeRoute {
-	fmt.Println("[DEBUG] ReadTradeRoutesFromFile")
-	trade_routes := []TradeRoute{}
-	f, err := os.Open(callsign + ".trade_routes")
-	PanicOnError(err)
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		trade_route := TradeRoute{}
-		err := json.Unmarshal([]byte(scanner.Text()), &trade_route)
-		PanicOnError(err)
-		trade_routes = append(trade_routes, trade_route)
-	}
-	return trade_routes
 }
 
 func DoesShipyardsFileExist(callsign string) (result bool) {
@@ -230,6 +172,16 @@ func DoesMarketsFileExist(callsign string) (result bool) {
 		return false
 	}
 	fmt.Println("[INFO] Markets file exists")
+	return true
+}
+
+func DoesWorldStateFileExist(callsign string) (result bool) {
+	var filename = callsign + world_state_filename
+	if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
+		fmt.Println("[INFO] World State file does not exist")
+		return false
+	}
+	fmt.Println("[INFO] World State file exists")
 	return true
 }
 

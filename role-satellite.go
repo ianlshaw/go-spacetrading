@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 )
 
 // TODO
@@ -15,15 +16,39 @@ func DecideSatelliteAction(
 ) ShipAction {
 	fmt.Println("[INFO] " + ship.Symbol + " " + ship.Registration.Role + " " + "DecideSatelliteAction")
 
+	// This should only happen once when the ship is first purchased.
 	if IsShipDocked(ship) {
 		return ShipAction{
 			Type: ActionOrbit,
 			ShipSymbol: ship.Symbol,
 		}
 	}
+
+	current_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, ship.Nav.WaypointSymbol)
+
+	markets_yet_to_be_visited := MarketsYetToBeVisited(world)
+
+	target := OldestMarket(world)
+
+	if len(markets_yet_to_be_visited) > 0 {
+		fmt.Printf("[INFO] %d markets have not yet been visited\n", len(markets_yet_to_be_visited))
+		best_distance := math.MaxInt
+
+		// find closest of markets yet to be visited
+		closest_market := Market{}
+		for _, market := range markets_yet_to_be_visited {
+			market_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, market.Symbol)
+			distance := DistanceBetweenTwoWaypoints(current_waypoint, market_waypoint)
+			if distance < best_distance {
+				closest_market = market
+				best_distance = distance
+			}
+		}
+		target = world.Markets[closest_market.Symbol]
+	}
 	
-    target := OldestMarket(world)
     if target == nil {
+		fmt.Println("[ERROR] DecideSatelliteAction target is nil")
 		return ShipAction{
 			Type: ActionWait,
 			ShipSymbol: ship.Symbol,

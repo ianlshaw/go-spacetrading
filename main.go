@@ -19,7 +19,6 @@ var http_calls = 0
 var turn_length = 120
 var callsign = os.Args[1]
 
-var trade_routes []TradeRoute
 var all_waypoints_in_system []Waypoint
 var all_markets_in_system []Market
 var probe_shipyard_waypoints []Waypoint
@@ -69,6 +68,9 @@ type ShipAction struct {
 
 type WorldState struct {
     Markets map[string]*MarketState
+	Waypoints map[string]*Waypoint
+	Shipyards map[string]*Shipyard
+	Ship map[string]*Ship
 }
 
 type MarketState struct {
@@ -166,7 +168,7 @@ func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
 	// TODO
 	// This calls GetMarket twice. One can be removed once we're fully using World MarketState
 	case ActionUpdateMarketData:
-		UpdateTradeRoutesIncludingThisWaypoint(action.WaypointSymbol)
+		//UpdateTradeRoutesIncludingThisWaypoint(action.WaypointSymbol)
 		resp := GetMarket(base_system_symbol, action.WaypointSymbol)
 		World.UpdateFromMarket(resp)
 		SaveWorldState(callsign, World)
@@ -251,18 +253,8 @@ func runShip(ship Ship){
 		ship.Cargo.Units,
 		ship.Cargo.Capacity)
 
-		//fmt.Print("[DEBUG] " + ship.Symbol + " " + ship.Registration.Role + " "  + ship.Frame.Symbol + " Fuel [")
-		//fmt.Print(ship.Fuel.Current)
-		//fmt.Print("/")
-		//fmt.Print(ship.Fuel.Capacity)
-		//fmt.Print("] Cargo [")
-		//fmt.Print(ship.Cargo.Units)
-		//fmt.Print("/")
-		//fmt.Print(ship.Cargo.Capacity)
-		//fmt.Println("]")
-
 		if ship.Registration.Role == "COMMAND" {
-			action := DecideTraderAction(ship, all_waypoints_in_system)
+			action := DecideTraderAction(ship, World, all_waypoints_in_system)
 			fmt.Println(action)
 			expiration = ExecuteAction(action, &ship)
 		}
@@ -295,17 +287,14 @@ func runShip(ship Ship){
 				fmt.Println(action)
 				expiration = ExecuteAction(action, &ship)
 			} else {
-				//expiration = ApplyRoleSatellite(ship, trade_routes)
-				//action := DecideSatelliteAction(ship, trade_routes)
-				//fmt.Println(action)
-				//expiration = ExecuteAction(action, &ship)
+				// 3+ satellites
 			}
 		}
 
 		if len(all_shuttles) >= 1 {
 			if ship.Symbol == all_shuttles[0].Symbol {
 				// DEBUG
-				action := DecideTraderAction(ship, all_waypoints_in_system)
+				action := DecideTraderAction(ship, World, all_waypoints_in_system)
 				fmt.Println(action)
 				expiration = ExecuteAction(action, &ship)
 				// DEBUG
@@ -344,11 +333,15 @@ func runShip(ship Ship){
 
 		expiration_formatted := expiration.Format(time.RFC3339)
 		fmt.Println("[INFO] " + ship.Symbol + " " + ship.Registration.Role + " Sleeping until " + expiration_formatted)
-		time.Sleep(time.Until(expiration))
 
-		// Anti-Spam
-		//Log("DEBUG", ship.Symbol + " ANTI SPAM ENGAGED")
-		//time.Sleep(60 * time.Second)
+		for {
+			sleepFor := time.Until(expiration)
+			if sleepFor <= 0 {
+				break
+			}
+			time.Sleep(sleepFor)
+			//time.Sleep(sleepFor + 1*time.Second)
+		}
 	}
 }
 
@@ -402,7 +395,6 @@ func main() {
 	World = LoadWorldState(CALLSIGN)
 
 	for _, waypoint := range all_waypoints_in_system {
-		//AddWaypointToSystemGraph(waypoint)
 		PopulateGraphDistancesForWaypoint(SystemGraph, all_waypoints_in_system, waypoint)
 		PopulateGraphDistancesForWaypointWithMaximum(SystemGraph, all_waypoints_in_system, waypoint, 400)
 	}
@@ -457,7 +449,6 @@ func main() {
 	}
 
 	for _, waypoint := range marketplace_waypoints {
-		//AddWaypointToSystemGraph(waypoint)
 		
 		PopulateGraphDistancesForWaypointWithMaximum(MarketplaceGraph, marketplace_waypoints, waypoint, 400)
 		PopulateGraphDistancesForWaypointWithMaximum(ShuttleMarketplaceGraph, marketplace_waypoints, waypoint, 300)
@@ -465,36 +456,20 @@ func main() {
 		//PopulateGraphDistancesForWaypointWithMaximum(SiphonerMarketplaceGraph, marketplace_waypoints, waypoint, 80)
 	}
 
-	// each unique market waypoint symbol (unordered)
-	markets_to_cover := make(map[string]string)
-
-	// association for places to BUY and SELL TradeGoods
-	//trade_routes := []TradeRoute{}
-
-	if !DoesTradeRouteFileExist(CALLSIGN) {
-		fmt.Println("[INFO] Trade route file does not exist. Initializing...")
-		trade_routes = IdentifyTradeRoutes(CALLSIGN, markets_to_cover, all_markets_in_system, marketplace_waypoints)
-		WriteTradeRoutesToFile(trade_routes, CALLSIGN)
-	} else {
-		fmt.Println("[INFO] Trade file exists. Reading from file...")
-		trade_routes = ReadTradeRoutesFromFile(CALLSIGN)
-	}
-
-	markets_to_cover = PopulateMarketsToCover(trade_routes)
 	_, probe_shipyard_waypoints = FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_PROBE")
 	fmt.Print("[DEBUG] probe shipyards:")
 
 	//_, shuttle_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_LIGHT_SHUTTLE")
 	//fmt.Print("[DEBUG] shuttle shipyards:")
-//
+
 	//mining_drone_shipyards, mining_drone_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_MINING_DRONE")
 	//fmt.Print("[DEBUG] mining_drone shipyards:")
 	//fmt.Println(len(mining_drone_shipyards))
-//
+
 	//siphon_drone_shipyards, siphon_drone_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_SIPHON_DRONE")
 	//fmt.Print("[DEBUG] siphon_drone shipyards:")
 	//fmt.Println(len(siphon_drone_shipyards))
-//
+
 	//surveyor_shipyards, surveyor_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_SURVEYOR")
 	//fmt.Print("[DEBUG] surveyor shipyards:")
 	//fmt.Println(len(surveyor_shipyards))
@@ -506,8 +481,6 @@ func main() {
 	http_calls = 0
 	fmt.Println()
 
-
-
 	agent = GetAgent()
 	fmt.Print("[INFO] ShipCount: ")
 	fmt.Print(agent.ShipCount)
@@ -516,31 +489,12 @@ func main() {
 	fmt.Print(agent.Credits)
 	fmt.Println()
 
-
-
 	ship_list = ListShips()
 
-	//wait_between_ships := turn_length / len(ship_list)
 
 	for _, ship := range ship_list {
     	ensureShipRunning(ship)
 	}
-
-	//for _, ship := range ship_list {
-	//	go runShip(
-	//		ship,
-	//		all_waypoints_in_system,
-	//		all_markets_in_system,
-	//		markets_to_cover,
-	//		shuttle_shipyard_waypoints,
-	//		mining_drone_shipyard_waypoints,
-	//		siphon_drone_shipyard_waypoints,
-	//		surveyor_shipyard_waypoints,
-	//		trade_routes,
-	//		CALLSIGN)
-	//		fmt.Print("[INFO] http calls:")
-	//		fmt.Println(http_calls)
-	//}
 
 	select {}
 }
