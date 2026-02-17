@@ -16,7 +16,6 @@ var account_token_filename = "ACCOUNTTOKENDONOTEXPOSE.txt"
 var agent_token = "Bearer "
 var base_system_symbol = ""
 var http_calls = 0
-var turn_length = 120
 var callsign = os.Args[1]
 
 var all_waypoints_in_system []Waypoint
@@ -26,7 +25,7 @@ var probe_shipyard_waypoints []Waypoint
 var agent Agent // does this need to be global or should it be a pointer
 var ship_list []Ship
 var runningShips = make(map[string]bool)
-var markets_to_cover = make(map[string]string)
+// var markets_to_cover = make(map[string]string)
 var probe_shipard_waypoints []Waypoint
 //var shuttle_shipyard_waypoints []Waypoint
 //var mining_drone_shipyard_waypoints []Waypoint
@@ -387,21 +386,18 @@ func main() {
 
 	World = LoadWorldState(CALLSIGN)
 
-	if !DoesWaypointsFileExist(CALLSIGN) {
+	if len(World.Waypoints) == 0 {
 		fmt.Println("[INFO] Gathering waypoint data...")
-		//all_waypoints_in_system := []Waypoint{}
 		list_waypoints_result := ListWaypointsInSystem(base_system_symbol, "1")
 		total_waypoints := list_waypoints_result.Meta.Total
 		limit := list_waypoints_result.Meta.Limit
 		loop_iterations_required := total_waypoints / int64(limit)
 		for i := 1; i < int(loop_iterations_required+2); i++ {
 			a_page_of_waypoints := ListWaypointsInSystem(base_system_symbol, strconv.FormatInt(int64(i), 10))
-			all_waypoints_in_system = append(all_waypoints_in_system, a_page_of_waypoints.Data...)
 			for _, waypoint := range a_page_of_waypoints.Data {
 				World.UpdateFromWaypoint(waypoint)
 			}
 		}
-		WriteWaypointsToFile(all_waypoints_in_system, CALLSIGN)
 		SaveWorldState(callsign, World)
 	}
 
@@ -433,29 +429,14 @@ func main() {
 
 	all_shipyards_in_system := ReadShipyardsFromFile(CALLSIGN)
 	
+	marketplace_waypoints := WaypointsWithTrait(World, "MARKETPLACE")
 
-	if !DoesMarketsFileExist(CALLSIGN) {
-		for _, waypoint := range all_waypoints_in_system {
-			for _, trait := range waypoint.Traits {
-				if trait.Symbol == "MARKETPLACE" {
-					get_market_result := GetMarket(base_system_symbol, waypoint.Symbol)
-					World.UpdateFromMarket(get_market_result)
-					all_markets_in_system = append(all_markets_in_system, get_market_result)
-				}
-			}
+	if len(World.Markets) == 0 {
+		for marketplace_waypoint_symbol, _ := range marketplace_waypoints {
+			get_market_result := GetMarket(base_system_symbol, marketplace_waypoint_symbol)
+			World.UpdateFromMarket(get_market_result)
 		}
-		WriteMarketsToFile(all_markets_in_system, CALLSIGN)
 		SaveWorldState(callsign, World)
-	}
-
-	marketplace_waypoints := make(map[string]*Waypoint)
-
-	for waypoint_symbol, waypoint := range World.Waypoints {
-		for _, trait := range waypoint.Traits {
-			if trait.Symbol == "MARKETPLACE" {
-				marketplace_waypoints[waypoint_symbol] = waypoint
-			}
-		}
 	}
 
 	for _, waypoint := range marketplace_waypoints {

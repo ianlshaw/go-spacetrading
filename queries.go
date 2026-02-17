@@ -163,12 +163,12 @@ func ClosestWaypointFromSliceToWaypoint(waypoint_slice []Waypoint, singular_wayp
 	return closest_waypoint
 }
 
-func WaypointsWithTrait(waypoint_slice []Waypoint, trait_to_check string) []Waypoint {
-	waypoints_with_trait := []Waypoint{}
-	for _, waypoint := range waypoint_slice {
+func WaypointsWithTrait(world *WorldState, trait_to_check string) map[string]*Waypoint {
+	waypoints_with_trait := make(map[string]*Waypoint)
+	for waypoint_symbol, waypoint := range world.Waypoints {
 		for _, trait := range waypoint.Traits {
 			if trait.Symbol == trait_to_check {
-				waypoints_with_trait = append(waypoints_with_trait, waypoint)
+				waypoints_with_trait[waypoint_symbol] = waypoint
 			}
 		}
 	}
