@@ -69,16 +69,25 @@ type ShipAction struct {
 type WorldState struct {
     Markets map[string]*MarketState
 	Waypoints map[string]*Waypoint
-	Shipyards map[string]*Shipyard
-	Ship map[string]*Ship
+	Shipyards map[string]*ShipyardState
+	Ships map[string]*ShipState
 }
 
 type MarketState struct {
     WaypointSymbol string
     LastSeen time.Time
-
-    // Raw API response
     Market Market
+}
+
+type ShipyardState struct {
+    WaypointSymbol string
+    LastSeen time.Time
+    Shipyard Shipyard
+}
+
+type ShipState struct {
+    BusyUntil time.Time
+    Ship Ship
 }
 
 var World *WorldState
@@ -89,6 +98,10 @@ func (w *WorldState) UpdateFromMarket(m Market) {
         LastSeen: time.Now(),
         Market:   m,
     }
+}
+
+func (w *WorldState) UpdateFromWaypoint(wp Waypoint) {
+    w.Waypoints[wp.Symbol] = &wp
 }
 
 func (w *WorldState) IsMarketStale(waypoint string) bool {
@@ -350,14 +363,10 @@ func main() {
 
 	// Ensure the CALLSIGN is provided as a command line argument
 	if len(os.Args) != 2 {
-		fmt.Println("go-spacetrade CALLSIGN")
+		fmt.Println("go run . CALLSIGN")
 		os.Exit(1)
 	}
 
-	//World = WorldState{
-    //    Markets: make(map[string]*MarketState),
-    //}
-	
 	CALLSIGN := os.Args[1]
 
 	// Check if an auth token file is present for the CALLSIGN provided
@@ -376,6 +385,8 @@ func main() {
 
 	// do waypoint files exist?
 
+	World = LoadWorldState(CALLSIGN)
+
 	if !DoesWaypointsFileExist(CALLSIGN) {
 		fmt.Println("[INFO] Gathering waypoint data...")
 		//all_waypoints_in_system := []Waypoint{}
@@ -386,15 +397,15 @@ func main() {
 		for i := 1; i < int(loop_iterations_required+2); i++ {
 			a_page_of_waypoints := ListWaypointsInSystem(base_system_symbol, strconv.FormatInt(int64(i), 10))
 			all_waypoints_in_system = append(all_waypoints_in_system, a_page_of_waypoints.Data...)
+			for _, waypoint := range a_page_of_waypoints.Data {
+				World.UpdateFromWaypoint(waypoint)
+			}
 		}
 		WriteWaypointsToFile(all_waypoints_in_system, CALLSIGN)
+		SaveWorldState(callsign, World)
 	}
 
-	all_waypoints_in_system = ReadWaypointsFromFile(CALLSIGN)
-
-	World = LoadWorldState(CALLSIGN)
-
-	for _, waypoint := range all_waypoints_in_system {
+	for _, waypoint := range World.Waypoints {
 		PopulateGraphDistancesForWaypoint(SystemGraph, all_waypoints_in_system, waypoint)
 		PopulateGraphDistancesForWaypointWithMaximum(SystemGraph, all_waypoints_in_system, waypoint, 400)
 	}

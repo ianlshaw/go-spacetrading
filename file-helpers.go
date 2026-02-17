@@ -92,12 +92,25 @@ func WorldStateFilename(callsign string) string {
     return callsign + ".world.json"
 }
 
+func DoesWorldStateFileExist(callsign string) (result bool) {
+	var filename = WorldStateFilename(callsign)
+	if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
+		fmt.Println("[INFO] World State file does not exist")
+		return false
+	}
+	fmt.Println("[INFO] World State file exists")
+	return true
+}
+
 func LoadWorldState(callsign string) *WorldState {
     filename := WorldStateFilename(callsign)
 
     if _, err := os.Stat(filename); os.IsNotExist(err) {
         return &WorldState{
             Markets: make(map[string]*MarketState),
+			Waypoints: make(map[string]*Waypoint),
+			Shipyards: make(map[string]*ShipyardState),
+			Ships: make(map[string]*ShipState),
         }
     }
 
@@ -110,6 +123,21 @@ func LoadWorldState(callsign string) *WorldState {
     if ws.Markets == nil {
 		fmt.Println("ws.Markets is nil")
         ws.Markets = make(map[string]*MarketState)
+    }
+
+    if ws.Waypoints == nil {
+		fmt.Println("ws.Waypoints is nil")
+        ws.Waypoints = make(map[string]*Waypoint)
+    }
+
+    if ws.Shipyards == nil {
+		fmt.Println("ws.Shipyards is nil")
+        ws.Shipyards = make(map[string]*ShipyardState)
+    }
+
+    if ws.Ships == nil {
+		fmt.Println("ws.Ships is nil")
+        ws.Ships = make(map[string]*ShipState)
     }
 
     return &ws
@@ -172,16 +200,6 @@ func DoesMarketsFileExist(callsign string) (result bool) {
 		return false
 	}
 	fmt.Println("[INFO] Markets file exists")
-	return true
-}
-
-func DoesWorldStateFileExist(callsign string) (result bool) {
-	var filename = callsign + world_state_filename
-	if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
-		fmt.Println("[INFO] World State file does not exist")
-		return false
-	}
-	fmt.Println("[INFO] World State file exists")
 	return true
 }
 
