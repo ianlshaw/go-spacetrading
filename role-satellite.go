@@ -29,7 +29,7 @@ func DecideSatelliteAction(ship Ship, world *WorldState) ShipAction {
 		}
 	}
 
-	current_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, ship.Nav.WaypointSymbol)
+	current_waypoint := *world.Waypoints[ship.Nav.WaypointSymbol]
 
 	markets_yet_to_be_visited := MarketsYetToBeVisited(world)
 
@@ -42,8 +42,7 @@ func DecideSatelliteAction(ship Ship, world *WorldState) ShipAction {
 		// find closest of markets yet to be visited
 		closest_market := Market{}
 		for _, market := range markets_yet_to_be_visited {
-			market_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, market.Symbol)
-			distance := DistanceBetweenTwoWaypoints(current_waypoint, market_waypoint)
+			distance := DistanceBetweenTwoWaypoints(current_waypoint, *world.Waypoints[market.Symbol])
 			if distance < best_distance {
 				closest_market = market
 				best_distance = distance

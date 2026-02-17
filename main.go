@@ -267,7 +267,7 @@ func runShip(ship Ship){
 		ship.Cargo.Capacity)
 
 		if ship.Registration.Role == "COMMAND" {
-			action := DecideTraderAction(ship, World, all_waypoints_in_system)
+			action := DecideTraderAction(ship, World)
 			fmt.Println(action)
 			expiration = ExecuteAction(action, &ship)
 		}
@@ -307,7 +307,7 @@ func runShip(ship Ship){
 		if len(all_shuttles) >= 1 {
 			if ship.Symbol == all_shuttles[0].Symbol {
 				// DEBUG
-				action := DecideTraderAction(ship, World, all_waypoints_in_system)
+				action := DecideTraderAction(ship, World)
 				fmt.Println(action)
 				expiration = ExecuteAction(action, &ship)
 				// DEBUG
@@ -406,8 +406,8 @@ func main() {
 	}
 
 	for _, waypoint := range World.Waypoints {
-		PopulateGraphDistancesForWaypoint(SystemGraph, all_waypoints_in_system, waypoint)
-		PopulateGraphDistancesForWaypointWithMaximum(SystemGraph, all_waypoints_in_system, waypoint, 400)
+		PopulateGraphDistancesForWaypoint(SystemGraph, World.Waypoints, *waypoint)
+		PopulateGraphDistancesForWaypointWithMaximum(SystemGraph, World.Waypoints, *waypoint, 400)
 	}
 
 	if !DoesShipyardsFileExist(CALLSIGN) {
@@ -432,6 +432,7 @@ func main() {
 	}
 
 	all_shipyards_in_system := ReadShipyardsFromFile(CALLSIGN)
+	
 
 	if !DoesMarketsFileExist(CALLSIGN) {
 		for _, waypoint := range all_waypoints_in_system {
@@ -440,7 +441,6 @@ func main() {
 					get_market_result := GetMarket(base_system_symbol, waypoint.Symbol)
 					World.UpdateFromMarket(get_market_result)
 					all_markets_in_system = append(all_markets_in_system, get_market_result)
-					time.Sleep(2 * time.Second)
 				}
 			}
 		}
@@ -448,21 +448,20 @@ func main() {
 		SaveWorldState(callsign, World)
 	}
 
-	all_markets_in_system := ReadMarketsFromFile(CALLSIGN)
-	marketplace_waypoints := []Waypoint{}
+	marketplace_waypoints := make(map[string]*Waypoint)
 
-	for _, market := range all_markets_in_system {
-		for _, waypoint := range all_waypoints_in_system {
-			if market.Symbol == waypoint.Symbol {
-				marketplace_waypoints = append(marketplace_waypoints, waypoint)
+	for waypoint_symbol, waypoint := range World.Waypoints {
+		for _, trait := range waypoint.Traits {
+			if trait.Symbol == "MARKETPLACE" {
+				marketplace_waypoints[waypoint_symbol] = waypoint
 			}
 		}
 	}
 
 	for _, waypoint := range marketplace_waypoints {
 		
-		PopulateGraphDistancesForWaypointWithMaximum(MarketplaceGraph, marketplace_waypoints, waypoint, 400)
-		PopulateGraphDistancesForWaypointWithMaximum(ShuttleMarketplaceGraph, marketplace_waypoints, waypoint, 300)
+		PopulateGraphDistancesForWaypointWithMaximum(MarketplaceGraph, marketplace_waypoints, *waypoint, 400)
+		PopulateGraphDistancesForWaypointWithMaximum(ShuttleMarketplaceGraph, marketplace_waypoints, *waypoint, 300)
 
 		//PopulateGraphDistancesForWaypointWithMaximum(SiphonerMarketplaceGraph, marketplace_waypoints, waypoint, 80)
 	}

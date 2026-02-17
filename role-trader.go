@@ -9,7 +9,7 @@ import (
 
 var ShuttleMarketplaceGraph dijkstra.Graph = make(dijkstra.Graph)
 
-func DecideTraderAction(ship Ship, world *WorldState, all_waypoints_in_system []Waypoint) ShipAction {
+func DecideTraderAction(ship Ship, world *WorldState) ShipAction {
 
 	fmt.Println("[INFO] " + ship.Symbol + " DecideTraderAction")
 
@@ -31,7 +31,7 @@ func DecideTraderAction(ship Ship, world *WorldState, all_waypoints_in_system []
 	most_profitable_derived_trade_route.ProfitPerUnit)
 
 	//most_profitable_trade_route := MostProfitableTradeRoute(trade_routes)
-	current_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, ship.Nav.WaypointSymbol)
+	current_waypoint := *world.Waypoints[ship.Nav.WaypointSymbol]
 
 	// Always update market data for a market we're at if it needs it.
 	if IsShipDocked(ship){
@@ -184,9 +184,13 @@ func DecideTraderAction(ship Ship, world *WorldState, all_waypoints_in_system []
 			}
 		}
 		
-		most_profitable_trade_route_buy_marketplace_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, most_profitable_derived_trade_route.From)
+		most_profitable_trade_route_buy_marketplace_waypoint := *world.Waypoints[most_profitable_derived_trade_route.From]
 		path, _, err := CalculateShortestPathBetweenTwoWaypoints(ShuttleMarketplaceGraph, current_waypoint, most_profitable_trade_route_buy_marketplace_waypoint)
+
 		if err != nil {
+			//
+			fmt.Println(err)
+			//
 			fmt.Println("[ERROR] cannot path")
 			return ShipAction{
 				Type: ActionWait,
@@ -206,9 +210,12 @@ func DecideTraderAction(ship Ship, world *WorldState, all_waypoints_in_system []
 		}
 	}
 
-	most_profitable_trade_route_sell_marketplace_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, sell_market_symbol)
+	most_profitable_trade_route_sell_marketplace_waypoint := *world.Waypoints[sell_market_symbol]
 	path, _, err := CalculateShortestPathBetweenTwoWaypoints(ShuttleMarketplaceGraph, current_waypoint, most_profitable_trade_route_sell_marketplace_waypoint)
 	if err != nil {
+		//
+		fmt.Println(err)
+		//
 		fmt.Println("[ERROR] cannot path")
 		return ShipAction{
 			Type: ActionWait,

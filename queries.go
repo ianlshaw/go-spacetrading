@@ -175,7 +175,9 @@ func WaypointsWithTrait(waypoint_slice []Waypoint, trait_to_check string) []Wayp
 	return waypoints_with_trait
 }
 
+// This is depreciated in favour of world.Waypoints[waypoint_symbol]
 func WaypointFromWaypointSymbol(waypoint_slice []Waypoint, waypoint_symbol_to_check string) Waypoint {
+	fmt.Println("[DEPRECIATED] WaypointFromWaypointSymbol")
 	default_waypoint := Waypoint{}
 	for _, waypoint := range waypoint_slice {
 		if waypoint.Symbol == waypoint_symbol_to_check {
@@ -235,7 +237,9 @@ func ClosestMarketSellingTradeGood(ship Ship, trade_good string, markets []Marke
 	return closest_market
 }
 
+// TODO both all_waypoints and markets should be replaced with world state equivilents.
 func ClosestMarketToWaypoint(target_waypoint Waypoint, all_waypoints []Waypoint, markets []Market) Market {
+	fmt.Println("[WARN] ClosestMarketToWaypoint needs rewrite see TODO")
 	shortest_distance := 9001
 	closest_market := Market{}
 	for _, market := range markets {
