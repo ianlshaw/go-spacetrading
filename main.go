@@ -99,6 +99,14 @@ func (w *WorldState) UpdateFromMarket(m Market) {
     }
 }
 
+func (w *WorldState) UpdateFromShipyard(s Shipyard) {
+    w.Shipyards[s.Symbol] = &ShipyardState{
+        WaypointSymbol: s.Symbol,
+        LastSeen: time.Now(),
+        Shipyard:   s,
+    }
+}
+
 func (w *WorldState) UpdateFromWaypoint(wp Waypoint) {
     w.Waypoints[wp.Symbol] = &wp
 }
@@ -406,28 +414,16 @@ func main() {
 		PopulateGraphDistancesForWaypointWithMaximum(SystemGraph, World.Waypoints, *waypoint, 400)
 	}
 
-	if !DoesShipyardsFileExist(CALLSIGN) {
-		shipyard_waypoints := []Waypoint{}
+	shipyard_waypoints := WaypointsWithTrait(World, "SHIPYARD")
 
-		for _, waypoint := range all_waypoints_in_system {
-			for _, trait := range waypoint.Traits {
-				if trait.Symbol == "SHIPYARD" {
-					shipyard_waypoints = append(shipyard_waypoints, waypoint)
-				}
-			}
-		}
-
-		all_shipyards_in_system := []Shipyard{}
+	if len(World.Shipyards) == 0 {
 
 		for _, shipyard_waypoint := range shipyard_waypoints {
 			get_shipyard_result := GetShipyard(base_system_symbol, shipyard_waypoint.Symbol)
-			all_shipyards_in_system = append(all_shipyards_in_system, get_shipyard_result)
+			World.UpdateFromShipyard(get_shipyard_result)
 		}
-
-		WriteShipyardsToFile(all_shipyards_in_system, CALLSIGN)
+		SaveWorldState(callsign, World)	
 	}
-
-	all_shipyards_in_system := ReadShipyardsFromFile(CALLSIGN)
 	
 	marketplace_waypoints := WaypointsWithTrait(World, "MARKETPLACE")
 
@@ -440,28 +436,26 @@ func main() {
 	}
 
 	for _, waypoint := range marketplace_waypoints {
-		
 		PopulateGraphDistancesForWaypointWithMaximum(MarketplaceGraph, marketplace_waypoints, *waypoint, 400)
 		PopulateGraphDistancesForWaypointWithMaximum(ShuttleMarketplaceGraph, marketplace_waypoints, *waypoint, 300)
-
 		//PopulateGraphDistancesForWaypointWithMaximum(SiphonerMarketplaceGraph, marketplace_waypoints, waypoint, 80)
 	}
 
-	_, probe_shipyard_waypoints = FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_PROBE")
+	_, probe_shipyard_waypoints = FindPurchaseableShipByFrame(World, "SHIP_PROBE")
 	fmt.Print("[DEBUG] probe shipyards:")
 
-	//_, shuttle_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_LIGHT_SHUTTLE")
+	//_, shuttle_shipyard_waypoints := FindPurcahseableShipByFrame(World, "SHIP_LIGHT_SHUTTLE")
 	//fmt.Print("[DEBUG] shuttle shipyards:")
 
-	//mining_drone_shipyards, mining_drone_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_MINING_DRONE")
+	//mining_drone_shipyards, mining_drone_shipyard_waypoints := FindPurcahseableShipByFrame(World, "SHIP_MINING_DRONE")
 	//fmt.Print("[DEBUG] mining_drone shipyards:")
 	//fmt.Println(len(mining_drone_shipyards))
 
-	//siphon_drone_shipyards, siphon_drone_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_SIPHON_DRONE")
+	//siphon_drone_shipyards, siphon_drone_shipyard_waypoints := FindPurcahseableShipByFrame(World, "SHIP_SIPHON_DRONE")
 	//fmt.Print("[DEBUG] siphon_drone shipyards:")
 	//fmt.Println(len(siphon_drone_shipyards))
 
-	//surveyor_shipyards, surveyor_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_SURVEYOR")
+	//surveyor_shipyards, surveyor_shipyard_waypoints := FindPurcahseableShipByFrame(World, "SHIP_SURVEYOR")
 	//fmt.Print("[DEBUG] surveyor shipyards:")
 	//fmt.Println(len(surveyor_shipyards))
 

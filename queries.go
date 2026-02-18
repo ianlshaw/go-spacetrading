@@ -108,16 +108,18 @@ func IsFuelFull(ship Ship) bool {
 	return false
 }
 
-func FindPurcahseableShipByFrame(all_waypoints_in_system []Waypoint, all_shipyards_in_system []Shipyard, frame string) ([]Shipyard, []Waypoint) {
+//TODO replace this with a map of ships indexed by frame symbol.
+func FindPurchaseableShipByFrame(world *WorldState, frame string) ([]Shipyard, []Waypoint) {
 	shipyards := []Shipyard{}
 	shipyard_waypoints := []Waypoint{}
-	for _, shipyard := range all_shipyards_in_system {
-		for _, ship := range shipyard.ShipTypes {
+
+	for _, shipyard_state := range world.Shipyards {
+		for _, ship := range shipyard_state.Shipyard.ShipTypes {
 			if ship.Type == frame {
-				shipyards = append(shipyards, shipyard)
-				for _, waypoint := range all_waypoints_in_system {
-					if waypoint.Symbol == shipyard.Symbol {
-						shipyard_waypoints = append(shipyard_waypoints, waypoint)
+				shipyards = append(shipyards, shipyard_state.Shipyard)
+				for _, waypoint := range world.Waypoints {
+					if waypoint.Symbol == shipyard_state.Shipyard.Symbol {
+						shipyard_waypoints = append(shipyard_waypoints, *waypoint)
 					}
 				}
 			}
