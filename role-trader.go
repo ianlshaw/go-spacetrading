@@ -15,7 +15,7 @@ func DecideTraderAction(ship Ship, world *WorldState) ShipAction {
 
 	derived_trade_routes := DeriveTradeRoutes(world)
 
-	fmt.Printf("[DEBUG] %d derived trade routes\n", len(derived_trade_routes))
+	//fmt.Printf("[DEBUG] %d derived trade routes\n", len(derived_trade_routes))
 
 	//for _, route := range derived_trade_routes {
 	//	fmt.Println(route)
@@ -23,12 +23,12 @@ func DecideTraderAction(ship Ship, world *WorldState) ShipAction {
 
 	most_profitable_derived_trade_route := MostProfitableDerivedTradeRoute(derived_trade_routes)
 
-	fmt.Printf("[DEBUG] %s Trade route: Buy %s at %s sell at %s for %d profit\n",
+	fmt.Printf("[DEBUG] %s Trade route: Buy %s at %s sell at %s pr %.2f\n",
 	ship.Symbol,
 	most_profitable_derived_trade_route.Good,
 	most_profitable_derived_trade_route.From,
 	most_profitable_derived_trade_route.To,
-	most_profitable_derived_trade_route.ProfitPerUnit)
+	most_profitable_derived_trade_route.ProfitabilityRating)
 
 	//most_profitable_trade_route := MostProfitableTradeRoute(trade_routes)
 	current_waypoint := *world.Waypoints[ship.Nav.WaypointSymbol]
@@ -61,7 +61,7 @@ func DecideTraderAction(ship Ship, world *WorldState) ShipAction {
 
 	// This can get stuck when the trader is holding cargo which becomes unprofitable after a trade.
 	// Further trades of that cargo will not be worth it and the trader will wait until it becomes profitable
-	if most_profitable_derived_trade_route.ProfitPerUnit < 1 {
+	if most_profitable_derived_trade_route.ProfitabilityRating < 0 {
 		fmt.Println("[INFO] Most profitable trade route is not profitable enough. Doing nothing...")
 		return ShipAction{
 			Type: ActionWait,

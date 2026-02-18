@@ -342,7 +342,7 @@ func ListWaypointInSystemByType(system_symbol string, query_type string) []Waypo
 }
 
 func GetMarket(system_symbol string, waypoint_symbol string) Market {
-	fmt.Println("[DEBUG] GetMarket")
+	//fmt.Println("[DEBUG] GetMarket")
 	endpoint := "systems/" + system_symbol + "/waypoints/" + waypoint_symbol + "/market"
 	response_string := BasicGet(endpoint)
 	data_container := GetMarketResponseData{}

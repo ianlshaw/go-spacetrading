@@ -139,7 +139,6 @@ type DerivedRoute struct {
     From        string
     To          string
     Good        string
-    ProfitPerUnit int64
 	ProfitabilityRating float64
 }
 
@@ -169,11 +168,18 @@ func DeriveTradeRoutes(world *WorldState) []DerivedRoute {
                     continue
                 }
 
+				// TODO this should be a path cost from a graph by ship type rather than as-the-crow-flies
+				distance := DistanceBetweenTwoWaypoints(*world.Waypoints[fromMarket.Market.Symbol], *world.Waypoints[toMarket.Market.Symbol])
+				if distance == 0 {
+					distance = 1
+				}
+				profitability_rating := float64(profit) / float64(distance * 2)
+
                 routes = append(routes, DerivedRoute{
                     From: fromMarket.Market.Symbol,
                     To:   toMarket.Market.Symbol,
                     Good: fromGood.Symbol,
-                    ProfitPerUnit: profit,
+					ProfitabilityRating: profitability_rating,
                 })
             }
         }
@@ -183,15 +189,15 @@ func DeriveTradeRoutes(world *WorldState) []DerivedRoute {
 }
 
 func MostProfitableDerivedTradeRoute(derived_routes []DerivedRoute) DerivedRoute {
-	highest_profit := int64(-9999)
-	highest_profit_route := DerivedRoute{}
+	highest_pr := float64(-9999)
+	highest_pr_route := DerivedRoute{}
 	for _, route := range derived_routes {
-		if route.ProfitPerUnit > highest_profit {
-			highest_profit_route = route
-			highest_profit = route.ProfitPerUnit
+		if route.ProfitabilityRating > highest_pr {
+			highest_pr_route = route
+			highest_pr = route.ProfitabilityRating
 		}
 	}
-	return highest_profit_route
+	return highest_pr_route
 }
 
 func DerivedTradeRoutesWithTradeGood(derived_trade_routes []DerivedRoute, trade_good_symbol string) []DerivedRoute {
