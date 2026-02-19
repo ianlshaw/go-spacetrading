@@ -18,36 +18,28 @@ var base_system_symbol = ""
 var http_calls = 0
 var callsign = os.Args[1]
 
-var all_waypoints_in_system []Waypoint
-var all_markets_in_system []Market
-var probe_shipyard_waypoints []Waypoint
-
 var agent Agent // does this need to be global or should it be a pointer
 var ship_list []Ship
 var runningShips = make(map[string]bool)
-// var markets_to_cover = make(map[string]string)
-var probe_shipard_waypoints []Waypoint
-//var shuttle_shipyard_waypoints []Waypoint
-//var mining_drone_shipyard_waypoints []Waypoint
-//var siphon_drone_shipyard_waypoints []Waypoint
-//var surveyor_shipyard_waypoints []Waypoint
+
 
 type ShipActionType string
 
 const (
-    ActionNavigate   		ShipActionType = "NAVIGATE"
-    ActionBuy        		ShipActionType = "BUY"
-    ActionSell       		ShipActionType = "SELL"
-    ActionExtract    		ShipActionType = "EXTRACT"
-    ActionWait       		ShipActionType = "WAIT"
-	ActionDock		 		ShipActionType = "DOCK"
-	ActionOrbit		 		ShipActionType = "ORBIT"
-	ActionUpdateMarketData  ShipActionType = "UPDATE MARKET DATA"
-	ActionPurchaseCargo 	ShipActionType = "PURCHASE CARGO"
-	ActionRefuel			ShipActionType = "REFUEL"
-	ActionFollowPath 		ShipActionType = "FOLLOW PATH"
-	ActionSellCargo 		ShipActionType = "SELL CARGO"
-	ActionPurchaseShip		ShipActionType = "PURCHASE SHIP"
+    ActionNavigate   			 ShipActionType = "NAVIGATE"
+    ActionBuy        			 ShipActionType = "BUY"
+    ActionSell       			 ShipActionType = "SELL"
+    ActionExtract    			 ShipActionType = "EXTRACT"
+    ActionWait       			 ShipActionType = "WAIT"
+	ActionDock		 			 ShipActionType = "DOCK"
+	ActionOrbit		 			 ShipActionType = "ORBIT"
+	ActionUpdateMarketData  	 ShipActionType = "UPDATE MARKET DATA"
+	ActionPurchaseCargo 		 ShipActionType = "PURCHASE CARGO"
+	ActionRefuel				 ShipActionType = "REFUEL"
+	ActionFollowPath 			 ShipActionType = "FOLLOW PATH"
+	ActionSellCargo 			 ShipActionType = "SELL CARGO"
+	ActionPurchaseShip			 ShipActionType = "PURCHASE SHIP"
+	ActionUpdateConstructionSite ShipActionType = "UPDATE CONSTRUCTION SITE"
 )
 
 type ShipAction struct {
@@ -70,6 +62,13 @@ type WorldState struct {
 	Waypoints map[string]*Waypoint
 	Shipyards map[string]*ShipyardState
 	Ships map[string]*ShipState
+	ConstructionSites map[string]*ConstructionSiteState
+}
+
+type ConstructionSiteState struct {
+	WaypointSymbol string
+	LastSeen time.Time
+	ConstructionSite ConstructionSite
 }
 
 type MarketState struct {
@@ -104,6 +103,14 @@ func (w *WorldState) UpdateFromShipyard(s Shipyard) {
         WaypointSymbol: s.Symbol,
         LastSeen: time.Now(),
         Shipyard:   s,
+    }
+}
+
+func (w *WorldState) UpdateFromConstructionSite(cs ConstructionSite) {
+    w.ConstructionSites[cs.Symbol] = &ConstructionSiteState{
+        WaypointSymbol: cs.Symbol,
+        LastSeen: time.Now(),
+        ConstructionSite:   cs,
     }
 }
 
@@ -185,12 +192,15 @@ func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
 		ship.Nav = resp.Nav
 		return time.Now()
 
-	// TODO
-	// This calls GetMarket twice. One can be removed once we're fully using World MarketState
 	case ActionUpdateMarketData:
-		//UpdateTradeRoutesIncludingThisWaypoint(action.WaypointSymbol)
 		resp := GetMarket(base_system_symbol, action.WaypointSymbol)
 		World.UpdateFromMarket(resp)
+		SaveWorldState(callsign, World)
+		return time.Now()
+
+	case ActionUpdateConstructionSite:
+		resp := GetConstructionSite(base_system_symbol, action.WaypointSymbol)
+		World.UpdateFromConstructionSite(resp)
 		SaveWorldState(callsign, World)
 		return time.Now()
 	
@@ -273,11 +283,12 @@ func runShip(ship Ship){
 		ship.Cargo.Units,
 		ship.Cargo.Capacity)
 
-		if ship.Registration.Role == "COMMAND" {
-			action := DecideTraderAction(ship, World)
-			fmt.Println(action)
-			expiration = ExecuteAction(action, &ship)
-		}
+		//if ship.Registration.Role == "COMMAND" {
+		////	action := DecideTraderAction(ship, World)
+		//	action := DecideConstructorAction(ship, World)
+		//	fmt.Println(action)
+		//	expiration = ExecuteAction(action, &ship)
+		//}
 
 		all_probes := []Ship{}
 		all_shuttles := []Ship{}
@@ -288,6 +299,7 @@ func runShip(ship Ship){
 			}
 			if ship.Registration.Role == "TRANSPORT" {
 				all_shuttles = append(all_shuttles, ship)
+				fmt.Println("I'm a TRANSPORT")
 			}
 		}
 
@@ -295,7 +307,7 @@ func runShip(ship Ship){
 
 		if ship.Registration.Role == "SATELLITE" {
 			if ship.Symbol == buyer_ship.Symbol {
-				action := DecideBuyerAction(ship)
+				action := DecideBuyerAction(ship, World)
 				fmt.Println(action)
 				expiration = ExecuteAction(action, &ship)
 			}
@@ -332,6 +344,12 @@ func runShip(ship Ship){
 				expiration = ApplyRoleTransportGas(ship)
 			}
 		}
+
+		//if ship.Registration.Role == "HAULER" {
+		//	action := DecideTraderAction(ship, World)
+		//	fmt.Println(action)
+		//	expiration = ExecuteAction(action, &ship)
+		//}
 
 		//}
 		//if ship.Registration.Role == "EXCAVATOR" {
@@ -435,14 +453,23 @@ func main() {
 		SaveWorldState(callsign, World)
 	}
 
+	construction_site_waypoints := WaypointsOfType(World, "JUMP_GATE")
+
+	if len(World.ConstructionSites) == 0 {
+		for construction_site_symbol, _ := range construction_site_waypoints {
+			get_construction_site_result := GetConstructionSite(base_system_symbol, construction_site_symbol)
+			World.UpdateFromConstructionSite(get_construction_site_result)
+		}
+		SaveWorldState(callsign, World)
+	}
+
 	for _, waypoint := range marketplace_waypoints {
 		PopulateGraphDistancesForWaypointWithMaximum(MarketplaceGraph, marketplace_waypoints, *waypoint, 400)
 		PopulateGraphDistancesForWaypointWithMaximum(ShuttleMarketplaceGraph, marketplace_waypoints, *waypoint, 300)
 		//PopulateGraphDistancesForWaypointWithMaximum(SiphonerMarketplaceGraph, marketplace_waypoints, waypoint, 80)
 	}
 
-	_, probe_shipyard_waypoints = FindPurchaseableShipByFrame(World, "SHIP_PROBE")
-	fmt.Print("[DEBUG] probe shipyards:")
+
 
 	//_, shuttle_shipyard_waypoints := FindPurcahseableShipByFrame(World, "SHIP_LIGHT_SHUTTLE")
 	//fmt.Print("[DEBUG] shuttle shipyards:")

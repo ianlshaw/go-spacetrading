@@ -109,7 +109,7 @@ func IsFuelFull(ship Ship) bool {
 }
 
 //TODO replace this with a map of ships indexed by frame symbol.
-func FindPurchaseableShipByFrame(world *WorldState, frame string) ([]Shipyard, []Waypoint) {
+func FindPurchaseableShipByType(world *WorldState, frame string) ([]Shipyard, []Waypoint) {
 	shipyards := []Shipyard{}
 	shipyard_waypoints := []Waypoint{}
 
@@ -175,6 +175,16 @@ func WaypointsWithTrait(world *WorldState, trait_to_check string) map[string]*Wa
 		}
 	}
 	return waypoints_with_trait
+}
+
+func WaypointsOfType(world *WorldState, type_to_check string) map[string]*Waypoint {
+	waypoints_of_type := make(map[string]*Waypoint)
+	for waypoint_symbol, waypoint := range world.Waypoints {
+		if waypoint.Type == type_to_check {
+			waypoints_of_type[waypoint_symbol] = waypoint
+		}
+	}
+	return waypoints_of_type
 }
 
 // This is depreciated in favour of world.Waypoints[waypoint_symbol]
@@ -314,4 +324,12 @@ func StringToTimestamp(input_string string) time.Time {
 		fmt.Println(err)
 	}
 	return(t)
+}
+
+func IsWaypointUnderConstruction(waypoint Waypoint) bool {
+	return waypoint.IsUnderConstruction
+}
+
+func IsMaterialFulfilled(material Material) bool {
+	return material.Fulfilled == material.Required
 }

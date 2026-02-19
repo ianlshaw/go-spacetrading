@@ -6,20 +6,17 @@ import (
 )
 
 // TODO
-// Either prioritize known trade routes or 
-// Use Dikjsra to create an efficient loop or
-// Both
 
 func DecideSatelliteAction(ship Ship, world *WorldState) ShipAction {
 	fmt.Println("[INFO] " + ship.Symbol + " " + ship.Registration.Role + " " + "DecideSatelliteAction")
 
-	if IsShipInTransit(ship) {
-		fmt.Printf("[WARN] %s in transit, waiting one minute...\n", ship.Symbol)
-		return ShipAction{
-			Type: ActionWait,
-			NotBefore: OneMinuteFromNow(),
-		}
-	}
+	//if IsShipInTransit(ship) {
+	//	fmt.Printf("[WARN] %s in transit, waiting one minute...\n", ship.Symbol)
+	//	return ShipAction{
+	//		Type: ActionWait,
+	//		NotBefore: OneMinuteFromNow(),
+	//	}
+	//}
 
 	// This should only happen once when the ship is first purchased.
 	if IsShipDocked(ship) {

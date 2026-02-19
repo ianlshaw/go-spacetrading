@@ -94,7 +94,7 @@ func DecideTraderAction(ship Ship, world *WorldState) ShipAction {
 					NotBefore: ThreeMinutesFromNow(),
 				}
 			}
-			fmt.Printf("[WARN] Backup market found for %s\n", trade_good_in_cargo)
+			//fmt.Printf("[DEBUG] Backup market found for %s\n", trade_good_in_cargo)
 			sell_market_symbol = sell_market.Symbol
 		
 		} else {

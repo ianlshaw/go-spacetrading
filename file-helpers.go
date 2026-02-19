@@ -111,6 +111,7 @@ func LoadWorldState(callsign string) *WorldState {
 			Waypoints: make(map[string]*Waypoint),
 			Shipyards: make(map[string]*ShipyardState),
 			Ships: make(map[string]*ShipState),
+			ConstructionSites: make(map[string]*ConstructionSiteState),
         }
     }
 
@@ -138,6 +139,11 @@ func LoadWorldState(callsign string) *WorldState {
     if ws.Ships == nil {
 		fmt.Println("ws.Ships is nil")
         ws.Ships = make(map[string]*ShipState)
+    }
+
+    if ws.ConstructionSites == nil {
+		fmt.Println("ws.ConstructionSites is nil")
+        ws.ConstructionSites = make(map[string]*ConstructionSiteState)
     }
 
     return &ws
