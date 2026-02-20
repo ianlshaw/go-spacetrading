@@ -36,6 +36,7 @@ type ShipyardState struct {
 type ShipState struct {
     BusyUntil time.Time
     Ship Ship
+    Role ShipRole
 }
 
 func (w *WorldState) UpdateFromShip(s Ship) {

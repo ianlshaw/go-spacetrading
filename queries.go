@@ -92,14 +92,24 @@ func MarketplacesWhichSellTradeGood(markets []Market, trade_good_symbol string) 
 	return markets_selling_trade_good
 }
 
-func CountShipsByFrame(ship_list []Ship, frame string) int {
+func CountShipsByFrame(world *WorldState, frame string) int {
 	count := 0
-	for _, ship := range ship_list {
-		if ship.Frame.Symbol == frame {
+	for _, ship_state := range world.Ships {
+		if ship_state.Ship.Frame.Symbol == frame {
 			count++
 		}
 	}
 	return count
+}
+
+func GetShipsByFrame(world *WorldState, frame string) []Ship {
+	ships := []Ship{}
+	for _, ship_state := range world.Ships {
+		if ship_state.Ship.Frame.Symbol == frame {
+			ships = append(ships, ship_state.Ship)
+		}
+	}
+	return ships
 }
 
 func IsFuelFull(ship Ship) bool {

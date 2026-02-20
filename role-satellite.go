@@ -7,8 +7,12 @@ import (
 
 // TODO
 
-func DecideSatelliteAction(ship Ship, world *WorldState) ShipAction {
+func DecideSatelliteAction(ship_ptr *Ship, world *WorldState) ShipAction {
+
+	ship := *ship_ptr
+
 	fmt.Println("[INFO] " + ship.Symbol + " " + ship.Registration.Role + " " + "DecideSatelliteAction")
+
 
 	//if IsShipInTransit(ship) {
 	//	fmt.Printf("[WARN] %s in transit, waiting one minute...\n", ship.Symbol)
@@ -47,7 +51,7 @@ func DecideSatelliteAction(ship Ship, world *WorldState) ShipAction {
 		}
 		target = world.Markets[closest_market.Symbol]
 	}
-	
+
     if target == nil {
 		fmt.Println("[ERROR] DecideSatelliteAction target is nil")
 		return ShipAction{

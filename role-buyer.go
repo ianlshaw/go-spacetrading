@@ -15,7 +15,8 @@ var desired_number_of_ship_light_freighter = 0
 //var desired_number_of_ship_siphon_drone = 1
 //var desired_number_of_ship_surveyor = 1
 
-func DecideBuyerAction(ship Ship, world *WorldState) ShipAction {
+func DecideBuyerAction(ship_ptr *Ship, world *WorldState) ShipAction {
+	ship := *ship_ptr
 
 	if IsShipDocked(ship){
 		if world.IsShipyardStale(ship.Nav.WaypointSymbol) {
@@ -37,7 +38,7 @@ func DecideBuyerAction(ship Ship, world *WorldState) ShipAction {
 
 	_, probe_shipyard_waypoints := FindPurchaseableShipByType(world, "SHIP_PROBE")
 
-	number_of_ship_probe := CountShipsByFrame(ship_list, "FRAME_PROBE") 
+	number_of_ship_probe := CountShipsByFrame(world, "FRAME_PROBE") 
 	if number_of_ship_probe < desired_number_of_ship_probe {
 		if !IsShipAlreadyAtWaypoint(ship, probe_shipyard_waypoints[0].Symbol) {
 			if IsShipDocked(ship) {
@@ -69,7 +70,7 @@ func DecideBuyerAction(ship Ship, world *WorldState) ShipAction {
 		}
 	}
 
-	number_of_ship_light_hauler := CountShipsByFrame(ship_list, "FRAME_LIGHT_FREIGHTER")
+	number_of_ship_light_hauler := CountShipsByFrame(world, "FRAME_LIGHT_FREIGHTER")
 	_, light_hauler_shipyard_waypoints := FindPurchaseableShipByType(world, "SHIP_LIGHT_HAULER")
 
 	if number_of_ship_light_hauler < desired_number_of_ship_light_freighter {

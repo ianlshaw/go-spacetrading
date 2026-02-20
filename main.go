@@ -19,16 +19,16 @@ var http_calls = 0
 var callsign = os.Args[1]
 
 var agent Agent // does this need to be global or should it be a pointer
-var ship_list []Ship
+//var ship_list []Ship
 var runningShips = make(map[string]bool)
 
-func ensureShipRunning(ship Ship) {
+func ensureShipRunning(world *WorldState, ship *Ship) {
     if runningShips[ship.Symbol] {
         return
     }
-	World.UpdateFromShip(ship)
+	World.UpdateFromShip(*ship)
     runningShips[ship.Symbol] = true
-    go runShip(ship)
+    go runShip(world, ship)
 }
 
 func PanicOnError(e error) {
@@ -49,7 +49,18 @@ func populate_base_system_symbol() {
 	base_system_symbol = response_typed.Data[0].Nav.SystemSymbol
 }
 
-func runShip(ship Ship){
+type ShipRole string
+
+const (
+    RoleUnassigned        ShipRole = "UNASSIGNED"
+    RoleMarketBootstrap   ShipRole = "MARKET_BOOTSTRAP"
+    RoleScout             ShipRole = "SCOUT"
+	RoleBuyer			  ShipRole = "BUYER"
+    RoleTrader            ShipRole = "TRADER"
+)
+
+
+func runShip(world *WorldState, ship *Ship){
 
 	for {
 		//var expiration time.Time
@@ -66,46 +77,50 @@ func runShip(ship Ship){
 		ship.Cargo.Units,
 		ship.Cargo.Capacity)
 
-		//if ship.Registration.Role == "COMMAND" {
-		////	action := DecideTraderAction(ship, World)
+
+		if ship.Registration.Role == "COMMAND" {
+			action := DecideTraderAction(ship, World)
 		//	action := DecideConstructorAction(ship, World)
-		//	fmt.Println(action)
-		//	expiration = ExecuteAction(action, &ship)
+			fmt.Println(action)
+			expiration = ExecuteAction(action, ship)
+		}
+
+    	//probes := world.GetShipsByFrame("FRAME_PROBE")
+//
+		//all_probes := []Ship{}
+		//all_shuttles := []Ship{}
+//
+		//for _, ship_state := range world.Ships {
+		//	if ship_state.Ship.Registration.Role == "SATELLITE" {
+		//		all_probes = append(all_probes, ship_state.Ship)
+		//	}
+		//	if ship_state.Ship.Registration.Role == "TRANSPORT" {
+		//		all_shuttles = append(all_shuttles, ship_state.Ship)
+		//		fmt.Println("I'm a TRANSPORT")
+		//	}
 		//}
 
-		all_probes := []Ship{}
-		all_shuttles := []Ship{}
+		//buyer_ship := all_probes[0]
 
-		for _, ship := range ship_list {
-			if ship.Registration.Role == "SATELLITE" {
-				all_probes = append(all_probes, ship)
-			}
-			if ship.Registration.Role == "TRANSPORT" {
-				all_shuttles = append(all_shuttles, ship)
-				fmt.Println("I'm a TRANSPORT")
-			}
-		}
+		//if ship.Registration.Role == "SATELLITE" {
+		//	if ship.Symbol == buyer_ship.Symbol {
+		//		action := DecideBuyerAction(ship, World)
+		//		fmt.Println(action)
+		//		expiration = ExecuteAction(action, ship)
+		//	}
+		//}
 
-		buyer_ship := all_probes[0]
-
-		if ship.Registration.Role == "SATELLITE" {
-			if ship.Symbol == buyer_ship.Symbol {
-				action := DecideBuyerAction(ship, World)
-				fmt.Println(action)
-				expiration = ExecuteAction(action, &ship)
-			}
-		}
-
-		if len(all_probes) > 1 {
-			market_bootstrap_probe := all_probes[1]
-			if ship.Symbol == market_bootstrap_probe.Symbol {
-				action := DecideSatelliteAction(ship, World)
-				fmt.Println(action)
-				expiration = ExecuteAction(action, &ship)
-			} else {
-				// 3+ satellites
-			}
-		}
+		//if len(all_probes) > 1 {
+		//	market_bootstrap_probe := all_probes[1]
+		//	fmt.Println(market_bootstrap_probe.Symbol)
+		//	if ship.Symbol == market_bootstrap_probe.Symbol {
+		//		action := DecideSatelliteAction(ship, World)
+		//		fmt.Println(action)
+		//		expiration = ExecuteAction(action, ship)
+		//	} else {
+		//		// 3+ satellites
+		//	}
+		//}
 
 		//if len(all_shuttles) >= 1 {
 		//	if ship.Symbol == all_shuttles[0].Symbol {
@@ -247,6 +262,13 @@ func main() {
 		SaveWorldState(callsign, World)
 	}
 
+	
+	ship_list := ListShips()
+	for _, ship := range ship_list {
+		World.UpdateFromShip(ship)
+	}
+	SaveWorldState(callsign, World)
+
 	for _, waypoint := range marketplace_waypoints {
 		PopulateGraphDistancesForWaypointWithMaximum(MarketplaceGraph, marketplace_waypoints, *waypoint, 400)
 		PopulateGraphDistancesForWaypointWithMaximum(ShuttleMarketplaceGraph, marketplace_waypoints, *waypoint, 300)
@@ -276,10 +298,8 @@ func main() {
 	fmt.Print(agent.Credits)
 	fmt.Println()
 
-	ship_list = ListShips()
-
-	for _, ship := range ship_list {
-    	ensureShipRunning(ship)
+	for _, ship_state := range World.Ships {
+    	ensureShipRunning(World, &ship_state.Ship)
 	}
 
 	select {}

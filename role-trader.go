@@ -9,7 +9,9 @@ import (
 
 var ShuttleMarketplaceGraph dijkstra.Graph = make(dijkstra.Graph)
 
-func DecideTraderAction(ship Ship, world *WorldState) ShipAction {
+func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
+
+	ship := *ship_ptr
 
 	fmt.Println("[INFO] " + ship.Symbol + " DecideTraderAction")
 
