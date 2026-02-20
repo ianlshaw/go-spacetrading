@@ -188,9 +188,7 @@ func DecideTraderAction(ship Ship, world *WorldState) ShipAction {
 		path, _, err := CalculateShortestPathBetweenTwoWaypoints(ShuttleMarketplaceGraph, current_waypoint, most_profitable_trade_route_buy_marketplace_waypoint)
 
 		if err != nil {
-			//
 			fmt.Println(err)
-			//
 			fmt.Println("[ERROR] cannot path")
 			return ShipAction{
 				Type: ActionWait,
@@ -213,9 +211,7 @@ func DecideTraderAction(ship Ship, world *WorldState) ShipAction {
 	most_profitable_trade_route_sell_marketplace_waypoint := *world.Waypoints[sell_market_symbol]
 	path, _, err := CalculateShortestPathBetweenTwoWaypoints(ShuttleMarketplaceGraph, current_waypoint, most_profitable_trade_route_sell_marketplace_waypoint)
 	if err != nil {
-		//
 		fmt.Println(err)
-		//
 		fmt.Println("[ERROR] cannot path")
 		return ShipAction{
 			Type: ActionWait,

@@ -325,8 +325,22 @@ type Shipyard struct {
 	Symbol           string        `json:"symbol"`
 	ShipTypes        []ShipType    `json:"shipTypes"`
 	Transactions     []Transaction `json:"transactions"`
-	Ships            []Ship        `json:"ships"`
+	Ships            []ShipyardShip        `json:"ships"`
 	ModificationsFee int64         `json:"modificationsFee"`
+}
+
+type ShipyardShip struct {
+	Type string
+	Name string
+	Description string
+	Activity string
+	PurchasePrice int64
+	Frame Frame
+	Reactor Reactor
+	Engine Engine
+	Modules []Module
+	Mounts []Mount
+	Crew Crew
 }
 
 type ShipType struct {

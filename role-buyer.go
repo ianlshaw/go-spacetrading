@@ -5,19 +5,39 @@ import (
 )
 
 // TODO
+// Once we have some floating cash
+// Purchase enough satellites to cover all marketplaces in system
 
 var desired_number_of_ship_probe = 2
-var desired_number_of_ship_light_freighter = 1
-var desired_number_of_ship_shuttle = 1
-var desired_number_of_ship_mining_drone = 1
-var desired_number_of_ship_siphon_drone = 1
-var desired_number_of_ship_surveyor = 1
+var desired_number_of_ship_light_freighter = 0
+//var desired_number_of_ship_shuttle = 1
+//var desired_number_of_ship_mining_drone = 1
+//var desired_number_of_ship_siphon_drone = 1
+//var desired_number_of_ship_surveyor = 1
 
 func DecideBuyerAction(ship Ship, world *WorldState) ShipAction {
 
+	if IsShipDocked(ship){
+		if world.IsShipyardStale(ship.Nav.WaypointSymbol) {
+			return ShipAction{
+				Type: ActionUpdateShipyardData,
+				ShipSymbol: ship.Symbol,
+				WaypointSymbol: ship.Nav.WaypointSymbol,
+			}
+		}
+	}
+
+	if agent.Credits > 2000000 {
+		desired_number_of_ship_light_freighter = 1
+	}
+
+	//if agent.Credits > 3000000 {
+	//	desired_number_of_ship_probe = len(world.Markets)
+	//}
+
 	_, probe_shipyard_waypoints := FindPurchaseableShipByType(world, "SHIP_PROBE")
 
-	number_of_ship_probe := CountShipsByFrame(ship_list, "FRAME_PROBE") // This would need to -1 since the buyer is now a probe
+	number_of_ship_probe := CountShipsByFrame(ship_list, "FRAME_PROBE") 
 	if number_of_ship_probe < desired_number_of_ship_probe {
 		if !IsShipAlreadyAtWaypoint(ship, probe_shipyard_waypoints[0].Symbol) {
 			if IsShipDocked(ship) {
@@ -46,14 +66,6 @@ func DecideBuyerAction(ship Ship, world *WorldState) ShipAction {
 					ShipType: "SHIP_PROBE",
 				}
 			}
-		}
-	}
-
-	if agent.Credits < 1000000 {
-		fmt.Println("[INFO] " + ship.Symbol + " " + ship.Registration.Role + " " + ship.Frame.Symbol + " DecideBuyerAction less than 1000000 credits. Waiting.")
-		return ShipAction{
-			Type: ActionWait,
-			NotBefore: FifteenMinutesFromNow(),
 		}
 	}
 

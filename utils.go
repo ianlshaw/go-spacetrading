@@ -5,11 +5,10 @@ import (
 	"math"
 	"time"
 	"fmt"
-	"slices"
 	"context"
 	"log"
 	"os"
-
+	"encoding/json"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -167,20 +166,7 @@ func JettisonAllCargo(ship Ship) {
 	}
 }
 
-func IsContractDeliverble(contract Contract, all_markets_in_system []Market, mineable_goods []string, siphonable_goods []string) bool {
-	contract_delivery_trade_good_symbol := contract.Terms.Deliver[0].TradeSymbol
-	markets_with_contract_trade_good := MarketplacesWhichSellTradeGood(all_markets_in_system, contract_delivery_trade_good_symbol)
-	if len(markets_with_contract_trade_good) > 0 {
-		return true
-	}
-	if slices.Contains(mineable_goods, contract_delivery_trade_good_symbol) {
-		return true
-	}
-	if slices.Contains(siphonable_goods, contract_delivery_trade_good_symbol) {
-		return true
-	}
-	return false
-}
+
 
 func EraseState(callsign string) {
 	fmt.Println("[WARN] EraseState " + callsign)
@@ -230,4 +216,19 @@ func DeleteLocalFile(filename string) {
     }
 
     fmt.Println("File " + filename + " successfully deleted")
+}
+
+func pretty_print_json(json_blob string) {
+	byt := []byte(json_blob)
+
+	var dat map[string]interface{}
+	if err := json.Unmarshal(byt, &dat); err != nil {
+		panic(err)
+	}
+
+	b, err := json.MarshalIndent(dat, "", "\t")
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	os.Stdout.Write(b)
 }
