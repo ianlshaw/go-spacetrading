@@ -63,7 +63,7 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 
 	// This can get stuck when the trader is holding cargo which becomes unprofitable after a trade.
 	// Further trades of that cargo will not be worth it and the trader will wait until it becomes profitable
-	if most_profitable_derived_trade_route.ProfitabilityRating < 0 {
+	if most_profitable_derived_trade_route.ProfitabilityRating <= 0 {
 		fmt.Println("[INFO] Most profitable trade route is not profitable enough. Doing nothing...")
 		return ShipAction{
 			Type: ActionWait,
@@ -85,7 +85,7 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 
 			// There are three options here
 			// 1) Jettison the remaining cargo (wasteful)
-			// 2) Find a different market which will take the remaining trade goods (complex)
+			// 2) Find a different market which will take the remaining trade goods (complex) (current)
 			// 3) Wait until the current market will take the remaining trade goods (may get stuck)
 
 			sell_market, _, success := BestMarketToSellGood(world, trade_good_in_cargo)

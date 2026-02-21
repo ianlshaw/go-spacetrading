@@ -55,8 +55,6 @@ func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
         resp := NavigateShip(action.ShipSymbol, action.WaypointSymbol)
 		ship.Nav = resp.Nav
 		ship.Fuel = resp.Fuel
-		// Is this really required. I thought the updates to the pointer above should update the value behind them?
-		//World.UpdateFromShip(*ship)
         return StringToTimestamp(resp.Nav.Route.Arrival)
 
 	case ActionDock:
@@ -110,10 +108,9 @@ func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
 	case ActionPurchaseShip:
 		resp := PurchaseShip(action.ShipType, action.WaypointSymbol)
 		agent = resp.Agent
-		// TODO not sure this is needed.
-		//ship_list = append(ship_list, resp.Ship)
 		World.UpdateFromShip(resp.Ship)
-		ensureShipRunning(World, &resp.Ship)
+		ship_state := World.Ships[resp.Ship.Symbol]
+		ensureShipRunning(World, ship_state)
 		World.InvalidateShipyard(ship.Nav.WaypointSymbol)
 		return time.Now()
 	

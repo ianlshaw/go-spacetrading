@@ -36,15 +36,23 @@ type ShipyardState struct {
 type ShipState struct {
     BusyUntil time.Time
     Ship Ship
-    Role ShipRole
+    Job ShipJob
 }
 
 func (w *WorldState) UpdateFromShip(s Ship) {
-    w.Ships[s.Symbol] = &ShipState{
-        Ship: s,
+    _, ok := w.Ships[s.Symbol]
+    if !ok {
+        w.Ships[s.Symbol] = &ShipState{
+            Ship: s,
+        }
+    } else {
+        w.Ships[s.Symbol].Ship = s
+    }
+    //w.Ships[s.Symbol] = &ShipState{
+    //    Ship: s,
 		// TODO ensure this covers both navigation arrival times and mining cooldown durations
         //BusyUntil:  StringToTimestamp(s.Cooldown.Expiration),
-    }
+    //}
 }
 
 func (w *WorldState) UpdateFromMarket(m Market) {
@@ -61,6 +69,10 @@ func (w *WorldState) UpdateFromShipyard(s Shipyard) {
         LastSeen: time.Now(),
         Shipyard:   s,
     }
+}
+
+func (w *WorldState) AssignShipJob(ship_symbol string, job ShipJob) {
+    w.Ships[ship_symbol].Job = job
 }
 
 func (w *WorldState) UpdateFromConstructionSite(cs ConstructionSite) {

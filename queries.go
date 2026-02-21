@@ -359,3 +359,39 @@ func IsContractDeliverble(contract Contract, all_markets_in_system []Market, min
 	}
 	return false
 }
+
+func HaveAtLeastOneBuyerShip(world *WorldState) bool {
+	for _, ship_state := range world.Ships{
+		if ship_state.Job == JobBuyer {
+			return true
+		}
+	}
+	return false
+}
+
+func HaveAtLeastOneMarketBoostrap(world *WorldState) bool {
+	for _, ship_state := range world.Ships{
+		if ship_state.Job == JobMarketBootstrap {
+			return true
+		}
+	}
+	return false	
+}
+
+func UnassignedShipOfRole(world *WorldState, role string) (bool, string) {
+	for _, ship_state := range world.Ships {
+		if ship_state.Ship.Registration.Role == role {
+			if ship_state.Job == "" {
+				return true, ship_state.Ship.Symbol
+			}
+		}
+	}
+	return false, ""
+}
+
+func IsShipStateJobUnassigned(ship_state *ShipState) bool {
+	if ship_state.Job == "" {
+		return true
+	}
+	return false
+}

@@ -22,13 +22,13 @@ var agent Agent // does this need to be global or should it be a pointer
 //var ship_list []Ship
 var runningShips = make(map[string]bool)
 
-func ensureShipRunning(world *WorldState, ship *Ship) {
-    if runningShips[ship.Symbol] {
+func ensureShipRunning(world *WorldState, ship_state *ShipState) {
+    if runningShips[ship_state.Ship.Symbol] {
         return
     }
-	World.UpdateFromShip(*ship)
-    runningShips[ship.Symbol] = true
-    go runShip(world, ship)
+	World.UpdateFromShip(ship_state.Ship)
+    runningShips[ship_state.Ship.Symbol] = true
+    go runShip(world, ship_state)
 }
 
 func PanicOnError(e error) {
@@ -49,18 +49,20 @@ func populate_base_system_symbol() {
 	base_system_symbol = response_typed.Data[0].Nav.SystemSymbol
 }
 
-type ShipRole string
+type ShipJob string
 
 const (
-    RoleUnassigned        ShipRole = "UNASSIGNED"
-    RoleMarketBootstrap   ShipRole = "MARKET_BOOTSTRAP"
-    RoleScout             ShipRole = "SCOUT"
-	RoleBuyer			  ShipRole = "BUYER"
-    RoleTrader            ShipRole = "TRADER"
+    JobUnassigned        ShipJob = "UNASSIGNED"
+    JobMarketBootstrap   ShipJob = "MARKET_BOOTSTRAP"
+    JobScout             ShipJob = "SCOUT"
+	JobBuyer			 ShipJob = "BUYER"
+    JobTrader            ShipJob = "TRADER"
 )
 
 
-func runShip(world *WorldState, ship *Ship){
+func runShip(world *WorldState, ship_state *ShipState){
+
+	ship := &ship_state.Ship
 
 	for {
 		//var expiration time.Time
@@ -78,18 +80,51 @@ func runShip(world *WorldState, ship *Ship){
 		ship.Cargo.Capacity)
 
 
+		// This can be set once outside of this loop
 		if ship.Registration.Role == "COMMAND" {
+			ship_state.Job = JobTrader
+			SaveWorldState(callsign, world)
+		}
+
+		if ship.Registration.Role == "SATELLITE" {
+			if !HaveAtLeastOneBuyerShip(world) {
+				fmt.Println("not even one buyer ship")
+				if IsShipStateJobUnassigned(ship_state){
+					ship_state.Job = JobBuyer
+					SaveWorldState(callsign, world)
+				}
+			}
+			if !HaveAtLeastOneMarketBoostrap(world) {
+				if IsShipStateJobUnassigned(ship_state){
+					ship_state.Job = JobMarketBootstrap
+					SaveWorldState(callsign, world)
+				}
+			}
+		}
+
+	    switch ship_state.Job {
+		case JobTrader:
 			action := DecideTraderAction(ship, World)
-		//	action := DecideConstructorAction(ship, World)
 			fmt.Println(action)
 			expiration = ExecuteAction(action, ship)
+
+		case JobBuyer:
+			action := DecideBuyerAction(ship, World)
+			fmt.Println(action)
+			expiration = ExecuteAction(action, ship)
+
+		case JobMarketBootstrap:
+			action := DecideSatelliteAction(ship, World)
+			fmt.Println(action)
+			expiration = ExecuteAction(action, ship)
+
 		}
 
     	//probes := world.GetShipsByFrame("FRAME_PROBE")
-//
+
 		//all_probes := []Ship{}
 		//all_shuttles := []Ship{}
-//
+
 		//for _, ship_state := range world.Ships {
 		//	if ship_state.Ship.Registration.Role == "SATELLITE" {
 		//		all_probes = append(all_probes, ship_state.Ship)
@@ -299,7 +334,7 @@ func main() {
 	fmt.Println()
 
 	for _, ship_state := range World.Ships {
-    	ensureShipRunning(World, &ship_state.Ship)
+    	ensureShipRunning(World, ship_state)
 	}
 
 	select {}
