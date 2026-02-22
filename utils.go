@@ -166,15 +166,10 @@ func JettisonAllCargo(ship Ship) {
 	}
 }
 
-
-
 func EraseState(callsign string) {
 	fmt.Println("[WARN] EraseState " + callsign)
 	state_filenames := []string{
-		callsign + ".markets.json",
-		callsign + ".shipyards.json",
 		callsign + ".token",
-		callsign + ".waypoints.json",
 		callsign + ".world.json",
 	}
 		
