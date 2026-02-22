@@ -7,20 +7,11 @@ import (
 
 // TODO
 
-func DecideSatelliteAction(ship_ptr *Ship, world *WorldState) ShipAction {
+func DecideMarketBootstrapSatellite(ship_ptr *Ship, world *WorldState) ShipAction {
 
 	ship := *ship_ptr
 
-	fmt.Println("[INFO] " + ship.Symbol + " " + ship.Registration.Role + " " + "DecideSatelliteAction")
-
-
-	//if IsShipInTransit(ship) {
-	//	fmt.Printf("[WARN] %s in transit, waiting one minute...\n", ship.Symbol)
-	//	return ShipAction{
-	//		Type: ActionWait,
-	//		NotBefore: OneMinuteFromNow(),
-	//	}
-	//}
+	fmt.Println("[INFO] " + ship.Symbol + " " + ship.Registration.Role + " " + "DecideMarketBootstrapSatellite")
 
 	// This should only happen once when the ship is first purchased.
 	if IsShipDocked(ship) {
@@ -53,7 +44,7 @@ func DecideSatelliteAction(ship_ptr *Ship, world *WorldState) ShipAction {
 	}
 
     if target == nil {
-		fmt.Println("[ERROR] DecideSatelliteAction target is nil")
+		fmt.Println("[ERROR] DecideMarketBootstrapSatellite target is nil")
 		return ShipAction{
 			Type: ActionWait,
 			ShipSymbol: ship.Symbol,

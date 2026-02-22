@@ -395,3 +395,12 @@ func IsShipStateJobUnassigned(ship_state *ShipState) bool {
 	}
 	return false
 }
+
+func (w *Waypoint) WaypointHasTrait(trait_to_check string) bool {
+	for _, wp_trait := range w.Traits {
+		if wp_trait.Symbol == trait_to_check {
+			return true
+		}
+	}
+	return false
+}

@@ -52,11 +52,12 @@ func populate_base_system_symbol() {
 type ShipJob string
 
 const (
-    JobUnassigned        ShipJob = "UNASSIGNED"
-    JobMarketBootstrap   ShipJob = "MARKET_BOOTSTRAP"
-    JobScout             ShipJob = "SCOUT"
-	JobBuyer			 ShipJob = "BUYER"
-    JobTrader            ShipJob = "TRADER"
+    JobUnassigned          ShipJob = "UNASSIGNED"
+    JobMarketBootstrap     ShipJob = "MARKET_BOOTSTRAP"
+    JobScout               ShipJob = "SCOUT"
+	JobBuyer			   ShipJob = "BUYER"
+    JobTrader              ShipJob = "TRADER"
+	JobSaturationSatellite ShipJob = "SATURATION SATELLITE"
 )
 
 
@@ -78,7 +79,6 @@ func runShip(world *WorldState, ship_state *ShipState){
 		ship.Fuel.Capacity,
 		ship.Cargo.Units,
 		ship.Cargo.Capacity)
-
 
 		// This can be set once outside of this loop
 		if ship.Registration.Role == "COMMAND" {
@@ -102,6 +102,13 @@ func runShip(world *WorldState, ship_state *ShipState){
 			}
 		}
 
+		if CountShipsByFrame(world, "SATELLITE") >= len(world.Markets) {
+			if ship.Registration.Role == "SATELLITE" {
+				ship_state.Job = JobSaturationSatellite
+				SaveWorldState(callsign, world)
+			}	
+		}
+
 		if ship.Registration.Role == "HAULER" {
 			if IsShipStateJobUnassigned(ship_state) {
 				ship_state.Job = JobTrader
@@ -121,77 +128,17 @@ func runShip(world *WorldState, ship_state *ShipState){
 			expiration = ExecuteAction(action, ship)
 
 		case JobMarketBootstrap:
-			action := DecideSatelliteAction(ship, World)
+			action := DecideMarketBootstrapSatellite(ship, World)
+			fmt.Println(action)
+			expiration = ExecuteAction(action, ship)
+
+		case JobSaturationSatellite:
+			action := DecideSaturationSatelliteAction(ship, World)
 			fmt.Println(action)
 			expiration = ExecuteAction(action, ship)
 
 
 		}
-
-    	//probes := world.GetShipsByFrame("FRAME_PROBE")
-
-		//all_probes := []Ship{}
-		//all_shuttles := []Ship{}
-
-		//for _, ship_state := range world.Ships {
-		//	if ship_state.Ship.Registration.Role == "SATELLITE" {
-		//		all_probes = append(all_probes, ship_state.Ship)
-		//	}
-		//	if ship_state.Ship.Registration.Role == "TRANSPORT" {
-		//		all_shuttles = append(all_shuttles, ship_state.Ship)
-		//		fmt.Println("I'm a TRANSPORT")
-		//	}
-		//}
-
-		//buyer_ship := all_probes[0]
-
-		//if ship.Registration.Role == "SATELLITE" {
-		//	if ship.Symbol == buyer_ship.Symbol {
-		//		action := DecideBuyerAction(ship, World)
-		//		fmt.Println(action)
-		//		expiration = ExecuteAction(action, ship)
-		//	}
-		//}
-
-		//if len(all_probes) > 1 {
-		//	market_bootstrap_probe := all_probes[1]
-		//	fmt.Println(market_bootstrap_probe.Symbol)
-		//	if ship.Symbol == market_bootstrap_probe.Symbol {
-		//		action := DecideSatelliteAction(ship, World)
-		//		fmt.Println(action)
-		//		expiration = ExecuteAction(action, ship)
-		//	} else {
-		//		// 3+ satellites
-		//	}
-		//}
-
-		//if len(all_shuttles) >= 1 {
-		//	if ship.Symbol == all_shuttles[0].Symbol {
-		//		// DEBUG
-		//		action := DecideTraderAction(ship, World)
-		//		fmt.Println(action)
-		//		expiration = ExecuteAction(action, &ship)
-		//		// DEBUG
-		//	}
-		//}
-
-		//if len(all_shuttles) >= 2 {
-		//	if ship.Symbol == all_shuttles[1].Symbol {
-		//		expiration = ApplyRoleTransportOre(ship)
-		//	}
-		//}
-
-		//if len(all_shuttles) >= 3 {
-		//	if ship.Symbol == all_shuttles[2].Symbol {
-		//		expiration = ApplyRoleTransportGas(ship)
-		//	}
-		//}
-
-		//if ship.Registration.Role == "HAULER" {
-		//	action := DecideTraderAction(ship, World)
-		//	fmt.Println(action)
-		//	expiration = ExecuteAction(action, &ship)
-		//}
 
 		//}
 		//if ship.Registration.Role == "EXCAVATOR" {
@@ -225,7 +172,6 @@ func runShip(world *WorldState, ship_state *ShipState){
 	}
 }
 
-
 func main() {
 
 	// Ensure the CALLSIGN is provided as a command line argument
@@ -249,8 +195,6 @@ func main() {
 
 	//agent := GetAgent()
 	//contracts := ListContracts()
-
-	// do waypoint files exist?
 
 	World = LoadWorldState(CALLSIGN)
 
@@ -305,7 +249,6 @@ func main() {
 		SaveWorldState(callsign, World)
 	}
 
-	
 	ship_list := ListShips()
 	for _, ship := range ship_list {
 		World.UpdateFromShip(ship)
@@ -317,21 +260,6 @@ func main() {
 		PopulateGraphDistancesForWaypointWithMaximum(ShuttleMarketplaceGraph, marketplace_waypoints, *waypoint, 300)
 		//PopulateGraphDistancesForWaypointWithMaximum(SiphonerMarketplaceGraph, marketplace_waypoints, waypoint, 80)
 	}
-
-	//_, shuttle_shipyard_waypoints := FindPurcahseableShipByFrame(World, "SHIP_LIGHT_SHUTTLE")
-	//fmt.Print("[DEBUG] shuttle shipyards:")
-
-	//mining_drone_shipyards, mining_drone_shipyard_waypoints := FindPurcahseableShipByFrame(World, "SHIP_MINING_DRONE")
-	//fmt.Print("[DEBUG] mining_drone shipyards:")
-	//fmt.Println(len(mining_drone_shipyards))
-
-	//siphon_drone_shipyards, siphon_drone_shipyard_waypoints := FindPurcahseableShipByFrame(World, "SHIP_SIPHON_DRONE")
-	//fmt.Print("[DEBUG] siphon_drone shipyards:")
-	//fmt.Println(len(siphon_drone_shipyards))
-
-	//surveyor_shipyards, surveyor_shipyard_waypoints := FindPurcahseableShipByFrame(World, "SHIP_SURVEYOR")
-	//fmt.Print("[DEBUG] surveyor shipyards:")
-	//fmt.Println(len(surveyor_shipyards))
 
 	agent = GetAgent()
 	fmt.Print("[INFO] ShipCount: ")
