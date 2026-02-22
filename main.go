@@ -102,6 +102,13 @@ func runShip(world *WorldState, ship_state *ShipState){
 			}
 		}
 
+		if ship.Registration.Role == "HAULER" {
+			if IsShipStateJobUnassigned(ship_state) {
+				ship_state.Job = JobTrader
+				SaveWorldState(callsign, world)
+			}
+		}
+
 	    switch ship_state.Job {
 		case JobTrader:
 			action := DecideTraderAction(ship, World)
@@ -117,6 +124,7 @@ func runShip(world *WorldState, ship_state *ShipState){
 			action := DecideSatelliteAction(ship, World)
 			fmt.Println(action)
 			expiration = ExecuteAction(action, ship)
+
 
 		}
 
