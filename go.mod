@@ -1,4 +1,4 @@
-module example/hello
+module ianlshaw/go-spacetrading
 
 go 1.23
 

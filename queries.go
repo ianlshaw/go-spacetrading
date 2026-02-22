@@ -4,6 +4,7 @@ import (
 	"math"
 	"fmt"
 	"time"
+	"slices"
 )
 
 func IsShipInTransit(ship Ship) bool {
@@ -91,14 +92,24 @@ func MarketplacesWhichSellTradeGood(markets []Market, trade_good_symbol string) 
 	return markets_selling_trade_good
 }
 
-func CountShipsByFrame(ship_list []Ship, frame string) int {
+func CountShipsByFrame(world *WorldState, frame string) int {
 	count := 0
-	for _, ship := range ship_list {
-		if ship.Frame.Symbol == frame {
+	for _, ship_state := range world.Ships {
+		if ship_state.Ship.Frame.Symbol == frame {
 			count++
 		}
 	}
 	return count
+}
+
+func GetShipsByFrame(world *WorldState, frame string) []Ship {
+	ships := []Ship{}
+	for _, ship_state := range world.Ships {
+		if ship_state.Ship.Frame.Symbol == frame {
+			ships = append(ships, ship_state.Ship)
+		}
+	}
+	return ships
 }
 
 func IsFuelFull(ship Ship) bool {
@@ -108,16 +119,18 @@ func IsFuelFull(ship Ship) bool {
 	return false
 }
 
-func FindPurcahseableShipByFrame(all_waypoints_in_system []Waypoint, all_shipyards_in_system []Shipyard, frame string) ([]Shipyard, []Waypoint) {
+//TODO replace this with a map of ships indexed by frame symbol.
+func FindPurchaseableShipByType(world *WorldState, frame string) ([]Shipyard, []Waypoint) {
 	shipyards := []Shipyard{}
 	shipyard_waypoints := []Waypoint{}
-	for _, shipyard := range all_shipyards_in_system {
-		for _, ship := range shipyard.ShipTypes {
+
+	for _, shipyard_state := range world.Shipyards {
+		for _, ship := range shipyard_state.Shipyard.ShipTypes {
 			if ship.Type == frame {
-				shipyards = append(shipyards, shipyard)
-				for _, waypoint := range all_waypoints_in_system {
-					if waypoint.Symbol == shipyard.Symbol {
-						shipyard_waypoints = append(shipyard_waypoints, waypoint)
+				shipyards = append(shipyards, shipyard_state.Shipyard)
+				for _, waypoint := range world.Waypoints {
+					if waypoint.Symbol == shipyard_state.Shipyard.Symbol {
+						shipyard_waypoints = append(shipyard_waypoints, *waypoint)
 					}
 				}
 			}
@@ -163,19 +176,31 @@ func ClosestWaypointFromSliceToWaypoint(waypoint_slice []Waypoint, singular_wayp
 	return closest_waypoint
 }
 
-func WaypointsWithTrait(waypoint_slice []Waypoint, trait_to_check string) []Waypoint {
-	waypoints_with_trait := []Waypoint{}
-	for _, waypoint := range waypoint_slice {
+func WaypointsWithTrait(world *WorldState, trait_to_check string) map[string]*Waypoint {
+	waypoints_with_trait := make(map[string]*Waypoint)
+	for waypoint_symbol, waypoint := range world.Waypoints {
 		for _, trait := range waypoint.Traits {
 			if trait.Symbol == trait_to_check {
-				waypoints_with_trait = append(waypoints_with_trait, waypoint)
+				waypoints_with_trait[waypoint_symbol] = waypoint
 			}
 		}
 	}
 	return waypoints_with_trait
 }
 
+func WaypointsOfType(world *WorldState, type_to_check string) map[string]*Waypoint {
+	waypoints_of_type := make(map[string]*Waypoint)
+	for waypoint_symbol, waypoint := range world.Waypoints {
+		if waypoint.Type == type_to_check {
+			waypoints_of_type[waypoint_symbol] = waypoint
+		}
+	}
+	return waypoints_of_type
+}
+
+// This is depreciated in favour of world.Waypoints[waypoint_symbol]
 func WaypointFromWaypointSymbol(waypoint_slice []Waypoint, waypoint_symbol_to_check string) Waypoint {
+	fmt.Println("[DEPRECIATED] WaypointFromWaypointSymbol")
 	default_waypoint := Waypoint{}
 	for _, waypoint := range waypoint_slice {
 		if waypoint.Symbol == waypoint_symbol_to_check {
@@ -235,7 +260,9 @@ func ClosestMarketSellingTradeGood(ship Ship, trade_good string, markets []Marke
 	return closest_market
 }
 
+// TODO both all_waypoints and markets should be replaced with world state equivilents.
 func ClosestMarketToWaypoint(target_waypoint Waypoint, all_waypoints []Waypoint, markets []Market) Market {
+	fmt.Println("[WARN] ClosestMarketToWaypoint needs rewrite see TODO")
 	shortest_distance := 9001
 	closest_market := Market{}
 	for _, market := range markets {
@@ -308,4 +335,63 @@ func StringToTimestamp(input_string string) time.Time {
 		fmt.Println(err)
 	}
 	return(t)
+}
+
+func IsWaypointUnderConstruction(waypoint Waypoint) bool {
+	return waypoint.IsUnderConstruction
+}
+
+func IsMaterialFulfilled(material Material) bool {
+	return material.Fulfilled == material.Required
+}
+
+func IsContractDeliverble(contract Contract, all_markets_in_system []Market, mineable_goods []string, siphonable_goods []string) bool {
+	contract_delivery_trade_good_symbol := contract.Terms.Deliver[0].TradeSymbol
+	markets_with_contract_trade_good := MarketplacesWhichSellTradeGood(all_markets_in_system, contract_delivery_trade_good_symbol)
+	if len(markets_with_contract_trade_good) > 0 {
+		return true
+	}
+	if slices.Contains(mineable_goods, contract_delivery_trade_good_symbol) {
+		return true
+	}
+	if slices.Contains(siphonable_goods, contract_delivery_trade_good_symbol) {
+		return true
+	}
+	return false
+}
+
+func HaveAtLeastOneBuyerShip(world *WorldState) bool {
+	for _, ship_state := range world.Ships{
+		if ship_state.Job == JobBuyer {
+			return true
+		}
+	}
+	return false
+}
+
+func HaveAtLeastOneMarketBoostrap(world *WorldState) bool {
+	for _, ship_state := range world.Ships{
+		if ship_state.Job == JobMarketBootstrap {
+			return true
+		}
+	}
+	return false	
+}
+
+func UnassignedShipOfRole(world *WorldState, role string) (bool, string) {
+	for _, ship_state := range world.Ships {
+		if ship_state.Ship.Registration.Role == role {
+			if ship_state.Job == "" {
+				return true, ship_state.Ship.Symbol
+			}
+		}
+	}
+	return false, ""
+}
+
+func IsShipStateJobUnassigned(ship_state *ShipState) bool {
+	if ship_state.Job == "" {
+		return true
+	}
+	return false
 }

@@ -9,13 +9,15 @@ import (
 
 var ShuttleMarketplaceGraph dijkstra.Graph = make(dijkstra.Graph)
 
-func DecideTraderAction(ship Ship, world *WorldState, all_waypoints_in_system []Waypoint) ShipAction {
+func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
+
+	ship := *ship_ptr
 
 	fmt.Println("[INFO] " + ship.Symbol + " DecideTraderAction")
 
 	derived_trade_routes := DeriveTradeRoutes(world)
 
-	fmt.Printf("[DEBUG] %d derived trade routes\n", len(derived_trade_routes))
+	//fmt.Printf("[DEBUG] %d derived trade routes\n", len(derived_trade_routes))
 
 	//for _, route := range derived_trade_routes {
 	//	fmt.Println(route)
@@ -23,15 +25,15 @@ func DecideTraderAction(ship Ship, world *WorldState, all_waypoints_in_system []
 
 	most_profitable_derived_trade_route := MostProfitableDerivedTradeRoute(derived_trade_routes)
 
-	fmt.Printf("[DEBUG] %s Trade route: Buy %s at %s sell at %s for %d profit\n",
+	fmt.Printf("[DEBUG] %s Trade route: Buy %s at %s sell at %s pr %.2f\n",
 	ship.Symbol,
 	most_profitable_derived_trade_route.Good,
 	most_profitable_derived_trade_route.From,
 	most_profitable_derived_trade_route.To,
-	most_profitable_derived_trade_route.ProfitPerUnit)
+	most_profitable_derived_trade_route.ProfitabilityRating)
 
 	//most_profitable_trade_route := MostProfitableTradeRoute(trade_routes)
-	current_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, ship.Nav.WaypointSymbol)
+	current_waypoint := *world.Waypoints[ship.Nav.WaypointSymbol]
 
 	// Always update market data for a market we're at if it needs it.
 	if IsShipDocked(ship){
@@ -61,7 +63,7 @@ func DecideTraderAction(ship Ship, world *WorldState, all_waypoints_in_system []
 
 	// This can get stuck when the trader is holding cargo which becomes unprofitable after a trade.
 	// Further trades of that cargo will not be worth it and the trader will wait until it becomes profitable
-	if most_profitable_derived_trade_route.ProfitPerUnit < 1 {
+	if most_profitable_derived_trade_route.ProfitabilityRating <= 0 {
 		fmt.Println("[INFO] Most profitable trade route is not profitable enough. Doing nothing...")
 		return ShipAction{
 			Type: ActionWait,
@@ -83,7 +85,7 @@ func DecideTraderAction(ship Ship, world *WorldState, all_waypoints_in_system []
 
 			// There are three options here
 			// 1) Jettison the remaining cargo (wasteful)
-			// 2) Find a different market which will take the remaining trade goods (complex)
+			// 2) Find a different market which will take the remaining trade goods (complex) (current)
 			// 3) Wait until the current market will take the remaining trade goods (may get stuck)
 
 			sell_market, _, success := BestMarketToSellGood(world, trade_good_in_cargo)
@@ -94,7 +96,7 @@ func DecideTraderAction(ship Ship, world *WorldState, all_waypoints_in_system []
 					NotBefore: ThreeMinutesFromNow(),
 				}
 			}
-			fmt.Printf("[WARN] Backup market found for %s\n", trade_good_in_cargo)
+			//fmt.Printf("[DEBUG] Backup market found for %s\n", trade_good_in_cargo)
 			sell_market_symbol = sell_market.Symbol
 		
 		} else {
@@ -184,9 +186,11 @@ func DecideTraderAction(ship Ship, world *WorldState, all_waypoints_in_system []
 			}
 		}
 		
-		most_profitable_trade_route_buy_marketplace_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, most_profitable_derived_trade_route.From)
+		most_profitable_trade_route_buy_marketplace_waypoint := *world.Waypoints[most_profitable_derived_trade_route.From]
 		path, _, err := CalculateShortestPathBetweenTwoWaypoints(ShuttleMarketplaceGraph, current_waypoint, most_profitable_trade_route_buy_marketplace_waypoint)
+
 		if err != nil {
+			fmt.Println(err)
 			fmt.Println("[ERROR] cannot path")
 			return ShipAction{
 				Type: ActionWait,
@@ -206,9 +210,10 @@ func DecideTraderAction(ship Ship, world *WorldState, all_waypoints_in_system []
 		}
 	}
 
-	most_profitable_trade_route_sell_marketplace_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, sell_market_symbol)
+	most_profitable_trade_route_sell_marketplace_waypoint := *world.Waypoints[sell_market_symbol]
 	path, _, err := CalculateShortestPathBetweenTwoWaypoints(ShuttleMarketplaceGraph, current_waypoint, most_profitable_trade_route_sell_marketplace_waypoint)
 	if err != nil {
+		fmt.Println(err)
 		fmt.Println("[ERROR] cannot path")
 		return ShipAction{
 			Type: ActionWait,

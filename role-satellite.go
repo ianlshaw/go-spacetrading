@@ -6,20 +6,21 @@ import (
 )
 
 // TODO
-// Either prioritize known trade routes or 
-// Use Dikjsra to create an efficient loop or
-// Both
 
-func DecideSatelliteAction(ship Ship, world *WorldState) ShipAction {
+func DecideSatelliteAction(ship_ptr *Ship, world *WorldState) ShipAction {
+
+	ship := *ship_ptr
+
 	fmt.Println("[INFO] " + ship.Symbol + " " + ship.Registration.Role + " " + "DecideSatelliteAction")
 
-	if IsShipInTransit(ship) {
-		fmt.Printf("[WARN] %s in transit, waiting one minute...\n", ship.Symbol)
-		return ShipAction{
-			Type: ActionWait,
-			NotBefore: OneMinuteFromNow(),
-		}
-	}
+
+	//if IsShipInTransit(ship) {
+	//	fmt.Printf("[WARN] %s in transit, waiting one minute...\n", ship.Symbol)
+	//	return ShipAction{
+	//		Type: ActionWait,
+	//		NotBefore: OneMinuteFromNow(),
+	//	}
+	//}
 
 	// This should only happen once when the ship is first purchased.
 	if IsShipDocked(ship) {
@@ -29,7 +30,7 @@ func DecideSatelliteAction(ship Ship, world *WorldState) ShipAction {
 		}
 	}
 
-	current_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, ship.Nav.WaypointSymbol)
+	current_waypoint := *world.Waypoints[ship.Nav.WaypointSymbol]
 
 	markets_yet_to_be_visited := MarketsYetToBeVisited(world)
 
@@ -42,8 +43,7 @@ func DecideSatelliteAction(ship Ship, world *WorldState) ShipAction {
 		// find closest of markets yet to be visited
 		closest_market := Market{}
 		for _, market := range markets_yet_to_be_visited {
-			market_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, market.Symbol)
-			distance := DistanceBetweenTwoWaypoints(current_waypoint, market_waypoint)
+			distance := DistanceBetweenTwoWaypoints(current_waypoint, *world.Waypoints[market.Symbol])
 			if distance < best_distance {
 				closest_market = market
 				best_distance = distance
@@ -51,7 +51,7 @@ func DecideSatelliteAction(ship Ship, world *WorldState) ShipAction {
 		}
 		target = world.Markets[closest_market.Symbol]
 	}
-	
+
     if target == nil {
 		fmt.Println("[ERROR] DecideSatelliteAction target is nil")
 		return ShipAction{

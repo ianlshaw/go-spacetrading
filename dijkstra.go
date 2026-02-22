@@ -16,19 +16,19 @@ func AddWaypointToGraph(graph dijkstra.Graph, waypoint Waypoint) {
 	graph[waypoint.Symbol] = graph_row
 }
 
-func PopulateGraphDistancesForWaypoint(graph dijkstra.Graph, all_waypoints_in_system []Waypoint, waypoint_to_populate Waypoint) {
+func PopulateGraphDistancesForWaypoint(graph dijkstra.Graph, waypoints map[string]*Waypoint, waypoint_to_populate Waypoint) {
 	graph_row := make(map[string]int)
-	for _, other_waypoint := range all_waypoints_in_system {
-		distance := DistanceBetweenTwoWaypoints(other_waypoint, waypoint_to_populate)
+	for _, other_waypoint := range waypoints {
+		distance := DistanceBetweenTwoWaypoints(*other_waypoint, waypoint_to_populate)
 		graph_row[other_waypoint.Symbol] = distance
 	}
 	graph[waypoint_to_populate.Symbol] = graph_row
 }
 
-func PopulateGraphDistancesForWaypointWithMaximum(graph dijkstra.Graph, all_waypoints_in_system []Waypoint, waypoint_to_populate Waypoint, max_distance int) {
+func PopulateGraphDistancesForWaypointWithMaximum(graph dijkstra.Graph, waypoints map[string]*Waypoint, waypoint_to_populate Waypoint, max_distance int) {
 	graph_row := make(map[string]int)
-	for _, other_waypoint := range all_waypoints_in_system {
-		distance := DistanceBetweenTwoWaypoints(other_waypoint, waypoint_to_populate)
+	for _, other_waypoint := range waypoints {
+		distance := DistanceBetweenTwoWaypoints(*other_waypoint, waypoint_to_populate)
 		if distance < max_distance {
 			graph_row[other_waypoint.Symbol] = distance
 		}

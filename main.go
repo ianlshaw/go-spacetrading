@@ -16,212 +16,25 @@ var account_token_filename = "ACCOUNTTOKENDONOTEXPOSE.txt"
 var agent_token = "Bearer "
 var base_system_symbol = ""
 var http_calls = 0
-var turn_length = 120
 var callsign = os.Args[1]
 
-var all_waypoints_in_system []Waypoint
-var all_markets_in_system []Market
-var probe_shipyard_waypoints []Waypoint
-
 var agent Agent // does this need to be global or should it be a pointer
-var ship_list []Ship
+//var ship_list []Ship
 var runningShips = make(map[string]bool)
-var markets_to_cover = make(map[string]string)
-var probe_shipard_waypoints []Waypoint
-//var shuttle_shipyard_waypoints []Waypoint
-//var mining_drone_shipyard_waypoints []Waypoint
-//var siphon_drone_shipyard_waypoints []Waypoint
-//var surveyor_shipyard_waypoints []Waypoint
 
-type ShipActionType string
-
-const (
-    ActionNavigate   		ShipActionType = "NAVIGATE"
-    ActionBuy        		ShipActionType = "BUY"
-    ActionSell       		ShipActionType = "SELL"
-    ActionExtract    		ShipActionType = "EXTRACT"
-    ActionWait       		ShipActionType = "WAIT"
-	ActionDock		 		ShipActionType = "DOCK"
-	ActionOrbit		 		ShipActionType = "ORBIT"
-	ActionUpdateMarketData  ShipActionType = "UPDATE MARKET DATA"
-	ActionPurchaseCargo 	ShipActionType = "PURCHASE CARGO"
-	ActionRefuel			ShipActionType = "REFUEL"
-	ActionFollowPath 		ShipActionType = "FOLLOW PATH"
-	ActionSellCargo 		ShipActionType = "SELL CARGO"
-	ActionPurchaseShip		ShipActionType = "PURCHASE SHIP"
-)
-
-type ShipAction struct {
-    Type       ShipActionType
-    ShipSymbol string
-
-    // Optional fields depending on Type
-    TradeGoodSymbol     string
-    Units     	   		int64
-	WaypointSymbol 		string
-	Path		   		[]string
-	ShipType	   		string
-
-    // When should this action be executed?
-    NotBefore time.Time
-}
-
-type WorldState struct {
-    Markets map[string]*MarketState
-	Waypoints map[string]*Waypoint
-	Shipyards map[string]*Shipyard
-	Ship map[string]*Ship
-}
-
-type MarketState struct {
-    WaypointSymbol string
-    LastSeen time.Time
-
-    // Raw API response
-    Market Market
-}
-
-var World *WorldState
-
-func (w *WorldState) UpdateFromMarket(m Market) {
-    w.Markets[m.Symbol] = &MarketState{
-        WaypointSymbol: m.Symbol,
-        LastSeen: time.Now(),
-        Market:   m,
-    }
-}
-
-func (w *WorldState) IsMarketStale(waypoint string) bool {
-    m, ok := w.Markets[waypoint]
-    if !ok {
-        return true // unknown == stale
-    }
-
-    return time.Since(m.LastSeen) > 1*time.Minute
-}
-
-func (w *WorldState) InvalidateMarket(waypoint_symbol string) {
-    if m, ok := w.Markets[waypoint_symbol]; ok {
-        m.LastSeen = time.Time{} // zero time = definitely stale
-    } else {
-		fmt.Println("[ERROR] Failed to InvalidateMarket " + waypoint_symbol)
-	}
-}
-
-func OldestMarket(world *WorldState) *MarketState {
-    var oldest *MarketState
-
-    for _, m := range world.Markets {
-        if oldest == nil ||
-           m.LastSeen.IsZero() ||
-           m.LastSeen.Before(oldest.LastSeen) {
-            oldest = m
-        }
-    }
-
-    return oldest
-}
-
-func ensureShipRunning(ship Ship) {
-    if runningShips[ship.Symbol] {
+func ensureShipRunning(world *WorldState, ship_state *ShipState) {
+    if runningShips[ship_state.Ship.Symbol] {
         return
     }
-
-    runningShips[ship.Symbol] = true
-
-    go runShip(ship)
-}
-
-func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
-    switch action.Type {
-
-    case ActionWait:
-        return action.NotBefore
-
-	case ActionFollowPath:
-		resp := FollowPath(ship, action.Path)
-		ship.Nav = resp.Nav
-		ship.Fuel = resp.Fuel
-		return StringToTimestamp(resp.Nav.Route.Arrival)
-
-    case ActionNavigate:
-        resp := NavigateShip(action.ShipSymbol, action.WaypointSymbol)
-		ship.Nav = resp.Nav
-        return StringToTimestamp(resp.Nav.Route.Arrival)
-
-	case ActionDock:
-		resp := DockShip(action.ShipSymbol)
-		ship.Nav = resp.Nav
-		return time.Now()
-
-	case ActionRefuel:
-		resp := RefuelShip(action.ShipSymbol, 1, false)
-		ship.Fuel = resp.Fuel
-		agent = resp.Agent
-		return time.Now()
-
-	case ActionOrbit:
-		resp := OrbitShip(action.ShipSymbol)
-		ship.Nav = resp.Nav
-		return time.Now()
-
-	// TODO
-	// This calls GetMarket twice. One can be removed once we're fully using World MarketState
-	case ActionUpdateMarketData:
-		//UpdateTradeRoutesIncludingThisWaypoint(action.WaypointSymbol)
-		resp := GetMarket(base_system_symbol, action.WaypointSymbol)
-		World.UpdateFromMarket(resp)
-		SaveWorldState(callsign, World)
-		return time.Now()
-	
-	case ActionPurchaseCargo:
-		resp := PurchaseCargo(action.ShipSymbol,
-			action.TradeGoodSymbol, 
-			action.Units,
-		)
-		ship.Cargo = resp.Cargo
-		agent = resp.Agent
-		World.InvalidateMarket(ship.Nav.WaypointSymbol)
-		return time.Now()
-
-	case ActionSellCargo:
-		resp := SellCargo(action.ShipSymbol, action.TradeGoodSymbol, action.Units)
-		ship.Cargo = resp.Cargo
-		agent = resp.Agent
-		World.InvalidateMarket(ship.Nav.WaypointSymbol)
-		return time.Now()
-	
-	case ActionPurchaseShip:
-		resp := PurchaseShip(action.ShipType, action.WaypointSymbol)
-		agent = resp.Agent
-		ship_list = append(ship_list, resp.Ship)
-		ensureShipRunning(resp.Ship)
-		return time.Now()
-	
-	}
-
-    panic("unknown action")
+	World.UpdateFromShip(ship_state.Ship)
+    runningShips[ship_state.Ship.Symbol] = true
+    go runShip(world, ship_state)
 }
 
 func PanicOnError(e error) {
 	if e != nil {
 		panic(e)
 	}
-}
-
-func pretty_print_json(json_blob string) {
-	byt := []byte(json_blob)
-
-	var dat map[string]interface{}
-	if err := json.Unmarshal(byt, &dat); err != nil {
-		panic(err)
-	}
-
-	b, err := json.MarshalIndent(dat, "", "\t")
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-	os.Stdout.Write(b)
 }
 
 func populate_base_system_symbol() {
@@ -236,7 +49,20 @@ func populate_base_system_symbol() {
 	base_system_symbol = response_typed.Data[0].Nav.SystemSymbol
 }
 
-func runShip(ship Ship){
+type ShipJob string
+
+const (
+    JobUnassigned        ShipJob = "UNASSIGNED"
+    JobMarketBootstrap   ShipJob = "MARKET_BOOTSTRAP"
+    JobScout             ShipJob = "SCOUT"
+	JobBuyer			 ShipJob = "BUYER"
+    JobTrader            ShipJob = "TRADER"
+)
+
+
+func runShip(world *WorldState, ship_state *ShipState){
+
+	ship := &ship_state.Ship
 
 	for {
 		//var expiration time.Time
@@ -253,65 +79,111 @@ func runShip(ship Ship){
 		ship.Cargo.Units,
 		ship.Cargo.Capacity)
 
+
+		// This can be set once outside of this loop
 		if ship.Registration.Role == "COMMAND" {
-			action := DecideTraderAction(ship, World, all_waypoints_in_system)
-			fmt.Println(action)
-			expiration = ExecuteAction(action, &ship)
+			ship_state.Job = JobTrader
+			SaveWorldState(callsign, world)
 		}
-
-		all_probes := []Ship{}
-		all_shuttles := []Ship{}
-
-		for _, ship := range ship_list {
-			if ship.Registration.Role == "SATELLITE" {
-				all_probes = append(all_probes, ship)
-			}
-			if ship.Registration.Role == "TRANSPORT" {
-				all_shuttles = append(all_shuttles, ship)
-			}
-		}
-
-		buyer_ship := all_probes[0]
 
 		if ship.Registration.Role == "SATELLITE" {
-			if ship.Symbol == buyer_ship.Symbol {
-				action := DecideBuyerAction(ship)
-				fmt.Println(action)
-				expiration = ExecuteAction(action, &ship)
+			if !HaveAtLeastOneBuyerShip(world) {
+				fmt.Println("not even one buyer ship")
+				if IsShipStateJobUnassigned(ship_state){
+					ship_state.Job = JobBuyer
+					SaveWorldState(callsign, world)
+				}
 			}
-		}
-		if len(all_probes) > 1 {
-			market_bootstrap_probe := all_probes[1]
-			if ship.Symbol == market_bootstrap_probe.Symbol {
-				action := DecideSatelliteAction(ship, World)
-				fmt.Println(action)
-				expiration = ExecuteAction(action, &ship)
-			} else {
-				// 3+ satellites
-			}
-		}
-
-		if len(all_shuttles) >= 1 {
-			if ship.Symbol == all_shuttles[0].Symbol {
-				// DEBUG
-				action := DecideTraderAction(ship, World, all_waypoints_in_system)
-				fmt.Println(action)
-				expiration = ExecuteAction(action, &ship)
-				// DEBUG
+			if !HaveAtLeastOneMarketBoostrap(world) {
+				if IsShipStateJobUnassigned(ship_state){
+					ship_state.Job = JobMarketBootstrap
+					SaveWorldState(callsign, world)
+				}
 			}
 		}
 
-		if len(all_shuttles) >= 2 {
-			if ship.Symbol == all_shuttles[1].Symbol {
-				expiration = ApplyRoleTransportOre(ship)
-			}
+	    switch ship_state.Job {
+		case JobTrader:
+			action := DecideTraderAction(ship, World)
+			fmt.Println(action)
+			expiration = ExecuteAction(action, ship)
+
+		case JobBuyer:
+			action := DecideBuyerAction(ship, World)
+			fmt.Println(action)
+			expiration = ExecuteAction(action, ship)
+
+		case JobMarketBootstrap:
+			action := DecideSatelliteAction(ship, World)
+			fmt.Println(action)
+			expiration = ExecuteAction(action, ship)
+
 		}
 
-		if len(all_shuttles) >= 3 {
-			if ship.Symbol == all_shuttles[2].Symbol {
-				expiration = ApplyRoleTransportGas(ship)
-			}
-		}
+    	//probes := world.GetShipsByFrame("FRAME_PROBE")
+
+		//all_probes := []Ship{}
+		//all_shuttles := []Ship{}
+
+		//for _, ship_state := range world.Ships {
+		//	if ship_state.Ship.Registration.Role == "SATELLITE" {
+		//		all_probes = append(all_probes, ship_state.Ship)
+		//	}
+		//	if ship_state.Ship.Registration.Role == "TRANSPORT" {
+		//		all_shuttles = append(all_shuttles, ship_state.Ship)
+		//		fmt.Println("I'm a TRANSPORT")
+		//	}
+		//}
+
+		//buyer_ship := all_probes[0]
+
+		//if ship.Registration.Role == "SATELLITE" {
+		//	if ship.Symbol == buyer_ship.Symbol {
+		//		action := DecideBuyerAction(ship, World)
+		//		fmt.Println(action)
+		//		expiration = ExecuteAction(action, ship)
+		//	}
+		//}
+
+		//if len(all_probes) > 1 {
+		//	market_bootstrap_probe := all_probes[1]
+		//	fmt.Println(market_bootstrap_probe.Symbol)
+		//	if ship.Symbol == market_bootstrap_probe.Symbol {
+		//		action := DecideSatelliteAction(ship, World)
+		//		fmt.Println(action)
+		//		expiration = ExecuteAction(action, ship)
+		//	} else {
+		//		// 3+ satellites
+		//	}
+		//}
+
+		//if len(all_shuttles) >= 1 {
+		//	if ship.Symbol == all_shuttles[0].Symbol {
+		//		// DEBUG
+		//		action := DecideTraderAction(ship, World)
+		//		fmt.Println(action)
+		//		expiration = ExecuteAction(action, &ship)
+		//		// DEBUG
+		//	}
+		//}
+
+		//if len(all_shuttles) >= 2 {
+		//	if ship.Symbol == all_shuttles[1].Symbol {
+		//		expiration = ApplyRoleTransportOre(ship)
+		//	}
+		//}
+
+		//if len(all_shuttles) >= 3 {
+		//	if ship.Symbol == all_shuttles[2].Symbol {
+		//		expiration = ApplyRoleTransportGas(ship)
+		//	}
+		//}
+
+		//if ship.Registration.Role == "HAULER" {
+		//	action := DecideTraderAction(ship, World)
+		//	fmt.Println(action)
+		//	expiration = ExecuteAction(action, &ship)
+		//}
 
 		//}
 		//if ship.Registration.Role == "EXCAVATOR" {
@@ -350,14 +222,10 @@ func main() {
 
 	// Ensure the CALLSIGN is provided as a command line argument
 	if len(os.Args) != 2 {
-		fmt.Println("go-spacetrade CALLSIGN")
+		fmt.Println("go run . CALLSIGN")
 		os.Exit(1)
 	}
 
-	//World = WorldState{
-    //    Markets: make(map[string]*MarketState),
-    //}
-	
 	CALLSIGN := os.Args[1]
 
 	// Check if an auth token file is present for the CALLSIGN provided
@@ -376,110 +244,86 @@ func main() {
 
 	// do waypoint files exist?
 
-	if !DoesWaypointsFileExist(CALLSIGN) {
+	World = LoadWorldState(CALLSIGN)
+
+	if len(World.Waypoints) == 0 {
 		fmt.Println("[INFO] Gathering waypoint data...")
-		//all_waypoints_in_system := []Waypoint{}
 		list_waypoints_result := ListWaypointsInSystem(base_system_symbol, "1")
 		total_waypoints := list_waypoints_result.Meta.Total
 		limit := list_waypoints_result.Meta.Limit
 		loop_iterations_required := total_waypoints / int64(limit)
 		for i := 1; i < int(loop_iterations_required+2); i++ {
 			a_page_of_waypoints := ListWaypointsInSystem(base_system_symbol, strconv.FormatInt(int64(i), 10))
-			all_waypoints_in_system = append(all_waypoints_in_system, a_page_of_waypoints.Data...)
-		}
-		WriteWaypointsToFile(all_waypoints_in_system, CALLSIGN)
-	}
-
-	all_waypoints_in_system = ReadWaypointsFromFile(CALLSIGN)
-
-	World = LoadWorldState(CALLSIGN)
-
-	for _, waypoint := range all_waypoints_in_system {
-		PopulateGraphDistancesForWaypoint(SystemGraph, all_waypoints_in_system, waypoint)
-		PopulateGraphDistancesForWaypointWithMaximum(SystemGraph, all_waypoints_in_system, waypoint, 400)
-	}
-
-	if !DoesShipyardsFileExist(CALLSIGN) {
-		shipyard_waypoints := []Waypoint{}
-
-		for _, waypoint := range all_waypoints_in_system {
-			for _, trait := range waypoint.Traits {
-				if trait.Symbol == "SHIPYARD" {
-					shipyard_waypoints = append(shipyard_waypoints, waypoint)
-				}
+			for _, waypoint := range a_page_of_waypoints.Data {
+				World.UpdateFromWaypoint(waypoint)
 			}
 		}
-
-		all_shipyards_in_system := []Shipyard{}
-
-		for _, shipyard_waypoint := range shipyard_waypoints {
-			get_shipyard_result := GetShipyard(base_system_symbol, shipyard_waypoint.Symbol)
-			all_shipyards_in_system = append(all_shipyards_in_system, get_shipyard_result)
-		}
-
-		WriteShipyardsToFile(all_shipyards_in_system, CALLSIGN)
-	}
-
-	all_shipyards_in_system := ReadShipyardsFromFile(CALLSIGN)
-
-	if !DoesMarketsFileExist(CALLSIGN) {
-		for _, waypoint := range all_waypoints_in_system {
-			for _, trait := range waypoint.Traits {
-				if trait.Symbol == "MARKETPLACE" {
-					get_market_result := GetMarket(base_system_symbol, waypoint.Symbol)
-					World.UpdateFromMarket(get_market_result)
-					all_markets_in_system = append(all_markets_in_system, get_market_result)
-					time.Sleep(2 * time.Second)
-				}
-			}
-		}
-		WriteMarketsToFile(all_markets_in_system, CALLSIGN)
 		SaveWorldState(callsign, World)
 	}
 
-	all_markets_in_system := ReadMarketsFromFile(CALLSIGN)
-	marketplace_waypoints := []Waypoint{}
-
-	for _, market := range all_markets_in_system {
-		for _, waypoint := range all_waypoints_in_system {
-			if market.Symbol == waypoint.Symbol {
-				marketplace_waypoints = append(marketplace_waypoints, waypoint)
-			}
-		}
+	for _, waypoint := range World.Waypoints {
+		PopulateGraphDistancesForWaypoint(SystemGraph, World.Waypoints, *waypoint)
+		PopulateGraphDistancesForWaypointWithMaximum(SystemGraph, World.Waypoints, *waypoint, 400)
 	}
 
-	for _, waypoint := range marketplace_waypoints {
-		
-		PopulateGraphDistancesForWaypointWithMaximum(MarketplaceGraph, marketplace_waypoints, waypoint, 400)
-		PopulateGraphDistancesForWaypointWithMaximum(ShuttleMarketplaceGraph, marketplace_waypoints, waypoint, 300)
+	shipyard_waypoints := WaypointsWithTrait(World, "SHIPYARD")
 
+	if len(World.Shipyards) == 0 {
+
+		for _, shipyard_waypoint := range shipyard_waypoints {
+			get_shipyard_result := GetShipyard(base_system_symbol, shipyard_waypoint.Symbol)
+			World.UpdateFromShipyard(get_shipyard_result)
+		}
+		SaveWorldState(callsign, World)	
+	}
+	
+	marketplace_waypoints := WaypointsWithTrait(World, "MARKETPLACE")
+
+	if len(World.Markets) == 0 {
+		for marketplace_waypoint_symbol, _ := range marketplace_waypoints {
+			get_market_result := GetMarket(base_system_symbol, marketplace_waypoint_symbol)
+			World.UpdateFromMarket(get_market_result)
+		}
+		SaveWorldState(callsign, World)
+	}
+
+	construction_site_waypoints := WaypointsOfType(World, "JUMP_GATE")
+
+	if len(World.ConstructionSites) == 0 {
+		for construction_site_symbol, _ := range construction_site_waypoints {
+			get_construction_site_result := GetConstructionSite(base_system_symbol, construction_site_symbol)
+			World.UpdateFromConstructionSite(get_construction_site_result)
+		}
+		SaveWorldState(callsign, World)
+	}
+
+	
+	ship_list := ListShips()
+	for _, ship := range ship_list {
+		World.UpdateFromShip(ship)
+	}
+	SaveWorldState(callsign, World)
+
+	for _, waypoint := range marketplace_waypoints {
+		PopulateGraphDistancesForWaypointWithMaximum(MarketplaceGraph, marketplace_waypoints, *waypoint, 400)
+		PopulateGraphDistancesForWaypointWithMaximum(ShuttleMarketplaceGraph, marketplace_waypoints, *waypoint, 300)
 		//PopulateGraphDistancesForWaypointWithMaximum(SiphonerMarketplaceGraph, marketplace_waypoints, waypoint, 80)
 	}
 
-	_, probe_shipyard_waypoints = FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_PROBE")
-	fmt.Print("[DEBUG] probe shipyards:")
-
-	//_, shuttle_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_LIGHT_SHUTTLE")
+	//_, shuttle_shipyard_waypoints := FindPurcahseableShipByFrame(World, "SHIP_LIGHT_SHUTTLE")
 	//fmt.Print("[DEBUG] shuttle shipyards:")
 
-	//mining_drone_shipyards, mining_drone_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_MINING_DRONE")
+	//mining_drone_shipyards, mining_drone_shipyard_waypoints := FindPurcahseableShipByFrame(World, "SHIP_MINING_DRONE")
 	//fmt.Print("[DEBUG] mining_drone shipyards:")
 	//fmt.Println(len(mining_drone_shipyards))
 
-	//siphon_drone_shipyards, siphon_drone_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_SIPHON_DRONE")
+	//siphon_drone_shipyards, siphon_drone_shipyard_waypoints := FindPurcahseableShipByFrame(World, "SHIP_SIPHON_DRONE")
 	//fmt.Print("[DEBUG] siphon_drone shipyards:")
 	//fmt.Println(len(siphon_drone_shipyards))
 
-	//surveyor_shipyards, surveyor_shipyard_waypoints := FindPurcahseableShipByFrame(all_waypoints_in_system, all_shipyards_in_system, "SHIP_SURVEYOR")
+	//surveyor_shipyards, surveyor_shipyard_waypoints := FindPurcahseableShipByFrame(World, "SHIP_SURVEYOR")
 	//fmt.Print("[DEBUG] surveyor shipyards:")
 	//fmt.Println(len(surveyor_shipyards))
-
-	//turn_number := 1
-
-	fmt.Print("[INFO] http calls: ")
-	fmt.Print(http_calls)
-	http_calls = 0
-	fmt.Println()
 
 	agent = GetAgent()
 	fmt.Print("[INFO] ShipCount: ")
@@ -489,11 +333,8 @@ func main() {
 	fmt.Print(agent.Credits)
 	fmt.Println()
 
-	ship_list = ListShips()
-
-
-	for _, ship := range ship_list {
-    	ensureShipRunning(ship)
+	for _, ship_state := range World.Ships {
+    	ensureShipRunning(World, ship_state)
 	}
 
 	select {}
