@@ -65,7 +65,7 @@ func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
 	case ActionRefuel:
 		resp := RefuelShip(action.ShipSymbol, 1, false)
 		ship.Fuel = resp.Fuel
-		agent = resp.Agent
+		World.UpdateFromAgent(resp.Agent)
 		return time.Now()
 
 	case ActionOrbit:
@@ -94,20 +94,20 @@ func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
 	case ActionPurchaseCargo:
 		resp := PurchaseCargo(action.ShipSymbol, action.TradeGoodSymbol, action.Units)
 		ship.Cargo = resp.Cargo
-		agent = resp.Agent
+		World.UpdateFromAgent(resp.Agent)
 		World.InvalidateMarket(ship.Nav.WaypointSymbol)
 		return time.Now()
 
 	case ActionSellCargo:
 		resp := SellCargo(action.ShipSymbol, action.TradeGoodSymbol, action.Units)
 		ship.Cargo = resp.Cargo
-		agent = resp.Agent
+		World.UpdateFromAgent(resp.Agent)
 		World.InvalidateMarket(ship.Nav.WaypointSymbol)
 		return time.Now()
 	
 	case ActionPurchaseShip:
 		resp := PurchaseShip(action.ShipType, action.WaypointSymbol)
-		agent = resp.Agent
+		World.UpdateFromAgent(resp.Agent)
 		World.UpdateFromShip(resp.Ship)
 		ship_state := World.Ships[resp.Ship.Symbol]
 		ensureShipRunning(World, ship_state)

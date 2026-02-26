@@ -18,8 +18,7 @@ var base_system_symbol = ""
 var http_calls = 0
 var callsign = os.Args[1]
 
-var agent Agent // does this need to be global or should it be a pointer
-//var ship_list []Ship
+// maybe put this into WorldState
 var runningShips = make(map[string]bool)
 
 func ensureShipRunning(world *WorldState, ship_state *ShipState) {
@@ -106,7 +105,7 @@ func runShip(world *WorldState, ship_state *ShipState){
 			if ship.Registration.Role == "SATELLITE" {
 				ship_state.Job = JobSaturationSatellite
 				SaveWorldState(callsign, world)
-			}	
+			}
 		}
 
 		if ship.Registration.Role == "HAULER" {
@@ -261,12 +260,14 @@ func main() {
 		//PopulateGraphDistancesForWaypointWithMaximum(SiphonerMarketplaceGraph, marketplace_waypoints, waypoint, 80)
 	}
 
-	agent = GetAgent()
+	resp := GetAgent()
+	World.UpdateFromAgent(resp)
+
 	fmt.Print("[INFO] ShipCount: ")
-	fmt.Print(agent.ShipCount)
+	fmt.Print(World.Agent.ShipCount)
 	fmt.Println()
 	fmt.Print("[INFO] Credits: ")
-	fmt.Print(agent.Credits)
+	fmt.Print(World.Agent.Credits)
 	fmt.Println()
 
 	for _, ship_state := range World.Ships {

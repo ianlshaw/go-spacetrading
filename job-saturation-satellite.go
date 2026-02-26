@@ -10,6 +10,12 @@ func DecideSaturationSatelliteAction(ship_ptr *Ship, world *WorldState) ShipActi
 
 	fmt.Println("[INFO] " + ship.Symbol + " " + ship.Registration.Role + " " + "DecideSaturationSatelliteAction")
 
+	// Is there another satellite already at this location?
+
+	// already at target
+
+	// Am I the only satellite here
+
 	// Is it a shipyard?
 	if world.Waypoints["ship.Nav.WaypointSymbol"].WaypointHasTrait("SHIPYARD") {
 		if !IsShipDocked(ship) {
@@ -35,6 +41,10 @@ func DecideSaturationSatelliteAction(ship_ptr *Ship, world *WorldState) ShipActi
 			}
 		}
 	}
+
+	// this would result in multiple satellites marking the same waypoint, there is nothing fanning them out yet.
+	// nor any navigation
+	
 
 	fmt.Printf("[WARN] DecideSaturationSatelliteAction uncaught branch. Waiting 15 minutes.\n")
 	return ShipAction{
