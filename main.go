@@ -54,9 +54,9 @@ const (
     JobUnassigned          ShipJob = "UNASSIGNED"
     JobMarketBootstrap     ShipJob = "MARKET_BOOTSTRAP"
     JobScout               ShipJob = "SCOUT"
-	JobBuyer			   ShipJob = "BUYER"
+    JobBuyer	           ShipJob = "BUYER"
     JobTrader              ShipJob = "TRADER"
-	JobSaturationSatellite ShipJob = "SATURATION SATELLITE"
+    JobSaturationSatellite ShipJob = "SATURATION SATELLITE"
 )
 
 
@@ -87,8 +87,9 @@ func runShip(world *WorldState, ship_state *ShipState){
 
 		if ship.Registration.Role == "SATELLITE" {
 			if !HaveAtLeastOneBuyerShip(world) {
-				fmt.Println("not even one buyer ship")
+				fmt.Printf("[INFO] No buyer ships. We need to assign one.")
 				if IsShipStateJobUnassigned(ship_state){
+					fmt.Printf("[INFO] %s assigned job BUYER\n", ship.Symbol)
 					ship_state.Job = JobBuyer
 					SaveWorldState(callsign, world)
 				}
