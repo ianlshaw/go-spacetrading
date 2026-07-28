@@ -28,9 +28,9 @@ func DecideBuyerAction(ship_ptr *Ship, world *WorldState) ShipAction {
 		}
 	}
 
-	if world.Agent.Credits > 2000000 {
-		desired_number_of_ship_light_freighter = 1
-	}
+	#if world.Agent.Credits > 2000000 {
+	#	desired_number_of_ship_light_freighter = 1
+	#}
 
 	if world.Agent.Credits > 2100000 {
 		desired_number_of_ship_probe = len(world.Markets)
