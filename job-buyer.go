@@ -28,13 +28,13 @@ func DecideBuyerAction(ship_ptr *Ship, world *WorldState) ShipAction {
 		}
 	}
 
-	if agent.Credits > 2000000 {
+	if world.Agent.Credits > 2000000 {
 		desired_number_of_ship_light_freighter = 1
 	}
 
-	//if agent.Credits > 3000000 {
-	//	desired_number_of_ship_probe = len(world.Markets)
-	//}
+	if world.Agent.Credits > 2100000 {
+		desired_number_of_ship_probe = len(world.Markets)
+	}
 
 	_, probe_shipyard_waypoints := FindPurchaseableShipByType(world, "SHIP_PROBE")
 

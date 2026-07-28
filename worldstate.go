@@ -8,6 +8,7 @@ import (
 var World *WorldState
 
 type WorldState struct {
+    Agent *Agent
     Markets map[string]*MarketState
 	Waypoints map[string]*Waypoint
 	Shipyards map[string]*ShipyardState
@@ -37,6 +38,7 @@ type ShipState struct {
     BusyUntil time.Time
     Ship Ship
     Job ShipJob
+    //TargetWaypointSymbol string // this is only needed for saturation satellites. maybe there's a better way to deal with it at the job level
 }
 
 func (w *WorldState) UpdateFromShip(s Ship) {
@@ -48,11 +50,10 @@ func (w *WorldState) UpdateFromShip(s Ship) {
     } else {
         w.Ships[s.Symbol].Ship = s
     }
-    //w.Ships[s.Symbol] = &ShipState{
-    //    Ship: s,
-		// TODO ensure this covers both navigation arrival times and mining cooldown durations
-        //BusyUntil:  StringToTimestamp(s.Cooldown.Expiration),
-    //}
+}
+
+func (w *WorldState) UpdateFromAgent(a Agent) {
+    w.Agent = &a
 }
 
 func (w *WorldState) UpdateFromMarket(m Market) {

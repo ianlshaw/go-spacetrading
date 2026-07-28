@@ -9,7 +9,7 @@ import (
 // Agents
 
 func RegisterAgent(callsign string) (result RegisterAgentResponse) {
-	fmt.Println("RegisterAgent")
+	fmt.Println("[INFO] RegisterAgent")
 	payload := &RegisterAgentPayload{}
 	payload.Faction = "COSMIC"
 	payload.Symbol = callsign

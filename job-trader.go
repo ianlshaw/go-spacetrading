@@ -145,7 +145,7 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 		fmt.Println("[ERROR] DecideTraderAction TradeGoodFromMarket failed")
 	}
 	//fmt.Println(buy_market_trade_good)
-	max_affordable_units := HowManyTradeGoodCanIAfford(agent, buy_market_trade_good)
+	max_affordable_units := HowManyTradeGoodCanIAfford(*world.Agent, buy_market_trade_good)
 
 	//if IsShipCargoEmpty(ship) {
 	if !IsShipCargoFull(ship) && max_affordable_units > 0 {

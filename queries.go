@@ -395,3 +395,24 @@ func IsShipStateJobUnassigned(ship_state *ShipState) bool {
 	}
 	return false
 }
+
+func (w *Waypoint) WaypointHasTrait(trait_to_check string) bool {
+	for _, wp_trait := range w.Traits {
+		if wp_trait.Symbol == trait_to_check {
+			return true
+		}
+	}
+	return false
+}
+
+func (w *WorldState) CountShipsAtWaypointByFrame(waypoint *Waypoint, frame string) int {
+	count := 0
+	for _, ship_state := range w.Ships {
+		if ship_state.Ship.Nav.WaypointSymbol == waypoint.Symbol {
+			if ship_state.Ship.Frame.Symbol == frame {
+				count++
+			}
+		}
+	}
+	return count
+}
