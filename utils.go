@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 )
 
 func ListAllContracts() []Contract {
@@ -169,7 +170,6 @@ func JettisonAllCargo(ship Ship) {
 func EraseState(callsign string) {
 	fmt.Println("[WARN] EraseState " + callsign)
 	state_filenames := []string{
-		callsign + ".token",
 		callsign + ".world.json",
 	}
 		
@@ -188,7 +188,8 @@ func EraseState(callsign string) {
 			log.Fatal(err)
 		}
 
-		DeleteLocalFile(filename)
+		//TODO remove this since we're no longer using local files for tokens
+		//DeleteLocalFile(filename)
 	}
 
 	log.Println("Objects deleted")
@@ -202,15 +203,32 @@ func deleteObject(ctx context.Context, client *s3.Client, bucket, key string) er
 	return err
 }
 
+func UpdateAgentTokenSecret(new_token string) {
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		log.Fatal(err)
+	}
+	client := secretsmanager.NewFromConfig(cfg)
+	secretName := "spacetraders/agent-token"
+	_, err = client.PutSecretValue(context.TODO(), &secretsmanager.PutSecretValueInput{
+		SecretId:     aws.String(secretName),
+		SecretString: aws.String(new_token),
+	})
+	if err != nil {
+		log.Fatalf("Failed to update secret value: %v", err)
+	}
+	fmt.Println("[INFO] Succesfully updated agent token secret.")
+}
+
 func DeleteLocalFile(filename string) {
 	// Attempt to remove the file
     err := os.Remove(filename)
     if err != nil {
-        fmt.Println("Error deleting file:", err)
+        fmt.Println("[ERROR] Error deleting file:", err)
         return
     }
 
-    fmt.Println("File " + filename + " successfully deleted")
+    fmt.Println("[INFO] File " + filename + " successfully deleted")
 }
 
 func pretty_print_json(json_blob string) {

@@ -47,6 +47,7 @@ func BasicGet(endpoint string) (response_body string) {
 	if error_container.Error.Code == 4113 {
 		fmt.Println("[ERROR] Server has restarted.")
 		EraseState(callsign)
+		UpdateAgentTokenSecret("AGENT_TOKEN_EXPIRED")
 		os.Exit(42)
 	}
 

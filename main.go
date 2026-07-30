@@ -12,11 +12,13 @@ var apiLimiter = time.NewTicker(550 * time.Millisecond)
 
 var url_base string = "https://api.spacetraders.io/v2/"
 var account_token = "Bearer "
+// TODO Remove
 var account_token_filename = "ACCOUNTTOKENDONOTEXPOSE.txt"
+
 var agent_token = "Bearer "
 var base_system_symbol = ""
 var http_calls = 0
-var callsign = os.Args[1]
+var callsign = os.Getenv("CALLSIGN")
 
 // maybe put this into WorldState
 var runningShips = make(map[string]bool)
@@ -175,20 +177,49 @@ func runShip(world *WorldState, ship_state *ShipState){
 func main() {
 
 	// Ensure the CALLSIGN is provided as a command line argument
-	if len(os.Args) != 2 {
-		fmt.Println("go run . CALLSIGN")
+	if len(os.Args) != 1 {
+		fmt.Println("go run .")
 		os.Exit(1)
 	}
 
-	CALLSIGN := os.Args[1]
+	//TODO Remove
+	//CALLSIGN := os.Args[1]
 
+
+	// TODO Remove: depreciating this in favour of aws secrets. RegisterAgent moves to server reset handling?
 	// Check if an auth token file is present for the CALLSIGN provided
-	if !DoesAgentTokenFileExist(CALLSIGN) {
-		ReadAccountTokenFromFile()
-		RegisterAgent(CALLSIGN)
+	//if !DoesAgentTokenFileExist(CALLSIGN) {
+	//	ReadAccountTokenFromFile()
+	//	RegisterAgent(CALLSIGN)
+	//}
+
+	ReadAccountTokenFromEnvironmentVariable()
+
+        if account_token == "Bearer " {
+          fmt.Printf("[ERROR] Account token null. Big problem\n")
+	  os.Exit(1)
 	}
 
-	ReadAgentTokenFromFile(CALLSIGN)
+	ReadAgentTokenFromEnvironmentVariable()
+
+	if agent_token == "Bearer " {
+          fmt.Printf("[WARN] Agent token null. Calling RegisterAgent\n")
+	  register_agent_result := RegisterAgent(callsign)
+	  os.Setenv("SPACETRADERS_AGENT_TOKEN", register_agent_result.Token)
+	  ReadAgentTokenFromEnvironmentVariable()
+	  UpdateAgentTokenSecret(register_agent_result.Token)
+	}
+
+	if agent_token == "AGENT_TOKEN_EXPIRED" {
+	  fmt.Printf("[INFO] Agent token expired. Server must have reset. Regenerating agent token.\n")	
+	  register_agent_result := RegisterAgent(callsign)
+	  os.Setenv("SPACETRADERS_AGENT_TOKEN", register_agent_result.Token)
+	  ReadAgentTokenFromEnvironmentVariable()
+	  UpdateAgentTokenSecret(register_agent_result.Token)
+	}
+
+	// TODO Remove
+	//ReadAgentTokenFromFile(CALLSIGN)
 
 	// TODO: globals are bad, this should be removed
 	populate_base_system_symbol()
@@ -196,7 +227,7 @@ func main() {
 	//agent := GetAgent()
 	//contracts := ListContracts()
 
-	World = LoadWorldState(CALLSIGN)
+	World = LoadWorldState(callsign)
 
 	if len(World.Waypoints) == 0 {
 		fmt.Println("[INFO] Gathering waypoint data...")

@@ -21,9 +21,10 @@ func RegisterAgent(callsign string) (result RegisterAgentResponse) {
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] RegisterAgent failed to unmarshal")
 	}
-	token := data_container.Data.Token
-	auth_token := token
-	WriteAuthTokenToFile(auth_token, callsign+".token")
+	
+	// TODO Remove
+	//WriteAuthTokenToFile(auth_token, callsign+".token")
+
 	return data_container.Data
 }
 

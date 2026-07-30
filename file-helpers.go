@@ -35,6 +35,14 @@ func ReadAccountTokenFromFile() {
 	account_token += (string(f))
 }
 
+func ReadAccountTokenFromEnvironmentVariable() {
+	account_token += (string(os.Getenv("SPACETRADERS_ACCOUNT_TOKEN")))
+}
+
+func ReadAgentTokenFromEnvironmentVariable() {
+	agent_token += (string(os.Getenv("SPACETRADERS_AGENT_TOKEN")))
+}
+
 func ReadAgentTokenFromFile(callsign string) {
 	f, err := os.ReadFile(callsign + ".token")
 	PanicOnError(err)
