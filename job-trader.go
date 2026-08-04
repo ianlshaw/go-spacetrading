@@ -13,7 +13,7 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 
 	ship := *ship_ptr
 
-	fmt.Println("[INFO] " + ship.Symbol + " DecideTraderAction")
+	//fmt.Println("[DEBUG] " + ship.Symbol + " DecideTraderAction")
 
 	derived_trade_routes := DeriveTradeRoutes(world)
 
@@ -77,11 +77,11 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 	// large trades with low trade volume can cause the derived route to cease to exist. eventually causing a nil pointer from here.
 	if !IsShipCargoEmpty(ship){
 		trade_good_in_cargo = ship.Cargo.Inventory[0].Symbol
-		fmt.Printf("[INFO] trade good in cargo: %s\n", trade_good_in_cargo)
+		//fmt.Printf("[DEBUG] trade good in cargo: %s\n", trade_good_in_cargo)
 		trade_routes_with_cargo := DerivedTradeRoutesWithTradeGood(derived_trade_routes, trade_good_in_cargo)
-		fmt.Printf("[INFO] %d trade routes with carried cargo %s\n", len(trade_routes_with_cargo), trade_good_in_cargo)
+		//fmt.Printf("[DEBUG] %d trade routes with carried cargo %s\n", len(trade_routes_with_cargo), trade_good_in_cargo)
 		if (len(trade_routes_with_cargo)) == 0 {
-			fmt.Printf("[WARN] No trade route exists for held cargo %s\n", trade_good_in_cargo)
+			//fmt.Printf("[WARN] No trade route exists for held cargo %s\n", trade_good_in_cargo)
 
 			// There are three options here
 			// 1) Jettison the remaining cargo (wasteful)
@@ -90,7 +90,7 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 
 			sell_market, _, success := BestMarketToSellGood(world, trade_good_in_cargo)
 			if !success {
-				fmt.Println("[ERROR] No markets will accept %s\n", trade_good_in_cargo)
+				fmt.Println("[ERROR] No markets will accept %s. Waiting 3 minutes.\n", trade_good_in_cargo)
 				return ShipAction{
 					Type: ActionWait,
 					NotBefore: ThreeMinutesFromNow(),
@@ -197,6 +197,8 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 				NotBefore: FifteenMinutesFromNow(),
 			}
 		}
+    fmt.Printf("[INFO] %s heading to %s to buy %s\n" ship.Symbol, most_profitable_derived_trade_route.From, most_profitable_derived_trade_route.Good)
+
 		return ShipAction{
 			Type: ActionFollowPath,
 			ShipSymbol: ship.Symbol,
@@ -220,6 +222,7 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 			NotBefore: FifteenMinutesFromNow(),
 		}
 	}
+    fmt.Printf("[INFO] %s heading to %s to sell %s\n" ship.Symbol, sell_market_symbol, most_profitable_derived_trade_route.Good)
 	return ShipAction{
 		Type: ActionFollowPath,
 		ShipSymbol: ship.Symbol,
