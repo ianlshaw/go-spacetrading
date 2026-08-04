@@ -189,7 +189,7 @@ func EraseState(callsign string) {
 		}
 
 		//TODO remove this since we're no longer using local files for tokens
-		//DeleteLocalFile(filename)
+		DeleteLocalFile(filename)
 	}
 
 	log.Println("Objects deleted")
