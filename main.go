@@ -12,6 +12,7 @@ var apiLimiter = time.NewTicker(550 * time.Millisecond)
 
 var url_base string = "https://api.spacetraders.io/v2/"
 var account_token = "Bearer "
+
 // TODO Remove
 var account_token_filename = "ACCOUNTTOKENDONOTEXPOSE.txt"
 
@@ -24,12 +25,12 @@ var callsign = os.Getenv("CALLSIGN")
 var runningShips = make(map[string]bool)
 
 func ensureShipRunning(world *WorldState, ship_state *ShipState) {
-    if runningShips[ship_state.Ship.Symbol] {
-        return
-    }
+	if runningShips[ship_state.Ship.Symbol] {
+		return
+	}
 	World.UpdateFromShip(ship_state.Ship)
-    runningShips[ship_state.Ship.Symbol] = true
-    go runShip(world, ship_state)
+	runningShips[ship_state.Ship.Symbol] = true
+	go runShip(world, ship_state)
 }
 
 func PanicOnError(e error) {
@@ -53,16 +54,15 @@ func populate_base_system_symbol() {
 type ShipJob string
 
 const (
-    JobUnassigned          ShipJob = "UNASSIGNED"
-    JobMarketBootstrap     ShipJob = "MARKET_BOOTSTRAP"
-    JobScout               ShipJob = "SCOUT"
-    JobBuyer	           ShipJob = "BUYER"
-    JobTrader              ShipJob = "TRADER"
-    JobSaturationSatellite ShipJob = "SATURATION SATELLITE"
+	JobUnassigned          ShipJob = "UNASSIGNED"
+	JobMarketBootstrap     ShipJob = "MARKET_BOOTSTRAP"
+	JobScout               ShipJob = "SCOUT"
+	JobBuyer               ShipJob = "BUYER"
+	JobTrader              ShipJob = "TRADER"
+	JobSaturationSatellite ShipJob = "SATURATION SATELLITE"
 )
 
-
-func runShip(world *WorldState, ship_state *ShipState){
+func runShip(world *WorldState, ship_state *ShipState) {
 
 	ship := &ship_state.Ship
 
@@ -73,13 +73,13 @@ func runShip(world *WorldState, ship_state *ShipState){
 		// DEBUG
 
 		fmt.Printf("[DEBUG] %s %s %s Fuel [%d/%d] Cargo [%d/%d]\n",
-		ship.Symbol,
-		ship.Registration.Role,
-		ship.Frame.Symbol,
-		ship.Fuel.Current,
-		ship.Fuel.Capacity,
-		ship.Cargo.Units,
-		ship.Cargo.Capacity)
+			ship.Symbol,
+			ship.Registration.Role,
+			ship.Frame.Symbol,
+			ship.Fuel.Current,
+			ship.Fuel.Capacity,
+			ship.Cargo.Units,
+			ship.Cargo.Capacity)
 
 		// This can be set once outside of this loop
 		if ship.Registration.Role == "COMMAND" {
@@ -90,14 +90,14 @@ func runShip(world *WorldState, ship_state *ShipState){
 		if ship.Registration.Role == "SATELLITE" {
 			if !HaveAtLeastOneBuyerShip(world) {
 				fmt.Printf("[INFO] No buyer ships. We need to assign one.")
-				if IsShipStateJobUnassigned(ship_state){
+				if IsShipStateJobUnassigned(ship_state) {
 					fmt.Printf("[INFO] %s assigned job BUYER\n", ship.Symbol)
 					ship_state.Job = JobBuyer
 					SaveWorldState(callsign, world)
 				}
 			}
 			if !HaveAtLeastOneMarketBoostrap(world) {
-				if IsShipStateJobUnassigned(ship_state){
+				if IsShipStateJobUnassigned(ship_state) {
 					ship_state.Job = JobMarketBootstrap
 					SaveWorldState(callsign, world)
 				}
@@ -118,7 +118,7 @@ func runShip(world *WorldState, ship_state *ShipState){
 			}
 		}
 
-	    switch ship_state.Job {
+		switch ship_state.Job {
 		case JobTrader:
 			action := DecideTraderAction(ship, World)
 			fmt.Println(action)
@@ -138,7 +138,6 @@ func runShip(world *WorldState, ship_state *ShipState){
 			action := DecideSaturationSatelliteAction(ship, World)
 			fmt.Println(action)
 			expiration = ExecuteAction(action, ship)
-
 
 		}
 
@@ -185,7 +184,6 @@ func main() {
 	//TODO Remove
 	//CALLSIGN := os.Args[1]
 
-
 	// TODO Remove: depreciating this in favour of aws secrets. RegisterAgent moves to server reset handling?
 	// Check if an auth token file is present for the CALLSIGN provided
 	//if !DoesAgentTokenFileExist(CALLSIGN) {
@@ -195,28 +193,28 @@ func main() {
 
 	ReadAccountTokenFromEnvironmentVariable()
 
-        if account_token == "Bearer " {
-          fmt.Printf("[ERROR] Account token null. Big problem\n")
-	  os.Exit(1)
+	if account_token == "Bearer " {
+		fmt.Printf("[ERROR] Account token null. Big problem\n")
+		os.Exit(1)
 	}
 
 	ReadAgentTokenFromEnvironmentVariable()
 
 	if agent_token == "Bearer " {
-          fmt.Printf("[WARN] Agent token null. Calling RegisterAgent\n")
-	  register_agent_result := RegisterAgent(callsign)
-	  os.Setenv("SPACETRADERS_AGENT_TOKEN", register_agent_result.Token)
-	  ReadAgentTokenFromEnvironmentVariable()
-	  UpdateAgentTokenSecret(register_agent_result.Token)
+		fmt.Printf("[WARN] Agent token null. Calling RegisterAgent\n")
+		register_agent_result := RegisterAgent(callsign)
+		os.Setenv("SPACETRADERS_AGENT_TOKEN", register_agent_result.Token)
+		ReadAgentTokenFromEnvironmentVariable()
+		UpdateAgentTokenSecret(register_agent_result.Token)
 	}
 
-    // TODO remove bearer from this and the above. Dont use functions to create this var, its messy
+	// TODO remove bearer from this and the above. Dont use functions to create this var, its messy
 	if agent_token == "Bearer AGENT_TOKEN_EXPIRED" {
-	  fmt.Printf("[INFO] Agent token expired. Server must have reset. Regenerating agent token.\n")	
-	  register_agent_result := RegisterAgent(callsign)
-	  os.Setenv("SPACETRADERS_AGENT_TOKEN", register_agent_result.Token)
-	  ReadAgentTokenFromEnvironmentVariable()
-	  UpdateAgentTokenSecret(register_agent_result.Token)
+		fmt.Printf("[INFO] Agent token expired. Server must have reset. Regenerating agent token.\n")
+		register_agent_result := RegisterAgent(callsign)
+		os.Setenv("SPACETRADERS_AGENT_TOKEN", register_agent_result.Token)
+		ReadAgentTokenFromEnvironmentVariable()
+		UpdateAgentTokenSecret(register_agent_result.Token)
 	}
 
 	// TODO Remove
@@ -258,9 +256,9 @@ func main() {
 			get_shipyard_result := GetShipyard(base_system_symbol, shipyard_waypoint.Symbol)
 			World.UpdateFromShipyard(get_shipyard_result)
 		}
-		SaveWorldState(callsign, World)	
+		SaveWorldState(callsign, World)
 	}
-	
+
 	marketplace_waypoints := WaypointsWithTrait(World, "MARKETPLACE")
 
 	if len(World.Markets) == 0 {
@@ -304,7 +302,7 @@ func main() {
 	fmt.Println()
 
 	for _, ship_state := range World.Ships {
-    	ensureShipRunning(World, ship_state)
+		ensureShipRunning(World, ship_state)
 	}
 
 	select {}

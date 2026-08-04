@@ -9,7 +9,6 @@ import (
 var SystemGraph dijkstra.Graph = make(dijkstra.Graph)
 var MarketplaceGraph dijkstra.Graph = make(dijkstra.Graph)
 
-
 func AddWaypointToGraph(graph dijkstra.Graph, waypoint Waypoint) {
 	fmt.Println("[DEBUG] AddWaypointToGraph")
 	graph_row := make(map[string]int)

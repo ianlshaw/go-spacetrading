@@ -1,18 +1,18 @@
 package main
 
 import (
-	"strconv"
-	"math"
-	"time"
-	"fmt"
 	"context"
-	"log"
-	"os"
 	"encoding/json"
+	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	"log"
+	"math"
+	"os"
+	"strconv"
+	"time"
 )
 
 func ListAllContracts() []Contract {
@@ -103,11 +103,11 @@ func BuyAsManyTradeGoodAsPossible(ship Ship, trade_good TradeGood, market Market
 }
 
 func BuyX(ship Ship, trade_good TradeGood, market Market, x int64) {
-	units_to_purchase 					 := x
-	remaining_units_to_purchase 		 := x
-	space_in_cargo_hold 	    		 := ship.Cargo.Capacity - ship.Cargo.Units
-	buy_market_trade_volume 			 := trade_good.TradeVolume
-	number_of_purchases_required 		 := float64(units_to_purchase) / float64(buy_market_trade_volume)
+	units_to_purchase := x
+	remaining_units_to_purchase := x
+	space_in_cargo_hold := ship.Cargo.Capacity - ship.Cargo.Units
+	buy_market_trade_volume := trade_good.TradeVolume
+	number_of_purchases_required := float64(units_to_purchase) / float64(buy_market_trade_volume)
 	rounded_number_of_purchases_required := math.Ceil(number_of_purchases_required)
 
 	fmt.Print("number_of_purchases_required ")
@@ -120,13 +120,13 @@ func BuyX(ship Ship, trade_good TradeGood, market Market, x int64) {
 		fmt.Println(i)
 		fmt.Print("rounded_number_of_purchases_required ")
 		fmt.Println(rounded_number_of_purchases_required)
-    	if remaining_units_to_purchase <= space_in_cargo_hold && remaining_units_to_purchase <= buy_market_trade_volume {
-    	    units_to_purchase = remaining_units_to_purchase
-    	} else if space_in_cargo_hold <= remaining_units_to_purchase && space_in_cargo_hold <= buy_market_trade_volume {
-    	    units_to_purchase = space_in_cargo_hold
-    	} else {
-    	    units_to_purchase = buy_market_trade_volume
-    	}
+		if remaining_units_to_purchase <= space_in_cargo_hold && remaining_units_to_purchase <= buy_market_trade_volume {
+			units_to_purchase = remaining_units_to_purchase
+		} else if space_in_cargo_hold <= remaining_units_to_purchase && space_in_cargo_hold <= buy_market_trade_volume {
+			units_to_purchase = space_in_cargo_hold
+		} else {
+			units_to_purchase = buy_market_trade_volume
+		}
 
 		fmt.Print("[DEBUG] units_to_purchase = ")
 		fmt.Println(units_to_purchase)
@@ -163,7 +163,7 @@ func OneMinuteFromNow() time.Time {
 
 func JettisonAllCargo(ship Ship) {
 	for _, item := range ship.Cargo.Inventory {
-		JettisonCargo(ship, item.Symbol, item.Units )
+		JettisonCargo(ship, item.Symbol, item.Units)
 	}
 }
 
@@ -172,7 +172,7 @@ func EraseState(callsign string) {
 	state_filenames := []string{
 		callsign + ".world.json",
 	}
-		
+
 	ctx := context.Background()
 
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("eu-west-2"))
@@ -222,13 +222,13 @@ func UpdateAgentTokenSecret(new_token string) {
 
 func DeleteLocalFile(filename string) {
 	// Attempt to remove the file
-    err := os.Remove(filename)
-    if err != nil {
-        fmt.Println("[ERROR] Error deleting file:", err)
-        return
-    }
+	err := os.Remove(filename)
+	if err != nil {
+		fmt.Println("[ERROR] Error deleting file:", err)
+		return
+	}
 
-    fmt.Println("[INFO] File " + filename + " successfully deleted")
+	fmt.Println("[INFO] File " + filename + " successfully deleted")
 }
 
 func pretty_print_json(json_blob string) {

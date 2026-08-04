@@ -15,7 +15,7 @@ package main
 //	mineable_goods := []string{""} // add SILICON_CRYSTALS when ApplyRoleContractMiner is done.
 //
 //	ship = GetShip(ship.Symbol)
-//	
+//
 //	if ship.Nav.Status == "IN_TRANSIT" {
 //		fmt.Println("[DEBUG] IN_TRANSIT TO " + ship.Nav.Route.Destination.Symbol)
 //		fmt.Println("[DEBUG] Arrival " + ship.Nav.Route.Arrival)
@@ -201,7 +201,7 @@ package main
 //			return arrival_time
 //		}
 //	}
-//	
+//
 //
 //
 //	// TESTING
@@ -414,4 +414,3 @@ package main
 //	fmt.Println("[ERROR] ApplyRoleCommand end of file")
 //	return time.Now()
 //}
-

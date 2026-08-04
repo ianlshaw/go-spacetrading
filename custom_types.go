@@ -53,7 +53,7 @@ type Cooldown struct {
 	ShipSymbol       string `json:"shipSymbol"`
 	TotalSeconds     int64  `json:"totalSeconds"`
 	RemainingSeconds int64  `json:"remainingSeconds"`
-	Expiration		 string `json:"expiration"`
+	Expiration       string `json:"expiration"`
 }
 
 type Crew struct {
@@ -240,7 +240,7 @@ type DeliverCargoToContractResponseData struct {
 
 type DeliverCargoToContractResponse struct {
 	Contract Contract `json:"contract"`
-	Cargo Cargo `json:"cargo"`
+	Cargo    Cargo    `json:"cargo"`
 }
 
 type Market struct {
@@ -322,25 +322,25 @@ type GetShipyardResponseData struct {
 }
 
 type Shipyard struct {
-	Symbol           string        `json:"symbol"`
-	ShipTypes        []ShipType    `json:"shipTypes"`
-	Transactions     []Transaction `json:"transactions"`
-	Ships            []ShipyardShip        `json:"ships"`
-	ModificationsFee int64         `json:"modificationsFee"`
+	Symbol           string         `json:"symbol"`
+	ShipTypes        []ShipType     `json:"shipTypes"`
+	Transactions     []Transaction  `json:"transactions"`
+	Ships            []ShipyardShip `json:"ships"`
+	ModificationsFee int64          `json:"modificationsFee"`
 }
 
 type ShipyardShip struct {
-	Type string
-	Name string
-	Description string
-	Activity string
+	Type          string
+	Name          string
+	Description   string
+	Activity      string
 	PurchasePrice int64
-	Frame Frame
-	Reactor Reactor
-	Engine Engine
-	Modules []Module
-	Mounts []Mount
-	Crew Crew
+	Frame         Frame
+	Reactor       Reactor
+	Engine        Engine
+	Modules       []Module
+	Mounts        []Mount
+	Crew          Crew
 }
 
 type ShipType struct {
@@ -449,7 +449,7 @@ type FulfillContractResponseData struct {
 
 type FulfillContractResponse struct {
 	Contract Contract `json:"contract"`
-	Agent Agent `json:"agent"`
+	Agent    Agent    `json:"agent"`
 }
 
 type OrbitShipResponse struct {
@@ -462,7 +462,7 @@ type EmptyPayload struct {
 type DeliverCargoToContractPayload struct {
 	ShipSymbol  string `json:"shipSymbol"`
 	TradeSymbol string `json:"tradeSymbol"`
-	Units int64 `json:"units"`
+	Units       int64  `json:"units"`
 }
 
 type DockShipResponseData struct {
@@ -557,8 +557,8 @@ type RefuelShipPayload struct {
 
 type TransferCargoPayload struct {
 	TradeSymbol string `json:"tradeSymbol"`
-	Units	int64 `json:"units"`
-	ShipSymbol string `json:"shipSymbol"`
+	Units       int64  `json:"units"`
+	ShipSymbol  string `json:"shipSymbol"`
 }
 
 type TransferCargoResponseData struct {
@@ -566,7 +566,7 @@ type TransferCargoResponseData struct {
 }
 
 type TransferCargoResponse struct {
-	Cargo Cargo `json:"cargo"`
+	Cargo       Cargo `json:"cargo"`
 	TargetCargo Cargo `json:"targetCargo"`
 }
 
@@ -582,7 +582,7 @@ type RefuelShipResponse struct {
 
 type JettisonCargoPayload struct {
 	TradeSymbol string `json:"symbol"`
-	Units int64 `json:"units"`
+	Units       int64  `json:"units"`
 }
 
 type JettisonCargoResponseData struct {

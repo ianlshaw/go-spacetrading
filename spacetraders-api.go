@@ -21,7 +21,7 @@ func RegisterAgent(callsign string) (result RegisterAgentResponse) {
 	if err := json.Unmarshal([]byte(response_string), &data_container); err != nil {
 		fmt.Println("[ERROR] RegisterAgent failed to unmarshal")
 	}
-	
+
 	// TODO Remove
 	//WriteAuthTokenToFile(auth_token, callsign+".token")
 
@@ -114,7 +114,7 @@ func GetShip(ship_symbol string) Ship {
 	return data_container.Data
 }
 
-func NavigateShip(ship_symbol string, waypoint_symbol string) (NavigateShipResponse) {
+func NavigateShip(ship_symbol string, waypoint_symbol string) NavigateShipResponse {
 	fmt.Println("[INFO] " + ship_symbol + " NavigateShip " + waypoint_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/navigate"
 	payload := &NavigateShipPayload{}
@@ -177,7 +177,7 @@ func PurchaseShip(ship_type string, waypoint_symbol string) PurchaseShipResponse
 
 func PurchaseCargo(ship_symbol string, trade_good_symbol string, units int64) PurchaseCargoResponse {
 	units_as_string := strconv.FormatInt(units, 10)
-	Log("DEBUG", ship_symbol + " PurchaseCargo " + units_as_string + " " + trade_good_symbol)
+	Log("DEBUG", ship_symbol+" PurchaseCargo "+units_as_string+" "+trade_good_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/purchase"
 	payload := &PurchaseCargoPayload{}
 	payload.Symbol = trade_good_symbol
@@ -260,7 +260,7 @@ func RefuelShip(ship_symbol string, units int64, from_cargo bool) RefuelShipResp
 }
 
 func TransferCargo(source_ship_symbol string, target_ship_symbol string, cargo_symbol string, units int64) TransferCargoResponse {
-	Log("DEBUG", "TransferCargo " + source_ship_symbol + " " + target_ship_symbol + " " + cargo_symbol + string(units) )
+	Log("DEBUG", "TransferCargo "+source_ship_symbol+" "+target_ship_symbol+" "+cargo_symbol+string(units))
 	endpoint := "my/ships/" + source_ship_symbol + "/transfer"
 	payload := &TransferCargoPayload{}
 	payload.TradeSymbol = cargo_symbol
@@ -405,7 +405,7 @@ func SiphonResources(ship_symbol string) SiphonResourcesResponse {
 	}
 	fmt.Print("[INFO] " + ship_symbol + " siphoned ")
 	fmt.Print(data_container.Data.Siphon.Yield.Units)
-	fmt.Println(" " + data_container.Data.Siphon.Yield.Symbol)	
+	fmt.Println(" " + data_container.Data.Siphon.Yield.Symbol)
 	return data_container.Data
 }
 

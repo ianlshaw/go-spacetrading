@@ -20,14 +20,14 @@ func DecideSaturationSatelliteAction(ship_ptr *Ship, world *WorldState) ShipActi
 	if world.Waypoints["ship.Nav.WaypointSymbol"].WaypointHasTrait("SHIPYARD") {
 		if !IsShipDocked(ship) {
 			return ShipAction{
-				Type: ActionDock,
+				Type:       ActionDock,
 				ShipSymbol: ship.Symbol,
 			}
 		}
-		if world.IsShipyardStale(ship.Nav.WaypointSymbol){
+		if world.IsShipyardStale(ship.Nav.WaypointSymbol) {
 			return ShipAction{
-				Type: ActionUpdateShipyardData,
-					WaypointSymbol: ship.Nav.WaypointSymbol,
+				Type:           ActionUpdateShipyardData,
+				WaypointSymbol: ship.Nav.WaypointSymbol,
 			}
 		}
 	}
@@ -36,20 +36,19 @@ func DecideSaturationSatelliteAction(ship_ptr *Ship, world *WorldState) ShipActi
 	if world.Waypoints["ship.Nav.WaypointSymbol"].WaypointHasTrait("MARKETPLACE") {
 		if world.IsMarketStale(ship.Nav.WaypointSymbol) {
 			return ShipAction{
-				Type: ActionUpdateMarketData,
-					WaypointSymbol: ship.Nav.WaypointSymbol,
+				Type:           ActionUpdateMarketData,
+				WaypointSymbol: ship.Nav.WaypointSymbol,
 			}
 		}
 	}
 
 	// this would result in multiple satellites marking the same waypoint, there is nothing fanning them out yet.
 	// nor any navigation
-	
 
 	fmt.Printf("[WARN] DecideSaturationSatelliteAction uncaught branch. Waiting 15 minutes.\n")
 	return ShipAction{
-		Type: ActionWait,
+		Type:       ActionWait,
 		ShipSymbol: ship.Symbol,
-		NotBefore: FifteenMinutesFromNow(),
+		NotBefore:  FifteenMinutesFromNow(),
 	}
 }

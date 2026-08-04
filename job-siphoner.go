@@ -9,8 +9,8 @@ package main
 //var SiphonerMarketplaceGraph dijkstra.Graph = make(dijkstra.Graph)
 //
 //func ApplyRoleSiphoner(ship Ship,
-//						all_waypoints_in_system []Waypoint, 
-//						all_markets_in_system []Market, 
+//						all_waypoints_in_system []Waypoint,
+//						all_markets_in_system []Market,
 //						contract Contract) time.Time {
 //	fmt.Println("[DEBUG] ApplyRoleSiphoner " + ship.Symbol)
 //
@@ -37,11 +37,11 @@ package main
 //	closest_gas_giant_waypoint := ClosestWaypointFromSliceToWaypoint(gas_giant_waypoints, current_waypoint)
 //	closest_market_to_closest_gas_giant := ClosestMarketToWaypoint(closest_gas_giant_waypoint, all_waypoints_in_system, all_markets_in_system)
 //	closest_market_to_closest_gas_giant_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, closest_market_to_closest_gas_giant.Symbol)
-//	target_trade_good := contract.Terms.Deliver[0].TradeSymbol	
+//	target_trade_good := contract.Terms.Deliver[0].TradeSymbol
 //	contract_delivery_destination_symbol := contract.Terms.Deliver[0].DestinationSymbol
 //	contract_delivery_waypoint := WaypointFromWaypointSymbol(all_waypoints_in_system, contract_delivery_destination_symbol)
 //	remaining_contract_units := ContractRemainingRequired(contract)
-//	
+//
 //	// is cargo full? -> go to closest market, followed by delivery waypoint
 //
 //	if IsShipCargoFull(ship) { // TODO This wont be true when we only siphon whats needed for the contract

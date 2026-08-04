@@ -16,7 +16,7 @@ func DecideMarketBootstrapSatellite(ship_ptr *Ship, world *WorldState) ShipActio
 	// This should only happen once when the ship is first purchased.
 	if IsShipDocked(ship) {
 		return ShipAction{
-			Type: ActionOrbit,
+			Type:       ActionOrbit,
 			ShipSymbol: ship.Symbol,
 		}
 	}
@@ -43,35 +43,35 @@ func DecideMarketBootstrapSatellite(ship_ptr *Ship, world *WorldState) ShipActio
 		target = world.Markets[closest_market.Symbol]
 	}
 
-    if target == nil {
+	if target == nil {
 		fmt.Println("[ERROR] DecideMarketBootstrapSatellite target is nil")
 		return ShipAction{
-			Type: ActionWait,
+			Type:       ActionWait,
 			ShipSymbol: ship.Symbol,
-			NotBefore: FifteenMinutesFromNow(),
+			NotBefore:  FifteenMinutesFromNow(),
 		}
-    }
+	}
 
-    // If not at market, go there
-    if ship.Nav.WaypointSymbol != target.WaypointSymbol {
-        return ShipAction{
-			Type: ActionNavigate,
-            ShipSymbol:     ship.Symbol,
-            WaypointSymbol: target.WaypointSymbol,
-        }
-    }
+	// If not at market, go there
+	if ship.Nav.WaypointSymbol != target.WaypointSymbol {
+		return ShipAction{
+			Type:           ActionNavigate,
+			ShipSymbol:     ship.Symbol,
+			WaypointSymbol: target.WaypointSymbol,
+		}
+	}
 
-    // Already there → scan market
-    return ShipAction{
-		Type: ActionUpdateMarketData,
-        ShipSymbol:     ship.Symbol,
-        WaypointSymbol: target.WaypointSymbol,
-    }
-	
+	// Already there → scan market
+	return ShipAction{
+		Type:           ActionUpdateMarketData,
+		ShipSymbol:     ship.Symbol,
+		WaypointSymbol: target.WaypointSymbol,
+	}
+
 	fmt.Println(" uncaught branch, returning 15 minute delay")
 	return ShipAction{
-		Type: ActionWait,
+		Type:       ActionWait,
 		ShipSymbol: ship.Symbol,
-		NotBefore: FifteenMinutesFromNow(),
+		NotBefore:  FifteenMinutesFromNow(),
 	}
 }

@@ -19,7 +19,7 @@ func CalculateProfitPerUnit(trade_route TradeRoute) float64 {
 	//fmt.Println("[DEBUG] CalculateProfitPerUnit")
 	if trade_route.BuyMarketTradeGood.PurchasePrice == 0 {
 		fmt.Println("[WARNING] CalculateProfitPerUnit trade_route.BuyMarketTradeGood.PurchasePrice == 0")
-        return 0
+		return 0
 	}
 	if trade_route.SellMarketTradeGood.SellPrice == 0 {
 		fmt.Println("[WARNING] CalculateProfitPerUnit trade_route.SellMarketTradeGoodPurchasePrice == 0")
@@ -136,56 +136,56 @@ func AssignSatellitesToMarkets(markets_to_cover map[string]string) {
 }
 
 type DerivedRoute struct {
-    From        string
-    To          string
-    Good        string
+	From                string
+	To                  string
+	Good                string
 	ProfitabilityRating float64
 }
 
 func DeriveTradeRoutes(world *WorldState) []DerivedRoute {
-    routes := []DerivedRoute{}
+	routes := []DerivedRoute{}
 
-    for _, fromMarket := range world.Markets {
-        for _, toMarket := range world.Markets {
+	for _, fromMarket := range world.Markets {
+		for _, toMarket := range world.Markets {
 
-            if fromMarket.Market.Symbol == toMarket.Market.Symbol {
-                continue
-            }
+			if fromMarket.Market.Symbol == toMarket.Market.Symbol {
+				continue
+			}
 
-            for _, fromGood := range fromMarket.Market.TradeGoods {
-                success, toGood := TradeGoodFromMarket(fromGood.Symbol, toMarket.Market)
+			for _, fromGood := range fromMarket.Market.TradeGoods {
+				success, toGood := TradeGoodFromMarket(fromGood.Symbol, toMarket.Market)
 
 				if !success {
 					continue
 				}
 
-                if fromGood.PurchasePrice == 0 || toGood.SellPrice == 0 {
-                    continue
-                }
+				if fromGood.PurchasePrice == 0 || toGood.SellPrice == 0 {
+					continue
+				}
 
-                profit := toGood.SellPrice - fromGood.PurchasePrice
-                if profit <= 0 {
-                    continue
-                }
+				profit := toGood.SellPrice - fromGood.PurchasePrice
+				if profit <= 0 {
+					continue
+				}
 
 				// TODO this should be a path cost from a graph by ship type rather than as-the-crow-flies
 				distance := DistanceBetweenTwoWaypoints(*world.Waypoints[fromMarket.Market.Symbol], *world.Waypoints[toMarket.Market.Symbol])
 				if distance == 0 {
 					distance = 1
 				}
-				profitability_rating := float64(profit) / float64(distance * 2)
+				profitability_rating := float64(profit) / float64(distance*2)
 
-                routes = append(routes, DerivedRoute{
-                    From: fromMarket.Market.Symbol,
-                    To:   toMarket.Market.Symbol,
-                    Good: fromGood.Symbol,
+				routes = append(routes, DerivedRoute{
+					From:                fromMarket.Market.Symbol,
+					To:                  toMarket.Market.Symbol,
+					Good:                fromGood.Symbol,
 					ProfitabilityRating: profitability_rating,
-                })
-            }
-        }
-    }
+				})
+			}
+		}
+	}
 
-    return routes
+	return routes
 }
 
 func MostProfitableDerivedTradeRoute(derived_routes []DerivedRoute) DerivedRoute {
@@ -213,7 +213,7 @@ func DerivedTradeRoutesWithTradeGood(derived_trade_routes []DerivedRoute, trade_
 func MarketsYetToBeVisited(world *WorldState) []Market {
 	markets_yet_to_be_vistied := []Market{}
 	for _, market_state := range world.Markets {
-		if market_state.Market.TradeGoods == nil  {
+		if market_state.Market.TradeGoods == nil {
 			markets_yet_to_be_vistied = append(markets_yet_to_be_vistied, market_state.Market)
 		}
 	}
@@ -222,28 +222,28 @@ func MarketsYetToBeVisited(world *WorldState) []Market {
 
 func BestMarketToSellGood(world *WorldState, tradeGoodSymbol string) (Market, int64, bool) {
 
-    var bestMarket Market
-    bestPrice := int64(-1000)
-    found := false
+	var bestMarket Market
+	bestPrice := int64(-1000)
+	found := false
 
-    for _, market_state := range world.Markets {
-        for _, good := range market_state.Market.TradeGoods {
-            if good.Symbol != tradeGoodSymbol {
-                continue
-            }
+	for _, market_state := range world.Markets {
+		for _, good := range market_state.Market.TradeGoods {
+			if good.Symbol != tradeGoodSymbol {
+				continue
+			}
 
-            // If the market isn't buying it, skip
-            if good.SellPrice <= int64(0) {
-                continue
-            }
+			// If the market isn't buying it, skip
+			if good.SellPrice <= int64(0) {
+				continue
+			}
 
-            if good.SellPrice > bestPrice {
-                bestPrice = good.SellPrice
-                bestMarket = market_state.Market
-                found = true
-            }
-        }
-    }
+			if good.SellPrice > bestPrice {
+				bestPrice = good.SellPrice
+				bestMarket = market_state.Market
+				found = true
+			}
+		}
+	}
 
-    return bestMarket, bestPrice, found
+	return bestMarket, bestPrice, found
 }

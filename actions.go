@@ -7,43 +7,43 @@ import (
 type ShipActionType string
 
 const (
-    ActionNavigate   			 ShipActionType = "NAVIGATE"
-    ActionBuy        			 ShipActionType = "BUY"
-    ActionSell       			 ShipActionType = "SELL"
-    ActionExtract    			 ShipActionType = "EXTRACT"
-    ActionWait       			 ShipActionType = "WAIT"
-	ActionDock		 			 ShipActionType = "DOCK"
-	ActionOrbit		 			 ShipActionType = "ORBIT"
-	ActionUpdateMarketData  	 ShipActionType = "UPDATE MARKET DATA"
-	ActionUpdateShipyardData  	 ShipActionType = "UPDATE SHIPYARD DATA"
-	ActionPurchaseCargo 		 ShipActionType = "PURCHASE CARGO"
-	ActionRefuel				 ShipActionType = "REFUEL"
-	ActionFollowPath 			 ShipActionType = "FOLLOW PATH"
-	ActionSellCargo 			 ShipActionType = "SELL CARGO"
-	ActionPurchaseShip			 ShipActionType = "PURCHASE SHIP"
+	ActionNavigate               ShipActionType = "NAVIGATE"
+	ActionBuy                    ShipActionType = "BUY"
+	ActionSell                   ShipActionType = "SELL"
+	ActionExtract                ShipActionType = "EXTRACT"
+	ActionWait                   ShipActionType = "WAIT"
+	ActionDock                   ShipActionType = "DOCK"
+	ActionOrbit                  ShipActionType = "ORBIT"
+	ActionUpdateMarketData       ShipActionType = "UPDATE MARKET DATA"
+	ActionUpdateShipyardData     ShipActionType = "UPDATE SHIPYARD DATA"
+	ActionPurchaseCargo          ShipActionType = "PURCHASE CARGO"
+	ActionRefuel                 ShipActionType = "REFUEL"
+	ActionFollowPath             ShipActionType = "FOLLOW PATH"
+	ActionSellCargo              ShipActionType = "SELL CARGO"
+	ActionPurchaseShip           ShipActionType = "PURCHASE SHIP"
 	ActionUpdateConstructionSite ShipActionType = "UPDATE CONSTRUCTION SITE"
 )
 
 type ShipAction struct {
-    Type       ShipActionType
-    ShipSymbol string
+	Type       ShipActionType
+	ShipSymbol string
 
-    // Optional fields depending on Type
-    TradeGoodSymbol     string
-    Units     	   		int64
-	WaypointSymbol 		string
-	Path		   		[]string
-	ShipType	   		string
+	// Optional fields depending on Type
+	TradeGoodSymbol string
+	Units           int64
+	WaypointSymbol  string
+	Path            []string
+	ShipType        string
 
-    // When should this action be executed?
-    NotBefore time.Time
+	// When should this action be executed?
+	NotBefore time.Time
 }
 
-func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
-    switch action.Type {
+func ExecuteAction(action ShipAction, ship *Ship) time.Time {
+	switch action.Type {
 
-    case ActionWait:
-        return action.NotBefore
+	case ActionWait:
+		return action.NotBefore
 
 	case ActionFollowPath:
 		resp := FollowPath(ship, action.Path)
@@ -51,11 +51,11 @@ func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
 		ship.Fuel = resp.Fuel
 		return StringToTimestamp(resp.Nav.Route.Arrival)
 
-    case ActionNavigate:
-        resp := NavigateShip(action.ShipSymbol, action.WaypointSymbol)
+	case ActionNavigate:
+		resp := NavigateShip(action.ShipSymbol, action.WaypointSymbol)
 		ship.Nav = resp.Nav
 		ship.Fuel = resp.Fuel
-        return StringToTimestamp(resp.Nav.Route.Arrival)
+		return StringToTimestamp(resp.Nav.Route.Arrival)
 
 	case ActionDock:
 		resp := DockShip(action.ShipSymbol)
@@ -90,7 +90,7 @@ func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
 		World.UpdateFromShipyard(resp)
 		SaveWorldState(callsign, World)
 		return time.Now()
-	
+
 	case ActionPurchaseCargo:
 		resp := PurchaseCargo(action.ShipSymbol, action.TradeGoodSymbol, action.Units)
 		ship.Cargo = resp.Cargo
@@ -104,7 +104,7 @@ func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
 		World.UpdateFromAgent(resp.Agent)
 		World.InvalidateMarket(ship.Nav.WaypointSymbol)
 		return time.Now()
-	
+
 	case ActionPurchaseShip:
 		resp := PurchaseShip(action.ShipType, action.WaypointSymbol)
 		World.UpdateFromAgent(resp.Agent)
@@ -113,8 +113,8 @@ func ExecuteAction(action ShipAction, ship *Ship) (time.Time) {
 		ensureShipRunning(World, ship_state)
 		World.InvalidateShipyard(ship.Nav.WaypointSymbol)
 		return time.Now()
-	
+
 	}
 
-    panic("unknown action")
+	panic("unknown action")
 }

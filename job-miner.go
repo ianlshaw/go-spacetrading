@@ -5,7 +5,6 @@ import (
 	//"time"
 )
 
-
 func ApplyRoleMiner() {
 	fmt.Println("[DEBUG] ApplyRoleMiner")
 

@@ -10,7 +10,7 @@ func DecideConstructorAction(ship Ship, world *WorldState) ShipAction {
 	first_construction_site := ConstructionSite{}
 
 	if len(world.ConstructionSites) > 0 {
-		for _, construction_site_state := range world.ConstructionSites{
+		for _, construction_site_state := range world.ConstructionSites {
 			first_construction_site = construction_site_state.ConstructionSite
 			break
 		}
@@ -18,7 +18,7 @@ func DecideConstructorAction(ship Ship, world *WorldState) ShipAction {
 	} else {
 		fmt.Printf("[WARN] No unfinished construction sites. Waiting...\n")
 		return ShipAction{
-			Type: ActionWait,
+			Type:      ActionWait,
 			NotBefore: ThreeHoursFromNow(),
 		}
 	}
@@ -38,15 +38,10 @@ func DecideConstructorAction(ship Ship, world *WorldState) ShipAction {
 
 	fmt.Printf("[WARN] DecideConstructorAction uncaught branch. Waiting...\n")
 	return ShipAction{
-		Type: ActionWait,
+		Type:      ActionWait,
 		NotBefore: ThreeHoursFromNow(),
 	}
 	//construction_site, ok := world.ConstructionSites[first_under_construction_jump_gate_waypoint.Symbol]
-
-
-
-	
-
 
 	// update construction site data
 

@@ -26,21 +26,21 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 	most_profitable_derived_trade_route := MostProfitableDerivedTradeRoute(derived_trade_routes)
 
 	fmt.Printf("[DEBUG] %s Trade route: Buy %s at %s sell at %s pr %.2f\n",
-	ship.Symbol,
-	most_profitable_derived_trade_route.Good,
-	most_profitable_derived_trade_route.From,
-	most_profitable_derived_trade_route.To,
-	most_profitable_derived_trade_route.ProfitabilityRating)
+		ship.Symbol,
+		most_profitable_derived_trade_route.Good,
+		most_profitable_derived_trade_route.From,
+		most_profitable_derived_trade_route.To,
+		most_profitable_derived_trade_route.ProfitabilityRating)
 
 	//most_profitable_trade_route := MostProfitableTradeRoute(trade_routes)
 	current_waypoint := *world.Waypoints[ship.Nav.WaypointSymbol]
 
 	// Always update market data for a market we're at if it needs it.
-	if IsShipDocked(ship){
+	if IsShipDocked(ship) {
 		if world.IsMarketStale(ship.Nav.WaypointSymbol) {
 			return ShipAction{
-				Type: ActionUpdateMarketData,
-				ShipSymbol: ship.Symbol,
+				Type:           ActionUpdateMarketData,
+				ShipSymbol:     ship.Symbol,
 				WaypointSymbol: ship.Nav.WaypointSymbol,
 			}
 		}
@@ -48,14 +48,14 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 
 	// Always refuel if fuel is not full
 	if !IsFuelFull(ship) {
-		if IsShipDocked(ship){
+		if IsShipDocked(ship) {
 			return ShipAction{
-				Type: ActionRefuel,
+				Type:       ActionRefuel,
 				ShipSymbol: ship.Symbol,
 			}
 		} else {
 			return ShipAction{
-				Type: ActionDock,
+				Type:       ActionDock,
 				ShipSymbol: ship.Symbol,
 			}
 		}
@@ -66,7 +66,7 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 	if most_profitable_derived_trade_route.ProfitabilityRating <= 0 {
 		fmt.Println("[INFO] Most profitable trade route is not profitable enough. Doing nothing...")
 		return ShipAction{
-			Type: ActionWait,
+			Type:      ActionWait,
 			NotBefore: ThreeMinutesFromNow(),
 		}
 	}
@@ -75,7 +75,7 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 	var trade_good_in_cargo string
 
 	// large trades with low trade volume can cause the derived route to cease to exist. eventually causing a nil pointer from here.
-	if !IsShipCargoEmpty(ship){
+	if !IsShipCargoEmpty(ship) {
 		trade_good_in_cargo = ship.Cargo.Inventory[0].Symbol
 		//fmt.Printf("[DEBUG] trade good in cargo: %s\n", trade_good_in_cargo)
 		trade_routes_with_cargo := DerivedTradeRoutesWithTradeGood(derived_trade_routes, trade_good_in_cargo)
@@ -92,13 +92,13 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 			if !success {
 				fmt.Println("[ERROR] No markets will accept %s. Waiting 3 minutes.\n", trade_good_in_cargo)
 				return ShipAction{
-					Type: ActionWait,
+					Type:      ActionWait,
 					NotBefore: ThreeMinutesFromNow(),
 				}
 			}
 			//fmt.Printf("[DEBUG] Backup market found for %s\n", trade_good_in_cargo)
 			sell_market_symbol = sell_market.Symbol
-		
+
 		} else {
 			most_profitable_derived_trade_route = MostProfitableDerivedTradeRoute(trade_routes_with_cargo)
 			sell_market_symbol = most_profitable_derived_trade_route.To
@@ -110,14 +110,14 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 		if !IsShipCargoEmpty(ship) {
 			if !IsShipDocked(ship) {
 				return ShipAction{
-					Type: ActionDock,
+					Type:       ActionDock,
 					ShipSymbol: ship.Symbol,
 				}
 			} else {
 				// at sell wp, not empty, docked.
 				trade_good_cargo_count := CountTradeGoodCargo(ship, trade_good_in_cargo)
 				units := trade_good_cargo_count
-				
+
 				sell_market := world.Markets[sell_market_symbol].Market
 
 				success, sell_market_trade_good := TradeGoodFromMarket(trade_good_in_cargo, sell_market)
@@ -129,10 +129,10 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 					units = trade_volume
 				}
 				return ShipAction{
-					Type: ActionSellCargo,
-					ShipSymbol: ship.Symbol,
+					Type:            ActionSellCargo,
+					ShipSymbol:      ship.Symbol,
 					TradeGoodSymbol: trade_good_in_cargo,
-					Units: units,
+					Units:           units,
 				}
 			}
 		}
@@ -153,7 +153,7 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 		if IsShipAlreadyAtWaypoint(ship, most_profitable_derived_trade_route.From) {
 			if !IsShipDocked(ship) {
 				return ShipAction{
-					Type: ActionDock,
+					Type:       ActionDock,
 					ShipSymbol: ship.Symbol,
 				}
 			} else {
@@ -167,25 +167,25 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 				}
 				if units == 0 {
 					return ShipAction{
-						Type: ActionOrbit,
+						Type:       ActionOrbit,
 						ShipSymbol: ship.Symbol,
 					}
 				}
 				return ShipAction{
-					Type: ActionPurchaseCargo,
-					ShipSymbol: ship.Symbol,
+					Type:            ActionPurchaseCargo,
+					ShipSymbol:      ship.Symbol,
 					TradeGoodSymbol: most_profitable_derived_trade_route.Good,
-					Units: units,
+					Units:           units,
 				}
 			}
 		}
-		if IsShipDocked(ship){
+		if IsShipDocked(ship) {
 			return ShipAction{
-				Type: ActionOrbit,
+				Type:       ActionOrbit,
 				ShipSymbol: ship.Symbol,
 			}
 		}
-		
+
 		most_profitable_trade_route_buy_marketplace_waypoint := *world.Waypoints[most_profitable_derived_trade_route.From]
 		path, _, err := CalculateShortestPathBetweenTwoWaypoints(ShuttleMarketplaceGraph, current_waypoint, most_profitable_trade_route_buy_marketplace_waypoint)
 
@@ -193,21 +193,24 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 			fmt.Println(err)
 			fmt.Println("[ERROR] cannot path")
 			return ShipAction{
-				Type: ActionWait,
+				Type:      ActionWait,
 				NotBefore: FifteenMinutesFromNow(),
 			}
 		}
-    fmt.Printf("[INFO] %s heading to %s to buy %s\n" ship.Symbol, most_profitable_derived_trade_route.From, most_profitable_derived_trade_route.Good)
+		fmt.Printf("[INFO] %s heading to %s to buy %s\n",
+			ship.Symbol,
+			most_profitable_derived_trade_route.From,
+			most_profitable_derived_trade_route.Good)
 
 		return ShipAction{
-			Type: ActionFollowPath,
+			Type:       ActionFollowPath,
 			ShipSymbol: ship.Symbol,
-			Path: path,
+			Path:       path,
 		}
 	}
 	if IsShipDocked(ship) {
 		return ShipAction{
-			Type: ActionOrbit,
+			Type:       ActionOrbit,
 			ShipSymbol: ship.Symbol,
 		}
 	}
@@ -218,20 +221,23 @@ func DecideTraderAction(ship_ptr *Ship, world *WorldState) ShipAction {
 		fmt.Println(err)
 		fmt.Println("[ERROR] cannot path")
 		return ShipAction{
-			Type: ActionWait,
+			Type:      ActionWait,
 			NotBefore: FifteenMinutesFromNow(),
 		}
 	}
-    fmt.Printf("[INFO] %s heading to %s to sell %s\n" ship.Symbol, sell_market_symbol, most_profitable_derived_trade_route.Good)
+	fmt.Printf("[INFO] %s heading to %s to sell %s\n",
+		ship.Symbol,
+		sell_market_symbol,
+		most_profitable_derived_trade_route.Good)
 	return ShipAction{
-		Type: ActionFollowPath,
+		Type:       ActionFollowPath,
 		ShipSymbol: ship.Symbol,
-		Path: path,
+		Path:       path,
 	}
 
 	fmt.Println("[ERROR] DecideTraderAction unhandled branch")
 	return ShipAction{
-		Type: ActionWait,
+		Type:      ActionWait,
 		NotBefore: FifteenMinutesFromNow(),
 	}
 }

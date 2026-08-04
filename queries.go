@@ -1,10 +1,10 @@
 package main
 
 import (
-	"math"
 	"fmt"
-	"time"
+	"math"
 	"slices"
+	"time"
 )
 
 func IsShipInTransit(ship Ship) bool {
@@ -12,7 +12,7 @@ func IsShipInTransit(ship Ship) bool {
 }
 
 func IsShipAlreadyAtWaypoint(ship_to_test Ship, waypoint_symbol string) bool {
-	return (ship_to_test.Nav.WaypointSymbol == waypoint_symbol )
+	return (ship_to_test.Nav.WaypointSymbol == waypoint_symbol)
 }
 
 func IsShipDocked(ship Ship) bool {
@@ -119,7 +119,7 @@ func IsFuelFull(ship Ship) bool {
 	return false
 }
 
-//TODO replace this with a map of ships indexed by frame symbol.
+// TODO replace this with a map of ships indexed by frame symbol.
 func FindPurchaseableShipByType(world *WorldState, frame string) ([]Shipyard, []Waypoint) {
 	shipyards := []Shipyard{}
 	shipyard_waypoints := []Waypoint{}
@@ -334,7 +334,7 @@ func StringToTimestamp(input_string string) time.Time {
 	if err != nil {
 		fmt.Println(err)
 	}
-	return(t)
+	return (t)
 }
 
 func IsWaypointUnderConstruction(waypoint Waypoint) bool {
@@ -361,7 +361,7 @@ func IsContractDeliverble(contract Contract, all_markets_in_system []Market, min
 }
 
 func HaveAtLeastOneBuyerShip(world *WorldState) bool {
-	for _, ship_state := range world.Ships{
+	for _, ship_state := range world.Ships {
 		if ship_state.Job == JobBuyer {
 			return true
 		}
@@ -370,12 +370,12 @@ func HaveAtLeastOneBuyerShip(world *WorldState) bool {
 }
 
 func HaveAtLeastOneMarketBoostrap(world *WorldState) bool {
-	for _, ship_state := range world.Ships{
+	for _, ship_state := range world.Ships {
 		if ship_state.Job == JobMarketBootstrap {
 			return true
 		}
 	}
-	return false	
+	return false
 }
 
 func UnassignedShipOfRole(world *WorldState, role string) (bool, string) {

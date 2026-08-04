@@ -18,8 +18,6 @@ func DoesAgentTokenFileExist(callsign string) (result bool) {
 	return true
 }
 
-
-
 func WriteAuthTokenToFile(auth_token string, filename string) {
 	f, err := os.Create(filename)
 	PanicOnError(err)
@@ -50,7 +48,7 @@ func ReadAgentTokenFromFile(callsign string) {
 }
 
 func WorldStateFilename(callsign string) string {
-    return callsign + ".world.json"
+	return callsign + ".world.json"
 }
 
 func DoesWorldStateFileExist(callsign string) (result bool) {
@@ -64,61 +62,61 @@ func DoesWorldStateFileExist(callsign string) (result bool) {
 }
 
 func LoadWorldState(callsign string) *WorldState {
-    filename := WorldStateFilename(callsign)
+	filename := WorldStateFilename(callsign)
 
-    if _, err := os.Stat(filename); os.IsNotExist(err) {
-        return &WorldState{
-            Markets: make(map[string]*MarketState),
-			Waypoints: make(map[string]*Waypoint),
-			Shipyards: make(map[string]*ShipyardState),
-			Ships: make(map[string]*ShipState),
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		return &WorldState{
+			Markets:           make(map[string]*MarketState),
+			Waypoints:         make(map[string]*Waypoint),
+			Shipyards:         make(map[string]*ShipyardState),
+			Ships:             make(map[string]*ShipState),
 			ConstructionSites: make(map[string]*ConstructionSiteState),
-        }
-    }
+		}
+	}
 
-    data, err := os.ReadFile(filename)
-    PanicOnError(err)
+	data, err := os.ReadFile(filename)
+	PanicOnError(err)
 
-    var ws WorldState
-    PanicOnError(json.Unmarshal(data, &ws))
+	var ws WorldState
+	PanicOnError(json.Unmarshal(data, &ws))
 
 	if ws.Agent == nil {
 		fmt.Println("ws.Agent is nil")
 		ws.Agent = &Agent{}
 	}
 
-    if ws.Markets == nil {
+	if ws.Markets == nil {
 		fmt.Println("ws.Markets is nil")
-        ws.Markets = make(map[string]*MarketState)
-    }
+		ws.Markets = make(map[string]*MarketState)
+	}
 
-    if ws.Waypoints == nil {
+	if ws.Waypoints == nil {
 		fmt.Println("ws.Waypoints is nil")
-        ws.Waypoints = make(map[string]*Waypoint)
-    }
+		ws.Waypoints = make(map[string]*Waypoint)
+	}
 
-    if ws.Shipyards == nil {
+	if ws.Shipyards == nil {
 		fmt.Println("ws.Shipyards is nil")
-        ws.Shipyards = make(map[string]*ShipyardState)
-    }
+		ws.Shipyards = make(map[string]*ShipyardState)
+	}
 
-    if ws.Ships == nil {
+	if ws.Ships == nil {
 		fmt.Println("ws.Ships is nil")
-        ws.Ships = make(map[string]*ShipState)
-    }
+		ws.Ships = make(map[string]*ShipState)
+	}
 
-    if ws.ConstructionSites == nil {
+	if ws.ConstructionSites == nil {
 		fmt.Println("ws.ConstructionSites is nil")
-        ws.ConstructionSites = make(map[string]*ConstructionSiteState)
-    }
+		ws.ConstructionSites = make(map[string]*ConstructionSiteState)
+	}
 
-    return &ws
+	return &ws
 }
 
 func SaveWorldState(callsign string, ws *WorldState) {
-    data, err := json.MarshalIndent(ws, "", "  ")
-    PanicOnError(err)
+	data, err := json.MarshalIndent(ws, "", "  ")
+	PanicOnError(err)
 
-    err = os.WriteFile(WorldStateFilename(callsign), data, 0644)
-    PanicOnError(err)
+	err = os.WriteFile(WorldStateFilename(callsign), data, 0644)
+	PanicOnError(err)
 }

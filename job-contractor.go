@@ -5,7 +5,6 @@ import (
 	//"time"
 )
 
-
 func ApplyRoleContractor() {
 	fmt.Println("[DEBUG] ApplyRoleContractor")
 }
