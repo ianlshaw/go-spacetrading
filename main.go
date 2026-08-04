@@ -210,7 +210,8 @@ func main() {
 	  UpdateAgentTokenSecret(register_agent_result.Token)
 	}
 
-	if agent_token == "AGENT_TOKEN_EXPIRED" {
+    // TODO remove bearer from this and the above. Dont use functions to create this var, its messy
+	if agent_token == "Bearer AGENT_TOKEN_EXPIRED" {
 	  fmt.Printf("[INFO] Agent token expired. Server must have reset. Regenerating agent token.\n")	
 	  register_agent_result := RegisterAgent(callsign)
 	  os.Setenv("SPACETRADERS_AGENT_TOKEN", register_agent_result.Token)
