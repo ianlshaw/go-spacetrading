@@ -176,8 +176,7 @@ func PurchaseShip(ship_type string, waypoint_symbol string) PurchaseShipResponse
 }
 
 func PurchaseCargo(ship_symbol string, trade_good_symbol string, units int64) PurchaseCargoResponse {
-	units_as_string := strconv.FormatInt(units, 10)
-	Log("DEBUG", ship_symbol+" PurchaseCargo "+units_as_string+" "+trade_good_symbol)
+	fmt.Printf("[DEBUG] %s PurchaseCargo %d %s", ship_symbol, units, trade_good_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/purchase"
 	payload := &PurchaseCargoPayload{}
 	payload.Symbol = trade_good_symbol
