@@ -175,7 +175,7 @@ func PurchaseShip(ship_type string, waypoint_symbol string) PurchaseShipResponse
 }
 
 func PurchaseCargo(ship_symbol string, trade_good_symbol string, units int64) PurchaseCargoResponse {
-	fmt.Printf("[DEBUG] %s PurchaseCargo %d %s", ship_symbol, units, trade_good_symbol)
+	//fmt.Printf("[DEBUG] %s PurchaseCargo %d %s\n", ship_symbol, units, trade_good_symbol)
 	endpoint := "my/ships/" + ship_symbol + "/purchase"
 	payload := &PurchaseCargoPayload{}
 	payload.Symbol = trade_good_symbol
@@ -190,15 +190,7 @@ func PurchaseCargo(ship_symbol string, trade_good_symbol string, units int64) Pu
 		fmt.Println(err)
 	}
 
-	fmt.Print("[INFO] ")
-	fmt.Print(ship_symbol)
-	fmt.Print(" Purchased ")
-	fmt.Print(data_container.Data.Transaction.Units)
-	fmt.Print(" ")
-	fmt.Print(trade_good_symbol)
-	fmt.Print(" for ")
-	fmt.Print(data_container.Data.Transaction.TotalPrice)
-	fmt.Print("\n")
+	fmt.Printf("[INFO] %s Purchased %d %s for %d\n", ship_symbol, data_container.Data.Transaction.Units, trade_good_symbol, data_container.Data.Transaction.TotalPrice)
 
 	return data_container.Data
 }
