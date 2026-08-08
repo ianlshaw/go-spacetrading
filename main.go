@@ -135,7 +135,7 @@ func runShip(world *WorldState, ship_state *ShipState) {
 			expiration = ExecuteAction(action, ship)
 
 		case JobSaturationSatellite:
-			action := DecideSaturationSatelliteAction(ship, World)
+			action := DecideSaturationSatelliteAction(ship_state, World)
 			fmt.Println(action)
 			expiration = ExecuteAction(action, ship)
 

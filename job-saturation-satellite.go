@@ -4,14 +4,14 @@ import (
 	"fmt"
 )
 
-func DecideSaturationSatelliteAction(ship_ptr *Ship, world *WorldState) ShipAction {
+func DecideSaturationSatelliteAction(ship_state *ShipState, world *WorldState) ShipAction {
 
-	ship := *ship_ptr
+	ship := &ship_state.Ship
 
 	fmt.Printf("[INFO %s %s %s DecideSaturationSatelliteAction\n", ship.Symbol, ship.Registration.Role, ship.Nav.WaypointSymbol)
 
 	// do i have a target?
-	if ship.TargetWaypointSymbol == "" {
+	if ship_state.TargetWaypointSymbol == "" {
 		for _, market := range world.Markets {
 			for _, other_ship := range world.Ships {
 				// exclude self
@@ -26,12 +26,12 @@ func DecideSaturationSatelliteAction(ship_ptr *Ship, world *WorldState) ShipActi
 					continue
 				}
 				// if the iterator survives to this point then the market should not have any other satellites at or on the way to it.
-				ship.TargetWaypointSymbol = market.WaypointSymbol
+				ship_state.TargetWaypointSymbol = market.WaypointSymbol
 			}
 		}
 	}
 
-	if IsShipAlreadyAtWaypoint(ship, ship.TargetWaypointSymbol) {
+	if IsShipAlreadyAtWaypoint(ship, ship_state.TargetWaypointSymbol) {
 
 		// Is it a shipyard?
 		if world.Waypoints[ship.Nav.WaypointSymbol].WaypointHasTrait("SHIPYARD") {
