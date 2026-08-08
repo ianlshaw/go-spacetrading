@@ -17,7 +17,7 @@ func DecideSaturationSatelliteAction(ship_ptr *Ship, world *WorldState) ShipActi
 	// Am I the only satellite here
 
 	// Is it a shipyard?
-	if world.Waypoints["ship.Nav.WaypointSymbol"].WaypointHasTrait("SHIPYARD") {
+	if world.Waypoints[ship.Nav.WaypointSymbol].WaypointHasTrait("SHIPYARD") {
 		if !IsShipDocked(ship) {
 			return ShipAction{
 				Type:       ActionDock,
@@ -33,14 +33,14 @@ func DecideSaturationSatelliteAction(ship_ptr *Ship, world *WorldState) ShipActi
 	}
 
 	// Is it a marketplace?
-	if world.Waypoints["ship.Nav.WaypointSymbol"].WaypointHasTrait("MARKETPLACE") {
-		if world.IsMarketStale(ship.Nav.WaypointSymbol) {
-			return ShipAction{
-				Type:           ActionUpdateMarketData,
-				WaypointSymbol: ship.Nav.WaypointSymbol,
-			}
-		}
-	}
+	//if world.Waypoints["ship.Nav.WaypointSymbol"].WaypointHasTrait("MARKETPLACE") {
+	//	if world.IsMarketStale(ship.Nav.WaypointSymbol) {
+	//		return ShipAction{
+	//			Type:           ActionUpdateMarketData,
+	//			WaypointSymbol: ship.Nav.WaypointSymbol,
+	//		}
+	//	}
+	//}
 
 	// this would result in multiple satellites marking the same waypoint, there is nothing fanning them out yet.
 	// nor any navigation

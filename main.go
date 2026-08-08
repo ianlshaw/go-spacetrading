@@ -104,7 +104,7 @@ func runShip(world *WorldState, ship_state *ShipState) {
 			}
 		}
 
-		if CountShipsByFrame(world, "SATELLITE") >= len(world.Markets) {
+		if CountShipsByFrame(world, "FRAME_PROBE") >= len(world.Markets) {
 			if ship.Registration.Role == "SATELLITE" {
 				ship_state.Job = JobSaturationSatellite
 				SaveWorldState(callsign, world)
