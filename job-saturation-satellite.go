@@ -13,16 +13,16 @@ func DecideSaturationSatelliteAction(ship_state *ShipState, world *WorldState) S
 	// do i have a target?
 	if ship_state.TargetWaypointSymbol == "" {
 		for _, market := range world.Markets {
-			for _, other_ship := range world.Ships {
+			for _, other_ship_state := range world.Ships {
 				// exclude self
-				if ship.Symbol == other_ship.Symbol {
+				if ship.Symbol == other_ship_state.Ship.Symbol {
 					continue
 				}
 				// exclude non satellites
-				if other_ship.Registration.Role != "SATELLITE" {
+				if other_ship_state.Ship.Registration.Role != "SATELLITE" {
 					continue
 				}
-				if other_ship.Nav.WaypointSymbol == market.WaypointSymbol {
+				if other_ship_state.Ship.Nav.WaypointSymbol == market.WaypointSymbol {
 					continue
 				}
 				// if the iterator survives to this point then the market should not have any other satellites at or on the way to it.
