@@ -62,8 +62,9 @@ func DecideSaturationSatelliteAction(ship_state *ShipState, world *WorldState) S
 	}
 
 	return ShipAction{
-		Type:       ActionNavigate,
-		ShipSymbol: ship.Symbol,
+		Type:           ActionNavigate,
+		ShipSymbol:     ship.Symbol,
+		WaypointSymbol: ship_state.TargetWaypointSymbol,
 	}
 
 	// Is there another satellite already at this location?
