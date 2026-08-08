@@ -58,13 +58,16 @@ func DecideSaturationSatelliteAction(ship_state *ShipState, world *WorldState) S
 				}
 			}
 		}
-
+		return ShipAction{
+			Type:       ActionWait,
+			ShipSymbol: ship.Symbol,
+			NotBefore:  FifteenMinutesFromNow(),
+		}
 	}
-
 
 	if IsShipDocked(*ship) {
 		return ShipAction{
-			Type: ActionOrbit,
+			Type:       ActionOrbit,
 			ShipSymbol: ship.Symbol,
 		}
 	}
