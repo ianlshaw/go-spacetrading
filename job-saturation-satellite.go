@@ -61,7 +61,7 @@ func DecideSaturationSatelliteAction(ship_state *ShipState, world *WorldState) S
 		return ShipAction{
 			Type:       ActionWait,
 			ShipSymbol: ship.Symbol,
-			NotBefore:  FifteenMinutesFromNow(),
+			NotBefore:  ThreeMinutesFromNow(),
 		}
 	}
 
