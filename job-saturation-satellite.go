@@ -31,7 +31,7 @@ func DecideSaturationSatelliteAction(ship_state *ShipState, world *WorldState) S
 		}
 	}
 
-	if IsShipAlreadyAtWaypoint(ship, ship_state.TargetWaypointSymbol) {
+	if IsShipAlreadyAtWaypoint(*ship, ship_state.TargetWaypointSymbol) {
 
 		// Is it a shipyard?
 		if world.Waypoints[ship.Nav.WaypointSymbol].WaypointHasTrait("SHIPYARD") {
