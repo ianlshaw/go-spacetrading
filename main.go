@@ -89,7 +89,7 @@ func runShip(world *WorldState, ship_state *ShipState) {
 
 		if ship.Registration.Role == "SATELLITE" {
 			if !HaveAtLeastOneBuyerShip(world) {
-				fmt.Printf("[INFO] No buyer ships. We need to assign one.")
+				fmt.Printf("[INFO] No buyer ships. We need to assign one.\n")
 				if IsShipStateJobUnassigned(ship_state) {
 					fmt.Printf("[INFO] %s assigned job BUYER\n", ship.Symbol)
 					ship_state.Job = JobBuyer

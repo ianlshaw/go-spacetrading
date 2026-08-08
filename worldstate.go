@@ -35,10 +35,10 @@ type ShipyardState struct {
 }
 
 type ShipState struct {
-	BusyUntil time.Time
-	Ship      Ship
-	Job       ShipJob
-	//TargetWaypointSymbol string // this is only needed for saturation satellites. maybe there's a better way to deal with it at the job level
+	BusyUntil            time.Time
+	Ship                 Ship
+	Job                  ShipJob
+	TargetWaypointSymbol string // this is only needed for saturation satellites. maybe there's a better way to deal with it at the job level
 }
 
 func (w *WorldState) UpdateFromShip(s Ship) {
