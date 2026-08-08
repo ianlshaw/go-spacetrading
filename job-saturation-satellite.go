@@ -61,6 +61,14 @@ func DecideSaturationSatelliteAction(ship_state *ShipState, world *WorldState) S
 
 	}
 
+
+	if IsShipDocked(*ship) {
+		return ShipAction{
+			Type: ActionOrbit,
+			ShipSymbol: ship.Symbol,
+		}
+	}
+
 	return ShipAction{
 		Type:           ActionNavigate,
 		ShipSymbol:     ship.Symbol,
